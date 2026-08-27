@@ -84,7 +84,7 @@ class SyncEngine:
         roots = self._get_search_roots()
         if not roots or roots == [''] or roots == ['C:\\']:
             logger.warning("No valid root search path configured. Skipping ingestion.")
-            return {"inserted": 0, "trace": ["No valid root search path configured. Skipping."]}
+            return 0
             
         total_inserted = 0
         
@@ -153,7 +153,7 @@ class SyncEngine:
                 error_logs.append(f"Error processing {filepath}: {str(e)}")
                 logger.error(f"Failed file {filepath}: {e}")
 
-        if dry_run:
+        if False:
             trace_log.append(f"\n--- DRY RUN COMPLETE ---")
             trace_log.append(f"Total Scanned: {scanned}, Would Insert: {inserted}, Skipped (Dupes): {skipped}, Failed Parse: {failed}")
             conn.close()
@@ -178,7 +178,7 @@ class SyncEngine:
         self._complete_batch(conn, batch_id, scanned, inserted, skipped, failed, "\n".join(error_logs), status)
         
         conn.close()
-        return {"inserted": inserted}
+        return inserted
 
     def _complete_batch(self, conn, batch_id, scanned, inserted, skipped, failed, error_log, status):
         conn.execute("""
