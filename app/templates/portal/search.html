@@ -15,6 +15,7 @@
         
         <!-- HTMX powers this form. Any change or submit instantly refreshes the results-container -->
         <form id="search-form" hx-get="{{ url_for('portal.search_results') }}" hx-target="#results-container" hx-trigger="submit" hx-on::after-request="this.reset()" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
             
             <div class="form-control">
                 <label class="label"><span class="label-text font-bold text-gray-700">Recipe</span></label>
