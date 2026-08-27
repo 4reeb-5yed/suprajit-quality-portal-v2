@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, g, abort, request
+from flask import Blueprint, render_template, g, abort, request, current_app
 from flask_login import login_required, current_user
 from app.database import GET_SETTING, SET_SETTING
 
@@ -315,7 +315,7 @@ def diagnostics():
         log_lines = [f"Error reading log file: {e}"]
         
     # Get last sync info
-    last_run = g.db.execute("SELECT * FROM batch_runs ORDER BY start_time DESC LIMIT 1").fetchone()
+    last_run = g.db.execute("SELECT * FROM batch_runs ORDER BY run_started DESC LIMIT 1").fetchone()
     
     return __import__('flask').render_template('admin/diagnostics.html', log_lines=log_lines, last_run=last_run)
 
