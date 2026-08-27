@@ -7,8 +7,13 @@ from app.config import get_config
 import sys
 import os
 
-# Ensure the log file goes into the same directory as the executable/cwd
-log_file_path = 'suprajit.log'
+# If frozen (PyInstaller), log next to executable
+if getattr(sys, 'frozen', False):
+    log_dir = os.path.dirname(sys.executable)
+else:
+    log_dir = os.path.dirname(os.path.abspath(__file__))
+    
+log_file_path = os.path.join(log_dir, 'suprajit.log')
 
 logging.basicConfig(
     level=logging.INFO, 
@@ -21,8 +26,20 @@ logging.basicConfig(
 logger = logging.getLogger('waitress')
 
 if __name__ == '__main__':
-    app = create_app()
-    cfg = get_config()
-    
-    logger.info(f"Starting Waitress production server on {cfg.HOST}:{cfg.PORT}")
-    serve(app, host=cfg.HOST, port=cfg.PORT, threads=8)
+    try:
+        app = create_app()
+        cfg = get_config()
+        
+        logger.info(f"Starting Waitress production server on {cfg.HOST}:{cfg.PORT}")
+        serve(app, host=cfg.HOST, port=cfg.PORT, threads=8)
+    except OSError as e:
+        if "10048" in str(e):
+            logger.critical(f"FATAL ERROR: Port {cfg.PORT} is already in use by another application. Please close the other application or kill hanging python processes.")
+        else:
+            logger.critical(f"Fatal OS Error: {e}")
+        input("\n[ERROR] Press Enter to exit...")
+    except Exception as e:
+        logger.critical(f"Fatal Application Error: {e}")
+        import traceback
+        traceback.print_exc()
+        input("\n[ERROR] Press Enter to exit...")
