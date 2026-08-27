@@ -70,9 +70,7 @@ def create_app():
     app.register_blueprint(portal_bp)
     app.register_blueprint(admin_bp, url_prefix='/admin')
 
-    from flask_wtf.csrf import CSRFProtect
-    csrf = CSRFProtect()
-    csrf.init_app(app)
+
 
     @app.after_request
     def add_security_headers(response):
