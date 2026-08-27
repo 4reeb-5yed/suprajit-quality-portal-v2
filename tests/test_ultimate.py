@@ -12,12 +12,14 @@ def test_parser_perfect_filename():
     res = parse_filename("EV_TPS_13-06-2026_22.33.21_12.xlsx")
     assert res['recipe_name'] == "EV_TPS"
     assert res['report_date'] == "2026-06-13"
-    assert res['serial_number'] == "12"
+    assert res['serial_raw'] == "12"
+    assert res['serial_normalized'] == "0012"
 
 def test_parser_weird_casing_and_spaces():
     res = parse_filename("ev tps_13-06-2026_22.33.21_0045.XLSX")
     assert res['recipe_name'] == "ev tps"
-    assert res['serial_number'] == "0045"
+    assert res['serial_raw'] == "0045"
+    assert res['serial_normalized'] == "0045"
 
 def test_parser_invalid_garbage():
     res = parse_filename("random_junk_file.txt")
@@ -36,8 +38,8 @@ def test_regression_sync_engine_dict_addition_bug(app):
     FIX: Ensure run_batch properly tallies integers.
     """
     with app.app_context():
-        db_path = os.environ['DATABASE_PATH']
-        storage = os.environ['STORAGE_BASE']
+        db_path = app.config['DATABASE_PATH']
+        storage = app.config['STORAGE_BASE']
         engine = SyncEngine(db_path, storage)
         
         # Override process_folder to simulate a successful folder processing returning an integer
@@ -58,8 +60,8 @@ def test_regression_deadlock_status_bug(app):
     FIX: The engine MUST mark it as 'failed' or 'completed' even if it errors.
     """
     with app.app_context():
-        db_path = os.environ['DATABASE_PATH']
-        storage = os.environ['STORAGE_BASE']
+        db_path = app.config['DATABASE_PATH']
+        storage = app.config['STORAGE_BASE']
         engine = SyncEngine(db_path, storage)
         
         # Force process_folder to throw a fatal error
@@ -88,8 +90,8 @@ def test_e2e_factory_lifecycle(client, app):
     Simulates a full day at the factory from Admin setup, to ingestion, to Client search.
     """
     with app.app_context():
-        db_path = os.environ['DATABASE_PATH']
-        storage = os.environ['STORAGE_BASE']
+        db_path = app.config['DATABASE_PATH']
+        storage = app.config['STORAGE_BASE']
         
         # 1. Admin creates customer and assigns recipe
         client.post('/login', data={'username': 'testadmin', 'password': 'admin123'}, follow_redirects=True)
