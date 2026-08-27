@@ -212,7 +212,7 @@ class SyncEngine:
                 conn.close()
                 return 0
 
-        status = "completed" if failed == 0 else "completed_with_errors"
+        status = "completed"  # Rejecting unparseable files is a feature, not a batch failure
         self._complete_batch(conn, batch_id, scanned, inserted, skipped, failed, "\n".join(error_logs), status)
         
         conn.close()
