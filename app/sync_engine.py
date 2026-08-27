@@ -121,11 +121,17 @@ class SyncEngine:
         
         for filepath in files_to_process:
             try:
+                filename_only = os.path.basename(filepath)
+                self.logger.info(f"Scanning file: {filename_only}")
+                
                 parsed = parse_filename(filepath)
                 if not parsed:
                     failed += 1
                     error_logs.append(f"Unparseable filename: {filepath}")
+                    self.logger.warning(f"Failed to parse filename metadata for: {filename_only}")
                     continue
+                
+                self.logger.info(f"Parsed metadata -> Recipe: {parsed['recipe_name']}, Serial: {parsed['serial_raw']}")
                 
                 file_hash = hash_file(filepath)
                 if file_hash in existing_hashes:
@@ -140,6 +146,7 @@ class SyncEngine:
                     parsed['original_filename'], filepath, file_hash, file_size
                 ))
                 inserted += 1
+                self.logger.info(f"Successfully mapped {filename_only} to Recipe '{parsed['recipe_name']}'")
                 
             except Exception as e:
                 failed += 1

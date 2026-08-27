@@ -3,7 +3,20 @@ from waitress import serve
 from app import create_app
 from app.config import get_config
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(message)s')
+import sys
+import os
+
+# Ensure the log file goes into the same directory as the executable/cwd
+log_file_path = 'suprajit.log'
+
+logging.basicConfig(
+    level=logging.INFO, 
+    format='%(asctime)s [%(levelname)s] %(message)s',
+    handlers=[
+        logging.FileHandler(log_file_path, encoding='utf-8'),
+        logging.StreamHandler(sys.stdout)
+    ]
+)
 logger = logging.getLogger('waitress')
 
 if __name__ == '__main__':
