@@ -6,6 +6,11 @@
     <div class="flex items-center justify-between">
         <h1 class="text-3xl font-bold text-gray-800"><i class="fa-solid fa-chart-pie text-blue-800 mr-2"></i>Admin Dashboard</h1>
         <div class="text-sm text-gray-500">System Health Overview</div>
+        </div>
+        <div>
+            <a href="{{ url_for('admin.download_logs') }}" class="btn btn-error btn-sm text-white">
+                <i class="fa-solid fa-bug"></i> Download Diagnostic Logs
+            </a>
     </div>
 
     <!-- Stats Row -->
@@ -64,6 +69,8 @@
                                 <span class="badge badge-warning">Running</span>
                             {% elif batch.status == 'completed' %}
                                 <span class="badge badge-success text-white">Completed</span>
+                            {% elif batch.status == 'CRASHED_ZOMBIE' %}
+                                <span class="badge badge-error text-white">ZOMBIE (CRASHED)</span>
                             {% else %}
                                 <span class="badge badge-error text-white">Failed</span>
                             {% endif %}

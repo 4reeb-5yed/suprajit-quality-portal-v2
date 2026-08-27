@@ -4,6 +4,35 @@ from flask_wtf.csrf import CSRFProtect
 
 import os
 import sqlite3
+import logging
+from logging.handlers import RotatingFileHandler
+import sys
+
+def setup_logging(app):
+    # Setup Enterprise Log Rotation inside the data directory
+    log_dir = os.path.join(os.path.dirname(app.config['DATABASE_PATH']), 'logs')
+    os.makedirs(log_dir, exist_ok=True)
+    log_file = os.path.join(log_dir, 'suprajit_system.log')
+    
+    file_handler = RotatingFileHandler(log_file, maxBytes=10*1024*1024, backupCount=5)
+    file_formatter = logging.Formatter('%(asctime)s [%(levelname)s] %(name)s: %(message)s')
+    file_handler.setFormatter(file_formatter)
+    
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setFormatter(file_formatter)
+    
+    root_logger = logging.getLogger()
+    root_logger.setLevel(logging.INFO)
+    
+    # Clear existing handlers to prevent duplicates during testing
+    if root_logger.hasHandlers():
+        root_logger.handlers.clear()
+        
+    root_logger.addHandler(file_handler)
+    root_logger.addHandler(console_handler)
+    
+    app.config['LOG_FILE_PATH'] = log_file
+
 
 from app.config import get_config
 from app.database import get_connection, ensure_schema, GET_USER_BY_ID
@@ -28,6 +57,8 @@ def create_app():
     
     # Load config into Flask app
     app.config.from_object(cfg)
+    
+    setup_logging(app)
     
     # Initialize Extensions
     

@@ -507,3 +507,17 @@ def delete_user():
     if user['role'] == 'admin':
         return redirect(url_for('admin.settings'))
     return redirect(url_for('admin.customers'))
+import os
+from flask import send_file, current_app
+
+@admin_bp.route('/logs/download')
+@login_required
+@admin_required
+def download_logs():
+    """Allows System Administrators to instantly download the raw system log file for observability."""
+    log_path = current_app.config.get('LOG_FILE_PATH')
+    if not log_path or not os.path.exists(log_path):
+        flash("System log file does not exist yet.", "warning")
+        return redirect(url_for('admin.dashboard'))
+        
+    return send_file(log_path, as_attachment=True, download_name="suprajit_system.log", mimetype="text/plain")
