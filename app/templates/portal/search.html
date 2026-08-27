@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="space-y-6">
+    
+    <!-- Clean White Header Card -->
+    <div class="bg-white border border-gray-200 rounded shadow-sm p-6 mb-6">
+        <div class="flex items-center gap-3 mb-6">
+            <i class="fa-solid fa-magnifying-glass-chart text-3xl text-blue-800"></i>
+            <div>
+                <h1 class="text-2xl font-bold text-gray-800">Quality Data Search</h1>
+                <p class="text-sm text-gray-500">Filter reports by recipe, date, or serial number.</p>
+            </div>
+        </div>
+        
+        <!-- HTMX powers this form. Any change or submit instantly refreshes the results-container -->
+        <form id="search-form" hx-get="{{ url_for('portal.search_results') }}" hx-target="#results-container" hx-trigger="submit" hx-on::after-request="this.reset()" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+            
+            <div class="form-control">
+                <label class="label"><span class="label-text font-bold text-gray-700">Recipe</span></label>
+                <select name="recipe" class="select select-bordered w-full">
+                    <option value="">All Recipes</option>
+                    {% for r in recipes %}
+                    <option value="{{ r.recipe_name }}">{{ r.recipe_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="form-control">
+                <label class="label"><span class="label-text font-bold text-gray-700">Date</span></label>
+                <input type="date" name="date" class="input input-bordered w-full">
+            </div>
+            
+            <div class="form-control">
+                <label class="label"><span class="label-text font-bold text-gray-700">Serial Number</span></label>
+                <!-- Trigger search as user types -->
+                <input type="text" name="serial" placeholder="e.g. 0012" class="input input-bordered w-full">
+            </div>
+            
+            <div class="form-control">
+                <button type="submit" class="btn btn-primary suprajit-blue-bg border-none text-white w-full shadow">
+                    <i class="fa-solid fa-filter mr-1"></i> Search
+                </button>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Clean Data Table -->
+    <div class="bg-white border border-gray-200 rounded shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="table table-zebra w-full">
+                <thead class="bg-gray-100 text-gray-700 font-bold uppercase text-xs tracking-wider">
+                    <tr>
+                        <th>Serial Number</th>
+                        <th>Recipe Name</th>
+                        <th>Date</th>
+                        <th>Time</th>
+                        <th class="text-right">Action</th>
+                    </tr>
+                </thead>
+                <tbody id="results-container">
+                    <tr>
+                        <td colspan="5" class="text-center text-gray-500 py-12">
+                            <i class="fa-solid fa-magnifying-glass text-2xl mb-3 block text-gray-300"></i>
+                            Please select a recipe, date, or enter a serial number, then click Search.
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

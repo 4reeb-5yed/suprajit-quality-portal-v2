@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="space-y-8">
+    <div class="flex items-center justify-between">
+        <h1 class="text-3xl font-bold text-gray-800"><i class="fa-solid fa-cogs text-blue-800 mr-2"></i>System Configuration</h1>
+        <div class="text-sm text-gray-500">Global application settings</div>
+    </div>
+
+    <!-- Batch Ingestion Settings -->
+    <div class="bg-white border border-gray-200 rounded shadow-sm overflow-hidden">
+        <div class="p-6 border-b border-gray-200 bg-gray-50">
+            <h2 class="text-lg font-bold text-gray-800"><i class="fa-solid fa-clock mr-2 text-blue-600"></i>Automated Ingestion Schedule</h2>
+            <p class="text-sm text-gray-500 mt-1">Set the exact time the background engine will scan the global root directories for yesterday's data.</p>
+        </div>
+        <div class="p-6">
+            <form method="POST" action="{{ url_for('admin.settings') }}" class="flex flex-col gap-6 max-w-2xl">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                
+                <div class="form-control w-full">
+                    <label class="label"><span class="label-text font-bold text-gray-700">Daily Sync Time (24hr)</span></label>
+                    <input type="time" name="sync_time" value="{{ sync_time }}" required class="input input-bordered w-full md:w-64" />
+                </div>
+
+                <div class="form-control w-full">
+                    <label class="label"><span class="label-text font-bold text-gray-700">Global Search Root Directories</span></label>
+                    <input type="text" name="root_search_path" value="{{ root_search_path }}" required class="input input-bordered w-full font-mono text-sm" placeholder="e.g. Z:\Suprajit\Test Reports" />
+                    <label class="label"><span class="label-text-alt text-gray-500">The master folder(s) where all your recipes are stored. The engine will crawl this path recursively. Separate multiple paths with a semicolon (;).</span></label>
+                </div>
+                
+                <button type="submit" class="btn btn-primary suprajit-blue-bg border-none text-white w-full md:w-auto self-start">
+                    <i class="fa-solid fa-save mr-1"></i> Save Configuration
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- SMTP Settings -->
+    <div class="bg-white border border-gray-200 rounded shadow-sm overflow-hidden">
+        <div class="p-6 border-b border-gray-200 bg-gray-50">
+            <h2 class="text-lg font-bold text-gray-800"><i class="fa-solid fa-envelope mr-2 text-blue-600"></i>Email Server Configuration</h2>
+            <p class="text-sm text-gray-500 mt-1">Configure the email account used to send "Forgot Password" links and new user Welcome emails.</p>
+        </div>
+        <div class="p-6">
+            <form method="POST" action="{{ url_for('admin.settings') }}" class="flex flex-col gap-6 max-w-2xl">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="form-control w-full">
+                        <label class="label"><span class="label-text font-bold text-gray-700">SMTP Server</span></label>
+                        <input type="text" name="mail_server" value="{{ mail_server }}" placeholder="e.g. smtp.gmail.com" class="input input-bordered w-full" />
+                    </div>
+                    <div class="form-control w-full">
+                        <label class="label"><span class="label-text font-bold text-gray-700">SMTP Port</span></label>
+                        <input type="number" name="mail_port" value="{{ mail_port }}" placeholder="e.g. 587" class="input input-bordered w-full" />
+                    </div>
+                </div>
+
+                <div class="form-control w-full">
+                    <label class="label"><span class="label-text font-bold text-gray-700">Email Address (Username)</span></label>
+                    <input type="email" name="mail_username" value="{{ mail_username }}" placeholder="e.g. factory@gmail.com" class="input input-bordered w-full" />
+                </div>
+                
+                <div class="form-control w-full">
+                    <label class="label"><span class="label-text font-bold text-gray-700">Email Password (App Password)</span></label>
+                    <input type="password" name="mail_password" value="{{ mail_password }}" placeholder="*********" class="input input-bordered w-full" />
+                    <label class="label"><span class="label-text-alt text-gray-500">If using Gmail, you must generate an "App Password" in your Google Account settings.</span></label>
+                </div>
+                
+                <button type="submit" class="btn btn-primary suprajit-blue-bg border-none text-white w-full md:w-auto self-start">
+                    <i class="fa-solid fa-save mr-1"></i> Save Email Config
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Manual Actions -->
+    <div class="bg-white border border-red-200 rounded shadow-sm overflow-hidden border-t-4 border-t-red-600">
+        <div class="p-6 border-b border-gray-200 bg-gray-50">
+            <h2 class="text-lg font-bold text-red-700"><i class="fa-solid fa-bolt mr-2"></i>Manual Override</h2>
+            <p class="text-sm text-gray-500 mt-1">Force the system to run an immediate ingestion batch. This will crawl the global search root immediately.</p>
+        </div>
+        <div class="p-6">
+            <form method="POST" action="{{ url_for('admin.trigger_sync') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <button type="submit" class="btn btn-error text-white shadow">
+                    <i class="fa-solid fa-play-circle mr-1"></i> Run Ingestion Engine Now
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

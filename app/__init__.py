@@ -1,0 +1,115 @@
+from flask import Flask, g
+from flask_login import LoginManager
+from flask_wtf.csrf import CSRFProtect
+
+import os
+import sqlite3
+
+from app.config import get_config
+from app.database import get_connection, ensure_schema, GET_USER_BY_ID
+
+# Initialize extensions globally so blueprints can import them
+
+csrf = CSRFProtect()
+login_manager = LoginManager()
+login_manager.login_view = 'auth.login'
+login_manager.login_message_category = 'error'
+
+def create_app():
+    import sys
+    if getattr(sys, 'frozen', False):
+        # If running as PyInstaller EXE
+        template_folder = os.path.join(sys._MEIPASS, 'app', 'templates')
+        static_folder = os.path.join(sys._MEIPASS, 'app', 'static')
+        app = Flask(__name__, template_folder=template_folder, static_folder=static_folder)
+    else:
+        app = Flask(__name__)
+    cfg = get_config()
+    
+    # Load config into Flask app
+    app.config.from_object(cfg)
+    
+    # Initialize Extensions
+    
+    csrf.init_app(app)
+    login_manager.init_app(app)
+    
+    # User Loader for Flask-Login
+    @login_manager.user_loader
+    def load_user(user_id):
+        # We need a quick DB connection just for loading the session
+        conn = get_connection(app.config['DATABASE_PATH'])
+        row = conn.execute(GET_USER_BY_ID, (user_id,)).fetchone()
+        conn.close()
+        if not row:
+            return None
+            
+        from app.auth_models import User
+        return User(row)
+
+    # Request-Scoped Database Connection
+    @app.before_request
+    def before_request():
+        # Every request gets a fresh DB connection stored in `g`
+        g.db = get_connection(app.config['DATABASE_PATH'])
+
+    @app.teardown_request
+    def teardown_request(exception):
+        # Always close it when the request is done
+        db = getattr(g, 'db', None)
+        if db is not None:
+            db.close()
+
+    # Blueprints (Routes)
+    from app.routes.auth import auth_bp
+    from app.routes.portal import portal_bp
+    from app.routes.setup import setup_bp
+    from app.routes.admin import admin_bp
+    
+    app.register_blueprint(auth_bp)
+    app.register_blueprint(portal_bp)
+    app.register_blueprint(admin_bp, url_prefix='/admin')
+    app.register_blueprint(setup_bp)
+
+    # Initialize Database Schema
+    os.makedirs(os.path.dirname(app.config['DATABASE_PATH']), exist_ok=True)
+    with app.app_context():
+        conn = get_connection(app.config['DATABASE_PATH'])
+        ensure_schema(conn)
+        
+        # Security: Enforce unique cryptographically secure secret key per installation
+        secret_row = conn.execute("SELECT value FROM system_settings WHERE key = 'secret_key'").fetchone()
+        if not secret_row:
+            import secrets
+            new_secret = secrets.token_hex(32)
+            conn.execute("INSERT INTO system_settings (key, value) VALUES ('secret_key', ?)", (new_secret,))
+            conn.commit()
+            app.config['SECRET_KEY'] = new_secret
+        else:
+            app.config['SECRET_KEY'] = secret_row['value']
+            
+        conn.close()
+
+    # Global Rigorous Error Handler
+    @app.errorhandler(Exception)
+    def handle_global_exception(e):
+        import traceback
+        import sys
+        from flask import render_template
+        from werkzeug.exceptions import HTTPException
+        
+        # Log exactly what happened to the server terminal
+        traceback.print_exception(type(e), e, e.__traceback__, file=sys.stderr)
+        
+        # Pass through normal HTTP aborts (like 401 Unauthorized or 404 Not Found)
+        if isinstance(e, HTTPException):
+            return e
+            
+        error_msg = str(e)
+        return render_template('errors/500.html', error_msg=error_msg), 500
+
+    # Start the internal background scheduler
+    from app.scheduler import start_background_scheduler
+    start_background_scheduler(app)
+
+    return app

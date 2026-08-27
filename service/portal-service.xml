@@ -1,0 +1,20 @@
+<service>
+  <id>SuprajitPortal</id>
+  <name>Suprajit Quality Portal V2</name>
+  <description>Waitress WSGI Web Server for the Suprajit Quality Portal. Auto-starts on boot.</description>
+  
+  <!-- Path to the Python virtual environment -->
+  <executable>%BASE%\..\.venv\Scripts\python.exe</executable>
+  
+  <!-- Script to run -->
+  <arguments>web_server.py</arguments>
+  
+  <!-- Run in the project root folder -->
+  <workingdirectory>%BASE%\..</workingdirectory>
+  
+  <!-- Auto-restart if it crashes -->
+  <onfailure action="restart" delay="5 sec"/>
+  
+  <!-- Log outputs to the service folder -->
+  <log mode="roll"></log>
+</service>

@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+*.class
+.venv/
+
+# PyInstaller
+build/
+dist/
+*.spec
+
+# Database
+*.db
+*.db-wal
+*.db-shm
+*.sqlite3
+
+# Logs
+*.log
+suprajit.log
+
+# Temporary / Patch Scripts
+patch_*.py
+print_loop.py
+sqlite_benchmark.py
+benchmark*

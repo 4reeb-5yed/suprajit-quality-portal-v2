@@ -1,0 +1,90 @@
+﻿{% extends "base.html" %}
+{% block content %}
+<div class="space-y-6">
+    <div class="flex justify-between items-center bg-white border border-gray-200 rounded shadow-sm p-6">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800"><i class="fa-solid fa-stethoscope text-primary mr-2"></i> System Diagnostics</h1>
+            <p class="text-sm text-gray-500">Live heartbeat, telemetry, and error logs.</p>
+        </div>
+        <div>
+            <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline"><i class="fa-solid fa-arrow-left"></i> Back to Dashboard</a>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- System Health Card -->
+        <div class="bg-white border border-gray-200 rounded shadow-sm p-6">
+            <h3 class="font-bold text-lg border-b pb-2 mb-4"><i class="fa-solid fa-heart-pulse text-red-500 mr-2"></i> System Health</h3>
+            
+            <div class="flex items-center justify-between py-2 border-b">
+                <span class="font-semibold text-gray-600">Web Server Status</span>
+                <span class="badge badge-success text-white">ONLINE</span>
+            </div>
+            
+            <div class="flex items-center justify-between py-2 border-b">
+                <span class="font-semibold text-gray-600">Database Connection</span>
+                <span class="badge badge-success text-white">CONNECTED</span>
+            </div>
+            
+            <div class="flex items-center justify-between py-2 border-b">
+                <span class="font-semibold text-gray-600">Last Telemetry Ping</span>
+                <span class="text-sm text-gray-800 font-mono">{% if last_run %}{{ last_run.end_time or last_run.start_time }}{% else %}Never{% endif %}</span>
+            </div>
+            
+            <div class="mt-6">
+                <p class="text-sm text-gray-500 mb-2">Automated Telemetry reports are sent to the Canspirit Developer Email configured in Settings.</p>
+            </div>
+        </div>
+
+        <!-- Last Sync Info -->
+        <div class="bg-white border border-gray-200 rounded shadow-sm p-6">
+            <h3 class="font-bold text-lg border-b pb-2 mb-4"><i class="fa-solid fa-rotate text-blue-500 mr-2"></i> Last Sync Cycle</h3>
+            {% if last_run %}
+                <div class="flex items-center justify-between py-2 border-b">
+                    <span class="font-semibold text-gray-600">Status</span>
+                    {% if last_run.status == 'success' %}
+                        <span class="badge badge-success text-white">SUCCESS</span>
+                    {% elif last_run.status == 'failed' %}
+                        <span class="badge badge-error text-white">FAILED</span>
+                    {% else %}
+                        <span class="badge badge-warning">RUNNING</span>
+                    {% endif %}
+                </div>
+                <div class="flex items-center justify-between py-2 border-b">
+                    <span class="font-semibold text-gray-600">Files Processed</span>
+                    <span class="text-sm font-bold text-gray-800">{{ last_run.files_processed }}</span>
+                </div>
+                <div class="flex items-center justify-between py-2 border-b">
+                    <span class="font-semibold text-gray-600">Files Failed</span>
+                    <span class="text-sm font-bold {% if last_run.files_failed > 0 %}text-red-500{% else %}text-gray-800{% endif %}">{{ last_run.files_failed }}</span>
+                </div>
+                {% if last_run.error_message %}
+                <div class="mt-4 p-3 bg-red-50 rounded border border-red-200 text-sm text-red-800 font-mono">
+                    {{ last_run.error_message }}
+                </div>
+                {% endif %}
+            {% else %}
+                <p class="text-gray-500 italic">No sync jobs have run yet.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Live Logs Console -->
+    <div class="bg-gray-900 border border-gray-700 rounded shadow-lg overflow-hidden">
+        <div class="bg-gray-800 px-4 py-2 flex justify-between items-center border-b border-gray-700">
+            <span class="text-gray-300 font-mono text-sm"><i class="fa-solid fa-terminal mr-2"></i>suprajit.log (Last 100 lines)</span>
+        </div>
+        <div class="p-4 overflow-y-auto" style="max-height: 400px; font-family: monospace;">
+            {% for line in log_lines %}
+                {% if 'ERROR' in line or 'Exception' in line %}
+                    <div class="text-red-400 whitespace-pre-wrap">{{ line }}</div>
+                {% elif 'WARNING' in line %}
+                    <div class="text-yellow-400 whitespace-pre-wrap">{{ line }}</div>
+                {% else %}
+                    <div class="text-green-400 whitespace-pre-wrap">{{ line }}</div>
+                {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

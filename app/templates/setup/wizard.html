@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-md mx-auto mt-16">
+    <div class="bg-white border border-gray-200 rounded shadow-md p-8">
+        <div class="text-center mb-8">
+            <h1 class="text-2xl font-bold suprajit-blue-text">Portal Setup</h1>
+            <p class="text-sm text-gray-500 mt-2">Create the master administrator account</p>
+        </div>
+        
+        <form method="POST" action="{{ url_for('setup.wizard') }}" class="space-y-4">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            
+            <div class="form-control">
+                <label class="label"><span class="label-text font-semibold">Admin Username</span></label>
+                <input type="text" name="username" value="admin" required class="input input-bordered w-full" />
+            </div>
+
+            <div class="form-control">
+                <label class="label"><span class="label-text font-semibold">Admin Email</span></label>
+                <input type="email" name="email" required placeholder="admin@suprajit.com" class="input input-bordered w-full" />
+            </div>
+            
+            <div class="form-control">
+                <label class="label"><span class="label-text font-semibold">Secure Password</span></label>
+                <input type="password" name="password" required class="input input-bordered w-full" />
+            </div>
+            
+            <div class="mt-6">
+                <button type="submit" class="btn btn-primary w-full suprajit-blue-bg border-none text-white">Complete Setup</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

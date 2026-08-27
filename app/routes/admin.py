@@ -1,0 +1,342 @@
+from flask import Blueprint, render_template, g, abort, request
+from flask_login import login_required, current_user
+from app.database import GET_SETTING, SET_SETTING
+
+admin_bp = Blueprint('admin', __name__)
+
+@admin_bp.before_request
+@login_required
+def require_admin():
+    if not current_user.is_admin:
+        abort(403)
+
+@admin_bp.route('/')
+def dashboard():
+    # Fetch system stats (Active only)
+    users_count = g.db.execute("SELECT COUNT(*) FROM users ").fetchone()[0]
+    customers_count = g.db.execute("SELECT COUNT(*) FROM customers ").fetchone()[0]
+    reports_count = g.db.execute("SELECT COUNT(*) FROM reports").fetchone()[0]
+    
+    # Recent batches
+    recent_batches = g.db.execute("""
+        SELECT * FROM batch_runs 
+        ORDER BY run_started DESC 
+        LIMIT 10
+    """).fetchall()
+    
+    return render_template('admin/dashboard.html', 
+                           users_count=users_count,
+                           customers_count=customers_count,
+                           reports_count=reports_count,
+                           recent_batches=recent_batches)
+
+    
+    c_id = request.form.get('id', '').strip().lower() # e.g. 'tvs'
+@admin_bp.route('/settings', methods=['GET', 'POST'])
+def settings():
+    from app.database import GET_SETTING, SET_SETTING
+    from flask import flash, request, g
+    from flask import render_template
+    
+    if request.method == 'POST':
+        # Batch ingest settings
+        new_time = request.form.get('sync_time')
+        new_storage = request.form.get('root_search_path')
+        
+        # Email settings
+        m_srv = request.form.get('mail_server')
+        m_prt = request.form.get('mail_port')
+        m_usr = request.form.get('mail_username')
+        m_pwd = request.form.get('mail_password')
+        dev_email = request.form.get('developer_email')
+        tel_freq = request.form.get('telemetry_frequency')
+        
+        if new_time: g.db.execute(SET_SETTING, ('sync_time', new_time))
+        if new_storage: g.db.execute(SET_SETTING, ('root_search_path', new_storage))
+        if m_srv is not None: g.db.execute(SET_SETTING, ('mail_server', m_srv))
+        if m_prt is not None: g.db.execute(SET_SETTING, ('mail_port', m_prt))
+        if m_usr is not None: g.db.execute(SET_SETTING, ('mail_username', m_usr))
+        if m_pwd is not None: g.db.execute(SET_SETTING, ('mail_password', m_pwd))
+        if dev_email is not None: g.db.execute(SET_SETTING, ('developer_email', dev_email))
+        if tel_freq is not None: g.db.execute(SET_SETTING, ('telemetry_frequency', tel_freq))
+            
+        g.db.commit()
+        flash("System configuration updated.", "success")
+        return __import__('flask').redirect(__import__('flask').url_for('admin.settings'))
+        
+    def get_val(key, default):
+        row = g.db.execute(GET_SETTING, (key,)).fetchone()
+        return row['value'] if row else default
+        
+    sync_time = get_val('sync_time', '01:00')
+    root_search_path = get_val('root_search_path', 'C:\\')
+    
+    m_srv = get_val('mail_server', 'smtp.gmail.com')
+    m_prt = get_val('mail_port', '587')
+    m_usr = get_val('mail_username', '')
+    m_pwd = get_val('mail_password', '')
+    dev_email = get_val('developer_email', 'admin@canspirit.com')
+    tel_freq = get_val('telemetry_frequency', 'daily')
+    
+    return render_template('admin/settings.html', 
+                           developer_email=dev_email,
+                           telemetry_frequency=tel_freq,
+                           sync_time=sync_time, 
+                           root_search_path=root_search_path,
+                           mail_server=m_srv,
+                           mail_port=m_prt,
+                           mail_username=m_usr,
+                           mail_password=m_pwd)
+@admin_bp.route('/customers', methods=['GET'])
+def customers():
+    from app.database import GET_ALL_CUSTOMERS
+    customer_list = g.db.execute(GET_ALL_CUSTOMERS).fetchall()
+    
+    # Fetch all recipes and group by customer_id
+    recipes_raw = g.db.execute("SELECT * FROM customer_recipes").fetchall()
+    customer_recipes = {}
+    for r in recipes_raw:
+        cid = r['customer_id']
+        if cid not in customer_recipes:
+            customer_recipes[cid] = []
+        customer_recipes[cid].append(r)
+        
+    # Fetch all users
+    users_raw = g.db.execute("SELECT * FROM users WHERE role = 'customer_viewer'").fetchall()
+    customer_users = {}
+    for u in users_raw:
+        cid = u['customer_id']
+        if cid not in customer_users:
+            customer_users[cid] = []
+        customer_users[cid].append(u)
+        
+    available_recipes = [r['recipe_name'] for r in g.db.execute("SELECT DISTINCT recipe_name FROM reports ORDER BY recipe_name").fetchall()]
+    return render_template('admin/customers.html', 
+                           customers=customer_list, 
+                           customer_recipes=customer_recipes,
+                           customer_users=customer_users,
+                           available_recipes=available_recipes)
+
+@admin_bp.route('/customers/add', methods=['POST'])
+def add_customer():
+    from app.database import INSERT_CUSTOMER
+    from flask import request, flash
+    c_id = request.form.get('id', '').strip().lower()
+    c_name = request.form.get('company_name', '').strip()
+    
+    if not c_id or not c_name:
+        flash("Customer ID and Name are required.", "error")
+    else:
+        try:
+            g.db.execute(INSERT_CUSTOMER, (c_id, c_name))
+            g.db.commit()
+            flash(f"Customer '{c_name}' added successfully.", "success")
+        except Exception as e:
+            flash(f"Database Error: {e}", "error")
+            
+    return __import__('flask').redirect(__import__('flask').url_for('admin.customers'))
+
+@admin_bp.route('/customers/add_user', methods=['POST'])
+@admin_bp.route('/customers/add_user', methods=['POST'])
+def add_user():
+    from app.database import INSERT_USER
+    from flask import request, flash
+    from werkzeug.security import generate_password_hash
+    
+    customer_id = request.form.get('customer_id')
+    username = request.form.get('username', '').strip()
+    email = request.form.get('email', '').strip()
+    password = request.form.get('password', '')
+    display_name = request.form.get('display_name', '').strip()
+    
+    if not username or not password:
+        flash("Username and password are required.", "error")
+        return __import__('flask').redirect(__import__('flask').url_for('admin.customers'))
+        
+    pwd_hash = generate_password_hash(password)
+    
+    try:
+        g.db.execute(INSERT_USER, (username, email, pwd_hash, display_name, 'customer_viewer', customer_id))
+        g.db.commit()
+        
+        # Send welcome email if email was provided
+        if email:
+            from app.mail import send_welcome_email
+            # Run in a separate thread so the admin page doesn't hang if SMTP is slow
+            import threading
+            from flask import current_app
+            app_context = current_app._get_current_object().app_context()
+            from flask import request
+            host_login = f"{request.host_url.rstrip('/')}/login"
+            def background_mail(url):
+                with app_context:
+                    send_welcome_email(email, username, password, url)
+            threading.Thread(target=background_mail, args=(host_login,)).start()
+            flash(f"Login account '{username}' created. A welcome email is being sent to {email}.", "success")
+        else:
+            flash(f"Login account '{username}' created successfully.", "success")
+    except Exception as e:
+        flash(f"Database Error: {e}", "error")
+        print(f"User Creation Error: {e}")
+        
+    return __import__('flask').redirect(__import__('flask').url_for('admin.customers'))
+
+@admin_bp.route('/customers/toggle_user', methods=['POST'])
+@admin_bp.route('/customers/toggle_user', methods=['POST'])
+def toggle_user():
+    from app.database import TOGGLE_USER_ACCESS
+    from flask import request, flash
+
+    user_id = request.form.get('user_id')
+    new_status = int(request.form.get('is_active', 1))
+
+    if user_id:
+        g.db.execute(TOGGLE_USER_ACCESS, (new_status, user_id))
+        g.db.commit()
+        action = 'Granted' if new_status == 1 else 'Revoked'
+        flash(f'Access {action} successfully.', 'success')
+
+    return __import__('flask').redirect(__import__('flask').url_for('admin.customers'))
+        
+    return __import__('flask').redirect(__import__('flask').url_for('admin.customers'))
+
+@admin_bp.route('/customers/add_recipe', methods=['POST'])
+def add_recipe():
+    from app.database import INSERT_CUSTOMER_RECIPE
+    from flask import request, flash
+    
+    customer_id = request.form.get('customer_id')
+    recipe_name = request.form.get('recipe_name', '').strip()
+    
+    if not recipe_name:
+        flash("Recipe prefix is required.", "error")
+    else:
+        try:
+            g.db.execute(INSERT_CUSTOMER_RECIPE, (customer_id, recipe_name))
+            g.db.commit()
+            flash(f"Recipe access granted.", "success")
+        except Exception as e:
+            flash(f"Database Error: {e}", "error")
+            
+    return __import__('flask').redirect(__import__('flask').url_for('admin.customers'))
+
+@admin_bp.route('/customers/delete_recipe', methods=['POST'])
+def delete_recipe():
+    from app.database import DELETE_CUSTOMER_RECIPE
+    from flask import request, flash
+    
+    customer_id = request.form.get('customer_id')
+    recipe_name = request.form.get('recipe_name')
+    if customer_id and recipe_name:
+        g.db.execute(DELETE_CUSTOMER_RECIPE, (customer_id, recipe_name))
+        g.db.commit()
+        flash("Recipe access removed successfully.", "success")
+        
+    return __import__('flask').redirect(__import__('flask').url_for('admin.customers'))
+@admin_bp.route('/customers/edit', methods=['POST'])
+def edit_customer():
+    from app.database import UPDATE_CUSTOMER
+    from flask import request, flash
+    
+    customer_id = request.form.get('customer_id')
+    company_name = request.form.get('company_name', '').strip()
+    
+    if company_name:
+        g.db.execute(UPDATE_CUSTOMER, (company_name, customer_id))
+        g.db.commit()
+        flash(f"Customer '{company_name}' updated successfully.", "success")
+        
+    return __import__('flask').redirect(__import__('flask').url_for('admin.customers'))
+
+@admin_bp.route('/customers/suspend', methods=['POST'])
+def suspend_customer():
+    from app.database import TOGGLE_CUSTOMER_SUSPENSION
+    from flask import request, flash
+    
+    customer_id = request.form.get('customer_id')
+    new_state = int(request.form.get('portal_suspended', 1))
+    
+    if customer_id:
+        g.db.execute(TOGGLE_CUSTOMER_SUSPENSION, (new_state, customer_id))
+        g.db.commit()
+        if new_state == 1:
+            flash(f"Customer '{customer_id}' has been SUSPENDED. None of their users can log in.", "success")
+        else:
+            flash(f"Customer '{customer_id}' has been RESTORED. Portal access is active.", "success")
+            
+    return __import__('flask').redirect(__import__('flask').url_for('admin.customers'))
+@admin_bp.route('/customers/delete', methods=['POST'])
+def delete_customer():
+    from app.database import DELETE_CUSTOMER
+    from flask import request, flash
+    
+    customer_id = request.form.get('customer_id')
+    if customer_id:
+        try:
+            g.db.execute(DELETE_CUSTOMER, (customer_id,))
+            g.db.commit()
+            flash(f"Customer '{customer_id}' has been permanently deleted.", "success")
+        except Exception as e:
+            flash(f"Database Error: {e}", "error")
+        
+    return __import__('flask').redirect(__import__('flask').url_for('admin.customers'))
+        
+    return __import__('flask').redirect(__import__('flask').url_for('admin.customers'))
+
+@admin_bp.route('/customers/delete_user', methods=['POST'])
+def delete_user():
+    user_id = __import__('flask').request.form.get('user_id')
+    
+    from flask_login import current_user
+    # Ensure they aren't deleting themselves!
+    if str(user_id) == str(current_user.id):
+        __import__('flask').flash("You cannot delete your own admin account.", "error")
+        return __import__('flask').redirect(__import__('flask').url_for('admin.customers'))
+        
+    g.db.execute("DELETE FROM users WHERE id = ?", (user_id,))
+    g.db.commit()
+    __import__('flask').flash("User account permanently deleted.", "success")
+    return __import__('flask').redirect(__import__('flask').url_for('admin.customers'))
+
+@admin_bp.route('/diagnostics')
+def diagnostics():
+    # Read the last 100 lines of the suprajit.log file
+    log_lines = []
+    try:
+        log_path = 'suprajit.log'
+        import os
+        if os.path.exists(log_path):
+            with open(log_path, 'r', encoding='utf-8') as f:
+                lines = f.readlines()
+                log_lines = lines[-100:]
+        else:
+            log_lines = ["No log file found. System has not generated any logs yet."]
+    except Exception as e:
+        log_lines = [f"Error reading log file: {e}"]
+        
+    # Get last sync info
+    last_run = g.db.execute("SELECT * FROM batch_runs ORDER BY start_time DESC LIMIT 1").fetchone()
+    
+    return __import__('flask').render_template('admin/diagnostics.html', log_lines=log_lines, last_run=last_run)
+
+@admin_bp.route('/trigger_sync', methods=['POST'])
+def trigger_sync():
+    import threading
+    from app.sync_engine import SyncEngine
+    from flask import current_app, flash
+    
+    db_path = current_app.config['DATABASE_PATH']
+    storage_base = current_app.config['STORAGE_FOLDER']
+    
+    def run_job():
+        try:
+            engine = SyncEngine(db_path, storage_base)
+            engine.run_batch(full_sync=True)
+        except Exception as e:
+            print(f"Manual sync error: {e}")
+            
+    t = threading.Thread(target=run_job)
+    t.start()
+    
+    flash("Manual ingestion batch has been started in the background! Refresh the page in a few moments to see the results.", "success")
+    return __import__('flask').redirect(__import__('flask').url_for('admin.dashboard'))

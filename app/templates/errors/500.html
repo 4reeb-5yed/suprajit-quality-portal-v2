@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="flex items-center justify-center h-[70vh]">
+    <div class="bg-white border-l-4 border-red-600 shadow-md p-8 rounded-lg max-w-2xl w-full">
+        <h1 class="text-3xl font-bold text-red-700 flex items-center">
+            <i class="fa-solid fa-triangle-exclamation mr-3 text-4xl"></i> System Error Intercepted
+        </h1>
+        <p class="mt-4 text-gray-700 text-lg">
+            An internal error occurred, but the system caught it safely to prevent a total crash.
+        </p>
+        
+        <div class="mt-6 bg-gray-100 p-4 rounded-md overflow-x-auto border border-gray-300">
+            <p class="text-xs text-gray-500 mb-1 font-bold uppercase tracking-wider">Exception Trace Details</p>
+            <code class="text-sm text-red-800 font-mono break-all">{{ error_msg }}</code>
+        </div>
+        
+        <div class="mt-8 flex gap-4">
+            <button onclick="window.history.back()" class="btn btn-outline btn-error">
+                <i class="fa-solid fa-arrow-left"></i> Go Back
+            </button>
+            <a href="{{ url_for('portal.index') }}" class="btn btn-primary suprajit-blue-bg border-none text-white">
+                <i class="fa-solid fa-home"></i> Return to Safety
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

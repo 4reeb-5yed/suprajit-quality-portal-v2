@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="space-y-8">
+    
+    <div class="flex items-center justify-between">
+        <h1 class="text-3xl font-bold text-gray-800"><i class="fa-solid fa-chart-pie text-blue-800 mr-2"></i>Admin Dashboard</h1>
+        <div class="text-sm text-gray-500">System Health Overview</div>
+    </div>
+
+    <!-- Stats Row -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="bg-white border border-gray-200 rounded shadow-sm p-6 flex items-center justify-between">
+            <div>
+                <h2 class="text-gray-500 font-semibold uppercase tracking-wider text-xs">Total Reports</h2>
+                <div class="text-4xl font-bold text-blue-900 mt-2">{{ reports_count }}</div>
+            </div>
+            <i class="fa-solid fa-file-excel text-5xl text-blue-100"></i>
+        </div>
+        <div class="bg-white border border-gray-200 rounded shadow-sm p-6 flex items-center justify-between">
+            <div>
+                <h2 class="text-gray-500 font-semibold uppercase tracking-wider text-xs">Active Users</h2>
+                <div class="text-4xl font-bold text-blue-900 mt-2">{{ users_count }}</div>
+            </div>
+            <i class="fa-solid fa-users text-5xl text-blue-100"></i>
+        </div>
+        <div class="bg-white border border-gray-200 rounded shadow-sm p-6 flex items-center justify-between">
+            <div>
+                <h2 class="text-gray-500 font-semibold uppercase tracking-wider text-xs">Customers</h2>
+                <div class="text-4xl font-bold text-blue-900 mt-2">{{ customers_count }}</div>
+            </div>
+            <i class="fa-solid fa-building text-5xl text-blue-100"></i>
+        </div>
+    </div>
+    
+    <!-- Batch Runs Table -->
+    <div class="bg-white border border-gray-200 rounded shadow-sm overflow-hidden">
+        <div class="p-6 border-b border-gray-200 bg-gray-50">
+            <h2 class="text-lg font-bold text-gray-800">Recent Ingestion Batches</h2>
+            <p class="text-sm text-gray-500">Log of the automated nightly syncs</p>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="table w-full">
+                <thead class="bg-white text-gray-700">
+                    <tr>
+                        <th>Batch ID</th>
+                        <th>Run Started</th>
+                        <th>Customer ID</th>
+                        <th>Status</th>
+                        <th>Scanned</th>
+                        <th>Inserted</th>
+                        <th>Skipped</th>
+                        <th>Errors</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for batch in recent_batches %}
+                    <tr class="hover">
+                        <td class="font-mono text-gray-500">{{ batch.id }}</td>
+                        <td class="whitespace-nowrap">{{ batch.run_started }}</td>
+                        <td class="font-bold">{{ batch.customer_id }}</td>
+                        <td>
+                            {% if batch.status == 'running' %}
+                                <span class="badge badge-warning">Running</span>
+                            {% elif batch.status == 'completed' %}
+                                <span class="badge badge-success text-white">Completed</span>
+                            {% else %}
+                                <span class="badge badge-error text-white">Failed</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ batch.files_scanned }}</td>
+                        <td class="text-success font-bold">{{ batch.files_inserted }}</td>
+                        <td class="text-gray-400">{{ batch.files_skipped }}</td>
+                        <td class="{% if batch.files_failed > 0 %}text-error font-bold{% else %}text-gray-400{% endif %}">
+                            {{ batch.files_failed }}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="8" class="text-center p-6 text-gray-500">No batch runs recorded yet.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

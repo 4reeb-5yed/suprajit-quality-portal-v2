@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="corporate">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Suprajit Quality Portal</title>
+    
+    <!-- HTMX -->
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    
+    <!-- Tailwind & DaisyUI -->
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.7.2/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        /* Clean corporate styling */
+        body { background-color: #f3f4f6; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        .suprajit-blue-bg { background-color: #1E3A8A; } /* Deep corporate blue */
+        .suprajit-blue-text { color: #1E3A8A; }
+    </style>
+    
+    <!-- HTMX CSRF -->
+    <meta name="csrf-token" content="IjgzNTY5N2YwZmY5MzczYTQ4NzI0Nzk5ZGI0OTRiNWJmNTkyOGI1Mzgi.apAPdg.LXrEse7mguoUGpq_HVTay5AisJM">
+    <script>
+        document.body.addEventListener('htmx:configRequest', (event) => {
+            event.detail.headers['X-CSRFToken'] = 'IjgzNTY5N2YwZmY5MzczYTQ4NzI0Nzk5ZGI0OTRiNWJmNTkyOGI1Mzgi.apAPdg.LXrEse7mguoUGpq_HVTay5AisJM';
+        });
+    </script>
+</head>
+<body class="text-gray-800 antialiased">
+    
+    <!-- Classic Corporate Navbar -->
+    <nav class="suprajit-blue-bg text-white shadow-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <!-- Proper Brand Header -->
+                <div class="flex-shrink-0 flex items-center gap-3">
+                    <i class="fa-solid fa-industry text-2xl"></i>
+                    <span class="font-bold text-xl tracking-wide uppercase">SUPRAJIT</span>
+                    <span class="text-blue-200">|</span>
+                    <span class="font-medium text-lg">Quality Portal</span>
+                </div>
+                
+                <!-- Right Side Nav -->
+                <div class="flex items-center gap-6">
+                    
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+<div class="max-w-md mx-auto mt-16">
+    <div class="bg-white border border-gray-200 rounded shadow-md p-8">
+        <div class="text-center mb-6">
+            <h1 class="text-2xl font-bold suprajit-blue-text">Authorized Access Only</h1>
+            <p class="text-sm text-gray-500 mt-1">Please log in to view quality reports.</p>
+        </div>
+        
+        <form method="POST" action="/login" class="space-y-4">
+            <input type="hidden" name="csrf_token" value="IjgzNTY5N2YwZmY5MzczYTQ4NzI0Nzk5ZGI0OTRiNWJmNTkyOGI1Mzgi.apAPdg.LXrEse7mguoUGpq_HVTay5AisJM"/>
+            
+            <div class="form-control">
+                <label class="label"><span class="label-text font-semibold">Username</span></label>
+                <input type="text" name="username" required class="input input-bordered w-full" />
+            </div>
+            
+            <div class="form-control">
+                <label class="label">
+                    <span class="label-text font-semibold">Password</span>
+                    <a href="/forgot-password" class="label-text-alt text-blue-600 hover:underline">Forgot Password?</a>
+                </label>
+                <input type="password" name="password" required class="input input-bordered w-full" />
+            </div>
+            
+            <div class="mt-6">
+                <button type="submit" class="btn btn-primary w-full suprajit-blue-bg border-none text-white">Secure Login</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+    </main>
+
+    <!-- Flash Messages (Bottom Right Toasts) -->
+    
+        
+    
+    
+</body>
+</html>

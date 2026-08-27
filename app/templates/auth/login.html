@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-md mx-auto mt-16">
+    <div class="bg-white border border-gray-200 rounded shadow-md p-8">
+        <div class="text-center mb-6">
+            <h1 class="text-2xl font-bold suprajit-blue-text">Authorized Access Only</h1>
+            <p class="text-sm text-gray-500 mt-1">Please log in to view quality reports.</p>
+        </div>
+        
+        <form method="POST" action="{{ url_for('auth.login') }}" class="space-y-4">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            
+            <div class="form-control">
+                <label class="label"><span class="label-text font-semibold">Username</span></label>
+                <input type="text" name="username" required class="input input-bordered w-full" />
+            </div>
+            
+            <div class="form-control">
+                <label class="label">
+                    <span class="label-text font-semibold">Password</span>
+                    <a href="{{ url_for('auth.forgot_password') }}" class="label-text-alt text-blue-600 hover:underline">Forgot Password?</a>
+                </label>
+                <input type="password" name="password" required class="input input-bordered w-full" />
+            </div>
+            
+            <div class="mt-6">
+                <button type="submit" class="btn btn-primary w-full suprajit-blue-bg border-none text-white">Secure Login</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
