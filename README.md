@@ -21,22 +21,22 @@ This application was intentionally designed to operate without Docker, without C
 ## Local Development Setup
 
 1. **Clone the repository:**
-`ash
+```bash
 git clone https://github.com/4reeb-5yed/suprajit-quality-portal-v2.git
 cd suprajit-quality-portal-v2
-`
+```
 
 2. **Create a virtual environment and install dependencies:**
-`ash
+```bash
 python -m venv .venv
-.\.venv\Scripts\activate
+.\.venv\Scriptsctivate
 pip install -r requirements.txt
-`
+```
 
 3. **Run the application locally:**
-`ash
+```bash
 python web_server.py
-`
+```
 The portal will be available at http://localhost:5000.
 
 ## Compiling for Production (Client Handoff)
@@ -44,11 +44,11 @@ The portal will be available at http://localhost:5000.
 To package the entire Python ecosystem, Waitress server, and web application into a single standalone Windows Executable:
 
 1. Run the build script:
-`ash
-.\build.bat
-`
-2. The final compiled package will be generated at dist/SuprajitQualityPortal/.
-3. Hand that folder to the client. The client runs install_service.bat as Administrator to register the executable as a background Windows Service.
+```bash
+.uild.bat
+```
+2. The final compiled package will be generated at `dist/SuprajitQualityPortal/`.
+3. Hand that folder to the client. The client runs `install_service.bat` as Administrator to register the executable as a background Windows Service.
 
 ## Documentation
-For complete client installation, troubleshooting, and handover instructions, please see the HANDOVER_DOCUMENTATION.md file.
+For complete client installation, troubleshooting, and handover instructions, please see the `HANDOVER_DOCUMENTATION.md` file.
