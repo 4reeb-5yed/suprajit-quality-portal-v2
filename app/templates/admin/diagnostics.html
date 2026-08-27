@@ -47,7 +47,7 @@
             {% if last_run %}
                 <div class="flex items-center justify-between py-2 border-b">
                     <span class="font-semibold text-gray-600">Status</span>
-                    {% if last_run.status == 'success' %}
+                    {% if last_run.status == 'success' or last_run.status == 'completed' %}
                         <span class="badge badge-success text-white">SUCCESS</span>
                     {% elif last_run.status == 'failed' %}
                         <span class="badge badge-error text-white">FAILED</span>
