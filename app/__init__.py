@@ -106,12 +106,12 @@ def create_app():
         from flask import render_template
         from werkzeug.exceptions import HTTPException
         
-        # Log exactly what happened to the server terminal
-        traceback.print_exception(type(e), e, e.__traceback__, file=sys.stderr)
-        
-        # Pass through normal HTTP aborts (like 401 Unauthorized or 404 Not Found)
+        # Pass through normal HTTP aborts (like 401 Unauthorized or 404 Not Found) without a terrifying traceback
         if isinstance(e, HTTPException):
             return e
+            
+        # For actual server crashes (500s), print the traceback to the terminal
+        traceback.print_exception(type(e), e, e.__traceback__, file=sys.stderr)
             
         error_msg = str(e)
         return render_template('errors/500.html', error_msg=error_msg), 500
