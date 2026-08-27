@@ -174,8 +174,7 @@ class SyncEngine:
                 return 0
 
         status = "completed"
-        self._complete_batch(conn, batch_id, scanned, inserted, skipped, failed, "
-".join(error_logs), status)
+        self._complete_batch(conn, batch_id, scanned, inserted, skipped, failed, "\n".join(error_logs), status)
         
         conn.close()
         return inserted
@@ -192,7 +191,7 @@ class SyncEngine:
 
     def execute_dry_run(self, target_date: date = None) -> str:
         roots = self._get_search_roots()
-        if not roots or roots == [''] or roots == ['C:\']:
+        if not roots or roots == [''] or roots == ['C:\\']:
             return "No valid root search path configured. Please configure in Settings."
             
         trace = []

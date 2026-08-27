@@ -19,10 +19,12 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -e .
-        pip install pytest pytest-flask
+        pip install pytest pytest-flask pytest-cov
     - name: Run Mathematical Source Code Tests
+      env:
+        PYTHONPATH: .
       run: |
-        pytest tests/test_ultimate.py -v
+        python -m pytest tests/test_ultimate.py tests/test_sync_engine_dimensions.py -v --cov=app --cov-report=term
 
   build-and-smoke-test:
     needs: test-source
