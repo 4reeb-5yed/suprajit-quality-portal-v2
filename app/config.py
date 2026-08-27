@@ -7,8 +7,17 @@ class Config:
     # Flask Settings
     SECRET_KEY = os.getenv("SECRET_KEY", "fallback-dev-secret-key-do-not-use-in-prod")
     
+
     # Path configuration
-    BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    import sys
+    import os
+    if getattr(sys, 'frozen', False):
+        # Running as PyInstaller EXE: BASE_DIR is the folder containing the .exe
+        BASE_DIR = os.path.dirname(sys.executable)
+    else:
+        # Running from source
+        BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
     DATABASE_PATH = os.getenv("DATABASE_PATH", os.path.join(BASE_DIR, 'data', 'portal.db'))
     STORAGE_FOLDER = os.getenv("STORAGE_FOLDER", os.path.join(BASE_DIR, 'storage'))
     
