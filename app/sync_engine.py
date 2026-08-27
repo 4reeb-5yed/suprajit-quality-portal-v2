@@ -167,6 +167,12 @@ class SyncEngine:
             try:
                 filename_only = os.path.basename(filepath)
                 logger.info(f"Scanning file: {filename_only}")
+
+                if not ensure_file_safe(filepath):
+                    skipped += 1
+                    logger.warning(f"File locked or actively copying, skipping for next batch: {filename_only}")
+                    continue
+
                 
                 parsed = parse_filename(filepath)
                 if not parsed:
