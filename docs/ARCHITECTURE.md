@@ -1,4 +1,4 @@
-﻿# 🏗️ Architecture & Decision Records (ADR)
+﻿# Architecture & Decision Records (ADR)
 
 In enterprise software engineering, an Architecture Decision Record (ADR) captures the core technological choices and the exact reasoning behind why they were chosen over alternatives. 
 

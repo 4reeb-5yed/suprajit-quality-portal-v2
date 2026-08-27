@@ -1,4 +1,4 @@
-﻿# 🚀 Factory IT Deployment Guide
+﻿# Factory IT Deployment Guide
 
 This guide is for the Systems Administrator deploying the pre-compiled `SuprajitQualityPortal_V2.zip` executable onto a factory server.
 

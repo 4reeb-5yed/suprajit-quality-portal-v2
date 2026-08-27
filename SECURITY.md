@@ -1,4 +1,4 @@
-﻿# 🔐 Security Policy
+﻿# Security Policy
 
 The Suprajit Quality Portal (V2) is strictly designed to pass global Enterprise AppSec audits (OWASP Top 10) for safe exposure to the public internet via a Reverse Proxy.
 
