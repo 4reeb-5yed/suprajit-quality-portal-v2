@@ -64,7 +64,11 @@ def search_results():
 
 @portal_bp.route('/download/<int:report_id>')
 @login_required
-def download(report_id):
+def download_report(report_id):
+    from flask import send_file, abort, request, current_app
+    from app.database import get_connection
+    import os
+    
     where, params = customer_scope(current_user)
     row = g.db.execute(f"SELECT * FROM reports WHERE id = ? AND {where}", [report_id] + params).fetchone()
     
@@ -76,22 +80,21 @@ def download(report_id):
     if not os.path.exists(target_path):
         abort(404)
         
-    # Audit log
+    # Standard Audit Log
     g.db.execute("INSERT INTO audit_log (user_id, report_id, action, client_ip) VALUES (?, ?, ?, ?)",
                  (current_user.id, report_id, 'download', request.remote_addr))
     g.db.commit()
     
-    
-        try:
-            log_conn = get_connection(current_app.config['DATABASE_PATH'])
-            log_conn.execute(
-                "INSERT INTO audit_logs (username, action, target_info, ip_address) VALUES (?, ?, ?, ?)",
-                (current_user.username, "DOWNLOAD", report['original_filename'], request.remote_addr)
-            )
-            log_conn.commit()
-            log_conn.close()
-        except Exception as e:
-            current_app.logger.error(f"Audit log failed: {e}")
-            
-        return send_file(
-target_path, as_attachment=True, download_name=row['original_filename'])
+    # Enterprise Audit Trail
+    try:
+        log_conn = get_connection(current_app.config['DATABASE_PATH'])
+        log_conn.execute(
+            "INSERT INTO audit_logs (username, action, target_info, ip_address) VALUES (?, ?, ?, ?)",
+            (current_user.username, "DOWNLOAD", row['original_filename'], request.remote_addr)
+        )
+        log_conn.commit()
+        log_conn.close()
+    except Exception as e:
+        current_app.logger.error(f"Audit log failed: {e}")
+        
+    return send_file(target_path, as_attachment=True, download_name=row['original_filename'])
