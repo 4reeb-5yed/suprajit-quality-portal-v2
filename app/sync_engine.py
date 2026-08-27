@@ -197,8 +197,8 @@ class SyncEngine:
             
         trace = []
         trace.append(f"Starting DRY RUN across roots: {roots}")
-        trace.append(f"Target Date: {target_date if target_date else 'ALL HISTORICAL'}
-")
+        trace.append(f"Target Date: {target_date if target_date else 'ALL HISTORICAL'}\n")
+
         
         conn = get_connection(self.db_path)
         existing_hashes = {row[0] for row in conn.execute("SELECT file_hash FROM reports").fetchall()}
@@ -230,8 +230,8 @@ class SyncEngine:
                     trace.append(f"   [INSERT] Valid new file: {fname} (Recipe: {parsed['recipe_name']})")
                     total_insert += 1
                     
-        trace.append(f"
---- DRY RUN SUMMARY ---")
+        trace.append(f"\n--- DRY RUN SUMMARY ---")
+
         trace.append(f"Scanned: {total_scanned} | Would Insert: {total_insert} | Skipped: {total_skip} | Failed Parse: {total_fail}")
-        return "
-".join(trace)
+        return "\n".join(trace)
+
