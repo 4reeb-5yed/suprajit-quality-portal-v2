@@ -1,0 +1,93 @@
+﻿{% extends "base.html" %}
+{% block content %}
+<div class="space-y-6">
+    <div class="flex justify-between items-center bg-white border border-gray-200 rounded shadow-sm p-6">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-800"><i class="fa-solid fa-wrench text-primary mr-2"></i> Troubleshoot & Repair</h1>
+            <p class="text-sm text-gray-500">Developer tools to trace ingestion logic, force resyncs, and fix data anomalies.</p>
+        </div>
+        <div>
+            <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline"><i class="fa-solid fa-arrow-left"></i> Back to Dashboard</a>
+        </div>
+    </div>
+
+    {% if success_msg %}
+    <div class="alert alert-success shadow-lg text-white font-bold">
+        <div>
+            <i class="fa-solid fa-check-circle"></i>
+            <span>{{ success_msg }}</span>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if error_msg %}
+    <div class="alert alert-error shadow-lg text-white font-bold">
+        <div>
+            <i class="fa-solid fa-triangle-exclamation"></i>
+            <span>{{ error_msg }}</span>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- 1. Dry Run / Trace Tester -->
+        <div class="bg-white border border-gray-200 rounded shadow-sm p-6">
+            <h3 class="font-bold text-lg border-b pb-2 mb-4"><i class="fa-solid fa-microscope text-purple-500 mr-2"></i> Regex Mapper Simulator</h3>
+            <p class="text-sm text-gray-600 mb-4">Run the ingestion engine in "Dry Run" mode. It will scan the folders, test the regex parser against filenames, and print exactly what it found WITHOUT saving anything to the database.</p>
+            
+            <form method="POST" action="{{ url_for('admin.repair') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <input type="hidden" name="action" value="dry_run"/>
+                <div class="form-control mb-4">
+                    <label class="label"><span class="label-text">Target Date (Leave blank to scan ALL historical folders)</span></label>
+                    <input type="date" name="target_date" class="input input-bordered" />
+                </div>
+                <button type="submit" class="btn bg-purple-600 hover:bg-purple-700 text-white w-full">Run Trace Simulator</button>
+            </form>
+        </div>
+
+        <!-- 2. Force Tools -->
+        <div class="space-y-6">
+            <!-- Force Sync Date -->
+            <div class="bg-white border border-gray-200 rounded shadow-sm p-6">
+                <h3 class="font-bold text-lg border-b pb-2 mb-4"><i class="fa-solid fa-bolt text-blue-500 mr-2"></i> Force Sync Date</h3>
+                <p class="text-sm text-gray-600 mb-4">The background engine usually only scans N-1 (Yesterday). Use this to force it to run an ingestion for a very specific historical date.</p>
+                <form method="POST" action="{{ url_for('admin.repair') }}">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    <input type="hidden" name="action" value="force_sync"/>
+                    <div class="flex gap-2">
+                        <input type="date" name="target_date" required class="input input-bordered flex-1" />
+                        <button type="submit" class="btn btn-primary text-white"><i class="fa-solid fa-play"></i> Force Sync</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Purge Data -->
+            <div class="bg-white border border-gray-200 rounded shadow-sm p-6 border-l-4 border-l-red-500">
+                <h3 class="font-bold text-lg border-b pb-2 mb-4"><i class="fa-solid fa-trash text-red-500 mr-2"></i> Purge Batch by Date</h3>
+                <p class="text-sm text-gray-600 mb-4">If bad files were ingested, you can completely delete all database records for a specific date, allowing you to re-sync them cleanly.</p>
+                <form method="POST" action="{{ url_for('admin.repair') }}" onsubmit="return confirm('Are you sure you want to permanently delete all records for this date?');">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    <input type="hidden" name="action" value="purge_date"/>
+                    <div class="flex gap-2">
+                        <input type="date" name="target_date" required class="input input-bordered flex-1" />
+                        <button type="submit" class="btn btn-error text-white"><i class="fa-solid fa-skull"></i> Purge Data</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    {% if trace_log %}
+    <!-- Trace Output Box -->
+    <div class="bg-gray-900 border border-gray-700 rounded shadow-lg overflow-hidden mt-6">
+        <div class="bg-gray-800 px-4 py-2 flex justify-between items-center border-b border-gray-700">
+            <span class="text-gray-300 font-mono text-sm"><i class="fa-solid fa-terminal mr-2"></i>Trace Output</span>
+        </div>
+        <div class="p-4 overflow-y-auto" style="max-height: 600px; font-family: monospace;">
+            <pre class="text-green-400 whitespace-pre-wrap text-sm">{{ trace_log }}</pre>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

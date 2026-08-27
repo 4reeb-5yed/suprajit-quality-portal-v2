@@ -142,6 +142,12 @@ class SyncEngine:
                 error_logs.append(f"Error processing {filepath}: {str(e)}")
                 logger.error(f"Failed file {filepath}: {e}")
 
+        if dry_run:
+            trace_log.append(f"\n--- DRY RUN COMPLETE ---")
+            trace_log.append(f"Total Scanned: {scanned}, Would Insert: {inserted}, Skipped (Dupes): {skipped}, Failed Parse: {failed}")
+            conn.close()
+            return {"trace": "\n".join(trace_log)}
+
         if insert_values:
             try:
                 conn.execute("BEGIN TRANSACTION")
@@ -163,7 +169,7 @@ class SyncEngine:
         self._complete_batch(conn, batch_id, scanned, inserted, skipped, failed, "\n".join(error_logs), status)
         
         conn.close()
-        return inserted
+        return {"inserted": inserted}
 
     def _complete_batch(self, conn, batch_id, scanned, inserted, skipped, failed, error_log, status):
         conn.execute("""
