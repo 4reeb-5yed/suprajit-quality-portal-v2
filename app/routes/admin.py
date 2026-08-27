@@ -283,15 +283,6 @@ def delete_customer():
         
     return __import__('flask').redirect(__import__('flask').url_for('admin.customers'))
 
-@admin_bp.route('/customers/delete_user', methods=['POST'])
-def delete_user():
-    user_id = __import__('flask').request.form.get('user_id')
-    
-    from flask_login import current_user
-    # Ensure they aren't deleting themselves!
-    if str(user_id) == str(current_user.id):
-        __import__('flask').flash("You cannot delete your own admin account.", "error")
-        return __import__('flask').redirect(__import__('flask').url_for('admin.customers'))
         
     g.db.execute("DELETE FROM users WHERE id = ?", (user_id,))
     g.db.commit()
@@ -405,15 +396,6 @@ def trigger_sync():
     flash("Manual ingestion batch has been started in the background! Refresh the page in a few moments to see the results.", "success")
     return __import__('flask').redirect(__import__('flask').url_for('admin.dashboard'))
 
-@admin_bp.route('/users/delete', methods=['POST'])
-def delete_user():
-    from flask import request, flash, g
-    user_id = request.form.get('user_id')
-    user = g.db.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
-    
-    if not user:
-        flash("User not found.", "error")
-        return __import__('flask').redirect(__import__('flask').url_for('admin.customers'))
         
     if user['role'] == 'admin':
         admin_count = g.db.execute("SELECT COUNT(*) as c FROM users WHERE role = 'admin'").fetchone()['c']
@@ -425,3 +407,31 @@ def delete_user():
     g.db.commit()
     flash("User deleted successfully.", "success")
     return __import__('flask').redirect(__import__('flask').url_for('admin.customers'))
+
+@admin_bp.route('/users/delete', methods=['POST'])
+def delete_user():
+    from flask import request, flash, g, redirect, url_for
+    from flask_login import current_user
+    
+    user_id = request.form.get('user_id')
+    
+    if str(user_id) == str(current_user.id):
+        flash("You cannot delete your currently active account.", "error")
+        return redirect(url_for('admin.customers'))
+        
+    user = g.db.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
+    
+    if not user:
+        flash("User not found.", "error")
+        return redirect(url_for('admin.customers'))
+        
+    if user['role'] == 'admin':
+        admin_count = g.db.execute("SELECT COUNT(*) as c FROM users WHERE role = 'admin'").fetchone()['c']
+        if admin_count <= 1:
+            flash("Cannot delete the last remaining administrator account. Create a new one first.", "error")
+            return redirect(url_for('admin.customers'))
+            
+    g.db.execute("DELETE FROM users WHERE id = ?", (user_id,))
+    g.db.commit()
+    flash("User deleted successfully.", "success")
+    return redirect(url_for('admin.customers'))
