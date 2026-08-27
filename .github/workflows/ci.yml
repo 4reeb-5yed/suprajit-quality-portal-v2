@@ -18,7 +18,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install flask flask-limiter flask-login flask-mail flask-wtf python-dotenv waitress openpyxl apscheduler
+        pip install flask flask-limiter flask-login flask-mail flask-wtf python-dotenv waitress apscheduler
         pip install pytest pytest-flask pytest-cov
     - name: Run Mathematical Source Code Tests
       env:
@@ -38,7 +38,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install flask flask-limiter flask-login flask-mail flask-wtf python-dotenv waitress openpyxl apscheduler
+        pip install flask flask-limiter flask-login flask-mail flask-wtf python-dotenv waitress apscheduler
         pip install pyinstaller pytest pytest-flask
     - name: Compile Executable
       run: |
@@ -47,3 +47,4 @@ jobs:
     - name: Run Compiled EXE Smoke Test
       run: |
         python tests/test_compiled_binary.py
+
