@@ -193,9 +193,17 @@ def add_user():
     password = request.form.get('password', '')
     display_name = request.form.get('display_name', '').strip()
     
+
     if not username or not password:
         flash("Username and password are required.", "error")
         return __import__('flask').redirect(__import__('flask').url_for('admin.customers'))
+        
+    # Enterprise Password Complexity Enforcer
+    import re
+    if len(password) < 8 or not re.search(r"\d", password) or not re.search(r"[A-Z]", password) or not re.search(r"[@$!%*?&#]", password):
+        flash("Password must be at least 8 characters long and contain a number, an uppercase letter, and a special character.", "error")
+        return __import__('flask').redirect(__import__('flask').url_for('admin.customers'))
+
         
     pwd_hash = generate_password_hash(password)
     
