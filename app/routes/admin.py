@@ -395,8 +395,7 @@ def repair():
                 dt = datetime.strptime(target, '%Y-%m-%d').date() if target else None
                 
                 # Execute dry run
-                result = engine.run_batch(target_date=dt, full_sync=not bool(dt), dry_run=True)
-                trace_log = result.get('trace', 'No trace generated.')
+                trace_log = engine.execute_dry_run(target_date=dt)
                 
             elif action == 'purge_date':
                 target = request.form.get('target_date')
