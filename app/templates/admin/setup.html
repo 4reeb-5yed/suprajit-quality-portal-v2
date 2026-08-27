@@ -1,26 +1,60 @@
 ﻿{% extends "base.html" %}
 {% block content %}
-<div class="min-h-screen flex items-center justify-center bg-gray-100">
-    <div class="max-w-md w-full bg-white rounded shadow-lg p-8 border-t-4 border-blue-600">
-        <h2 class="text-2xl font-bold text-gray-800 mb-2"><i class="fa-solid fa-shield-halved text-blue-600 mr-2"></i>First-Boot Setup</h2>
-        <p class="text-sm text-gray-600 mb-6">For your security, you must immediately change the default bootstrap password before accessing the system.</p>
+<div class="min-h-screen flex items-center justify-center bg-gray-100 py-12">
+    <div class="max-w-xl w-full bg-white rounded shadow-lg p-8 border-t-4 border-blue-600">
+        <h2 class="text-2xl font-bold text-gray-800 mb-2"><i class="fa-solid fa-shield-halved text-blue-600 mr-2"></i>System Initialization</h2>
+        <p class="text-sm text-gray-600 mb-6">For security, you must configure the Master Administrator account and SMTP email settings before using the system.</p>
         
-        <form method="POST" action="{{ url_for('admin.setup') }}" class="space-y-4">
+        <form method="POST" action="{{ url_for('admin.setup') }}" class="space-y-6">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
             
-            <div class="form-control w-full">
-                <label class="label"><span class="label-text font-bold text-gray-700">New Administrator Password</span></label>
-                <input type="password" name="new_password" required minlength="8" class="input input-bordered w-full" placeholder="At least 8 characters" />
+            <div class="bg-gray-50 p-4 rounded border border-gray-200 space-y-4">
+                <h3 class="font-bold text-gray-800"><i class="fa-solid fa-user-lock text-blue-500 mr-2"></i>Master Administrator</h3>
+                <div class="form-control w-full">
+                    <label class="label"><span class="label-text font-bold text-gray-700">Administrator Email</span></label>
+                    <input type="email" name="admin_email" required class="input input-sm input-bordered w-full" placeholder="Required for password resets" />
+                </div>
+                
+                <div class="form-control w-full">
+                    <label class="label"><span class="label-text font-bold text-gray-700">New Password</span></label>
+                    <input type="password" name="new_password" required minlength="8" class="input input-sm input-bordered w-full" placeholder="At least 8 characters" />
+                </div>
+            </div>
+
+            <div class="bg-gray-50 p-4 rounded border border-gray-200 space-y-4">
+                <h3 class="font-bold text-gray-800"><i class="fa-solid fa-envelope text-blue-500 mr-2"></i>SMTP Configuration (Required)</h3>
+                <p class="text-xs text-gray-500">The system must be able to send emails to allow password resets and alert notifications.</p>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="form-control w-full">
+                        <label class="label"><span class="label-text font-bold text-gray-700">Mail Server</span></label>
+                        <input type="text" name="mail_server" required class="input input-sm input-bordered w-full" placeholder="e.g. smtp.gmail.com" />
+                    </div>
+                    <div class="form-control w-full">
+                        <label class="label"><span class="label-text font-bold text-gray-700">Port</span></label>
+                        <input type="text" name="mail_port" required class="input input-sm input-bordered w-full" placeholder="e.g. 587" />
+                    </div>
+                </div>
+                <div class="form-control w-full">
+                    <label class="label"><span class="label-text font-bold text-gray-700">Mail Username</span></label>
+                    <input type="email" name="mail_username" required class="input input-sm input-bordered w-full" />
+                </div>
+                <div class="form-control w-full">
+                    <label class="label"><span class="label-text font-bold text-gray-700">Mail App Password</span></label>
+                    <input type="password" name="mail_password" required class="input input-sm input-bordered w-full" />
+                </div>
+            </div>
+
+            <div class="bg-gray-50 p-4 rounded border border-gray-200 space-y-4">
+                <h3 class="font-bold text-gray-800"><i class="fa-solid fa-satellite-dish text-blue-500 mr-2"></i>Telemetry (Optional)</h3>
+                <div class="form-control w-full">
+                    <label class="label"><span class="label-text font-bold text-gray-700">Developer Telemetry Email</span></label>
+                    <input type="email" name="developer_email" class="input input-sm input-bordered w-full" placeholder="e.g. developer@company.com" />
+                    <label class="label"><span class="label-text-alt text-gray-500">If provided, background engine diagnostic logs will be sent here.</span></label>
+                </div>
             </div>
             
-            <div class="form-control w-full">
-                <label class="label"><span class="label-text font-bold text-gray-700">Canspirit Developer Email</span></label>
-                <input type="email" name="developer_email" required class="input input-bordered w-full" placeholder="admin@canspirit.com" />
-                <label class="label"><span class="label-text-alt text-gray-500">Telemetry logs will be sent here.</span></label>
-            </div>
-            
-            <button type="submit" class="btn btn-primary suprajit-blue-bg border-none text-white w-full mt-4">
-                Secure System & Continue
+            <button type="submit" class="btn btn-primary suprajit-blue-bg border-none text-white w-full">
+                Secure System & Boot Application
             </button>
         </form>
     </div>

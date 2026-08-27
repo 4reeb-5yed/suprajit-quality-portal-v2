@@ -93,7 +93,7 @@ def create_app():
         if admin_count == 0:
             from werkzeug.security import generate_password_hash
             default_pass = generate_password_hash('admin123')
-            conn.execute("INSERT INTO users (username, password_hash, display_name, role) VALUES ('admin', ?, 'Administrator', 'admin')", (default_pass,))
+            conn.execute("INSERT INTO users (username, password_hash, display_name, role) VALUES ('bootstrap_admin', ?, 'Administrator', 'admin')", (default_pass,))
             conn.commit()
             
         conn.close()

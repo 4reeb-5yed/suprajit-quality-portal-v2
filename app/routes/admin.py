@@ -11,7 +11,7 @@ def require_admin():
     if not current_user.is_admin:
         abort(403)
         
-    if current_user.username == 'admin' and request.endpoint not in ['admin.setup', 'auth.logout']:
+    if current_user.username == 'bootstrap_admin' and request.endpoint not in ['admin.setup', 'auth.logout']:
         from werkzeug.security import check_password_hash
         user_row = g.db.execute("SELECT password_hash FROM users WHERE id = ?", (current_user.id,)).fetchone()
         if user_row and check_password_hash(user_row['password_hash'], 'admin123'):
@@ -21,14 +21,31 @@ def require_admin():
 def setup():
     from flask import request, flash, redirect, url_for, render_template
     from werkzeug.security import generate_password_hash
+    from app.database import SET_SETTING
+    
     if request.method == 'POST':
         new_pass = request.form.get('new_password')
-        dev_email = request.form.get('developer_email')
+        admin_email = request.form.get('admin_email')
+        dev_email = request.form.get('developer_email', '')
+        
+        m_srv = request.form.get('mail_server')
+        m_prt = request.form.get('mail_port')
+        m_usr = request.form.get('mail_username')
+        m_pwd = request.form.get('mail_password')
+        
         if new_pass and len(new_pass) >= 8:
-            g.db.execute("UPDATE users SET password_hash = ? WHERE id = ?", (generate_password_hash(new_pass), current_user.id))
-            g.db.execute(SET_SETTING, ('developer_email', dev_email))
+            g.db.execute("UPDATE users SET password_hash = ?, email = ? WHERE id = ?", (generate_password_hash(new_pass), admin_email, current_user.id))
+            
+            if m_srv: g.db.execute(SET_SETTING, ('mail_server', m_srv))
+            if m_prt: g.db.execute(SET_SETTING, ('mail_port', m_prt))
+            if m_usr: g.db.execute(SET_SETTING, ('mail_username', m_usr))
+            if m_pwd: g.db.execute(SET_SETTING, ('mail_password', m_pwd))
+            
+            if dev_email:
+                g.db.execute(SET_SETTING, ('developer_email', dev_email))
+                
             g.db.commit()
-            flash("Setup complete. Your system is now secure.", "success")
+            flash("Initial configuration complete. Your system is secured and SMTP is ready.", "success")
             return redirect(url_for('admin.dashboard'))
         else:
             flash("Password must be at least 8 characters.", "error")
@@ -103,6 +120,7 @@ def settings():
     dev_email = get_val('developer_email', 'admin@canspirit.com')
     tel_freq = get_val('telemetry_frequency', 'daily')
     
+    system_admins = g.db.execute("SELECT * FROM users WHERE role = 'admin'").fetchall()
     return render_template('admin/settings.html', 
                            developer_email=dev_email,
                            telemetry_frequency=tel_freq,
@@ -111,7 +129,8 @@ def settings():
                            mail_server=m_srv,
                            mail_port=m_prt,
                            mail_username=m_usr,
-                           mail_password=m_pwd)
+                           mail_password=m_pwd,
+                           system_admins=system_admins)
 @admin_bp.route('/customers', methods=['GET'])
 def customers():
     from app.database import GET_ALL_CUSTOMERS
