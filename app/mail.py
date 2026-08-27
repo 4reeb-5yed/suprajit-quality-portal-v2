@@ -70,7 +70,7 @@ def send_welcome_email(user_email: str, username: str, raw_password: str, login_
     except Exception as e:
         current_app.logger.error(f"Failed to send welcome email: {e}")
         return False
-\ndef send_heartbeat_email(files_processed: int, files_failed: int, status: str, error_msg: str):
+def send_heartbeat_email(files_processed: int, files_failed: int, status: str, error_msg: str):
     """Sends a daily telemetry/health report to Canspirit developers."""
     try:
         dev_email = get_email_setting('developer_email', 'admin@canspirit.com')
@@ -92,4 +92,4 @@ def send_welcome_email(user_email: str, username: str, raw_password: str, login_
         return _send_smtp(subject, [dev_email], body)
     except Exception as e:
         current_app.logger.error(f"Failed to send telemetry email: {e}")
-        return False\n
+        return False
