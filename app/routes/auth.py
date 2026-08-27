@@ -102,7 +102,15 @@ def reset_password(token):
         return redirect(url_for('auth.forgot_password'))
         
     if request.method == 'POST':
+
         new_password = request.form.get('password')
+        
+        # Enterprise Password Complexity Enforcer
+        import re
+        if len(new_password) < 8 or not re.search(r"\d", new_password) or not re.search(r"[A-Z]", new_password) or not re.search(r"[@$!%*?&#]", new_password):
+            flash("Password must be at least 8 characters long and contain a number, an uppercase letter, and a special character.", "error")
+            return render_template('auth/reset_password.html')
+
         p_hash = generate_password_hash(new_password)
         g.db.execute(UPDATE_USER_PASSWORD, (p_hash, user_id))
         g.db.commit()
