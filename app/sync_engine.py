@@ -103,50 +103,6 @@ class SyncEngine:
         batch_id = cursor.lastrowid
         conn.commit()
 
-    def execute_dry_run(self, target_date: date = None) -> str:
-        roots = self._get_search_roots()
-        if not roots or roots == [''] or roots == ['C:\\']:
-            return "No valid root search path configured. Please configure in Settings."
-            
-        trace = []
-        trace.append(f"Starting DRY RUN across roots: {roots}")
-        trace.append(f"Target Date: {target_date if target_date else 'ALL HISTORICAL'}\n")
-        
-        conn = get_connection(self.db_path)
-        existing_hashes = {row[0] for row in conn.execute("SELECT file_hash FROM reports").fetchall()}
-        conn.close()
-        
-        total_scanned = 0
-        total_insert = 0
-        total_skip = 0
-        total_fail = 0
-        
-        for root_path in roots:
-            trace.append(f"-> Scanning: {root_path}")
-            files = self.scan_folder(root_path, target_date)
-            total_scanned += len(files)
-            
-            for fpath in files:
-                fname = os.path.basename(fpath)
-                parsed = parse_filename(fpath)
-                if not parsed:
-                    trace.append(f"   [FAIL] Could not parse metadata: {fname}")
-                    total_fail += 1
-                    continue
-                    
-                fhash = hash_file(fpath)
-                if fhash in existing_hashes:
-                    trace.append(f"   [SKIP] Already exists in DB: {fname}")
-                    total_skip += 1
-                else:
-                    trace.append(f"   [INSERT] Valid new file: {fname} (Recipe: {parsed['recipe_name']})")
-                    total_insert += 1
-                    
-        trace.append(f"\n--- DRY RUN SUMMARY ---")
-        trace.append(f"Scanned: {total_scanned} | Would Insert: {total_insert} | Skipped: {total_skip} | Failed Parse: {total_fail}")
-        return "\n".join(trace)
-
-
         files_to_process = self.scan_folder(source_path, target_date)
         
         scanned = len(files_to_process)
@@ -173,7 +129,6 @@ class SyncEngine:
                     logger.warning(f"File locked or actively copying, skipping for next batch: {filename_only}")
                     continue
 
-                
                 parsed = parse_filename(filepath)
                 if not parsed:
                     failed += 1
@@ -218,8 +173,9 @@ class SyncEngine:
                 conn.close()
                 return 0
 
-        status = "completed"  # Rejecting unparseable files is a feature, not a batch failure
-        self._complete_batch(conn, batch_id, scanned, inserted, skipped, failed, "\n".join(error_logs), status)
+        status = "completed"
+        self._complete_batch(conn, batch_id, scanned, inserted, skipped, failed, "
+".join(error_logs), status)
         
         conn.close()
         return inserted
@@ -236,12 +192,13 @@ class SyncEngine:
 
     def execute_dry_run(self, target_date: date = None) -> str:
         roots = self._get_search_roots()
-        if not roots or roots == [''] or roots == ['C:\\']:
+        if not roots or roots == [''] or roots == ['C:\']:
             return "No valid root search path configured. Please configure in Settings."
             
         trace = []
         trace.append(f"Starting DRY RUN across roots: {roots}")
-        trace.append(f"Target Date: {target_date if target_date else 'ALL HISTORICAL'}\n")
+        trace.append(f"Target Date: {target_date if target_date else 'ALL HISTORICAL'}
+")
         
         conn = get_connection(self.db_path)
         existing_hashes = {row[0] for row in conn.execute("SELECT file_hash FROM reports").fetchall()}
@@ -273,7 +230,8 @@ class SyncEngine:
                     trace.append(f"   [INSERT] Valid new file: {fname} (Recipe: {parsed['recipe_name']})")
                     total_insert += 1
                     
-        trace.append(f"\n--- DRY RUN SUMMARY ---")
+        trace.append(f"
+--- DRY RUN SUMMARY ---")
         trace.append(f"Scanned: {total_scanned} | Would Insert: {total_insert} | Skipped: {total_skip} | Failed Parse: {total_fail}")
-        return "\n".join(trace)
-
+        return "
+".join(trace)
