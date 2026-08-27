@@ -38,7 +38,7 @@
     <!-- SMTP Settings -->
     <div class="bg-white border border-gray-200 rounded shadow-sm overflow-hidden">
         <div class="p-6 border-b border-gray-200 bg-gray-50">
-            <h2 class="text-lg font-bold text-gray-800"><i class="fa-solid fa-envelope mr-2 text-blue-600"></i>Email Server Configuration</h2>
+            <h2 class="text-lg font-bold text-gray-800"><i class="fa-solid fa-envelope mr-2 text-blue-600"></i>Email Server & Telemetry Configuration</h2>
             <p class="text-sm text-gray-500 mt-1">Configure the email account used to send "Forgot Password" links and new user Welcome emails.</p>
         </div>
         <div class="p-6">
@@ -67,8 +67,26 @@
                     <label class="label"><span class="label-text-alt text-gray-500">If using Gmail, you must generate an "App Password" in your Google Account settings.</span></label>
                 </div>
                 
-                <button type="submit" class="btn btn-primary suprajit-blue-bg border-none text-white w-full md:w-auto self-start">
-                    <i class="fa-solid fa-save mr-1"></i> Save Email Config
+
+                <!-- Telemetry Fields -->
+                <div class="form-control w-full">
+                    <label class="label"><span class="label-text font-bold text-gray-700">Developer Email (Telemetry)</span></label>
+                    <input type="text" name="developer_email" value="{{ developer_email }}" class="input input-bordered w-full" placeholder="e.g. admin@canspirit.com" />
+                    <label class="label"><span class="label-text-alt text-gray-500">System health and diagnostics will be sent here.</span></label>
+                </div>
+                
+                <div class="form-control w-full">
+                    <label class="label"><span class="label-text font-bold text-gray-700">Telemetry Frequency</span></label>
+                    <select name="telemetry_frequency" class="select select-bordered w-full">
+                        <option value="daily" {% if telemetry_frequency == 'daily' %}selected{% endif %}>Daily Heartbeat</option>
+                        <option value="weekly" {% if telemetry_frequency == 'weekly' %}selected{% endif %}>Weekly Heartbeat</option>
+                        <option value="monthly" {% if telemetry_frequency == 'monthly' %}selected{% endif %}>Monthly Heartbeat</option>
+                        <option value="errors_only" {% if telemetry_frequency == 'errors_only' %}selected{% endif %}>Critical Errors Only</option>
+                    </select>
+                </div>
+                
+                <button type="submit" class="btn btn-primary suprajit-blue-bg border-none text-white w-full md:w-auto self-start mt-4">
+                    <i class="fa-solid fa-save mr-1"></i> Save Email & Telemetry Config
                 </button>
             </form>
         </div>
@@ -91,3 +109,4 @@
     </div>
 </div>
 {% endblock %}
+
