@@ -69,7 +69,7 @@ def settings():
         return row['value'] if row else default
         
     sync_time = get_val('sync_time', '01:00')
-    root_search_path = get_val('root_search_path', 'C:\\')
+    root_search_path = get_val('root_search_path', '')
     
     m_srv = get_val('mail_server', 'smtp.gmail.com')
     m_prt = get_val('mail_port', '587')

@@ -82,6 +82,10 @@ class SyncEngine:
             target_date = None
             
         roots = self._get_search_roots()
+        if not roots or roots == [''] or roots == ['C:\\']:
+            self.logger.warning("No valid root search path configured. Skipping ingestion.")
+            return {"inserted": 0, "trace": ["No valid root search path configured. Skipping."]}
+            
         total_inserted = 0
         
         for root_path in roots:
