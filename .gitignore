@@ -2,25 +2,33 @@
 __pycache__/
 *.py[cod]
 *.class
-.venv/
-
-# PyInstaller
+*.so
+.Python
+env/
 build/
+develop-eggs/
 dist/
-*.spec
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+.venv/
+venv/
+ENV/
+env.bak/
+venv.bak/
 
-# Database
-*.db
-*.db-wal
-*.db-shm
-*.sqlite3
-
-# Logs
-*.log
+# Project Specific
 suprajit.log
-
-# Temporary / Patch Scripts
-patch_*.py
-print_loop.py
-sqlite_benchmark.py
-benchmark*
+.env
+data/
+storage/
+test_*.py

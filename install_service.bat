@@ -15,14 +15,13 @@ if %errorLevel% == 0 (
 )
 
 set APP_DIR=%~dp0
-set PYTHON_EXE=%APP_DIR%.venv\Scripts\python.exe
-set SCRIPT_PATH=%APP_DIR%web_server.py
+set EXE_PATH=%APP_DIR%SuprajitQualityPortal.exe
 set SERVICE_NAME=SuprajitQualityPortal
 
-:: Check if Python venv exists
-if not exist "%PYTHON_EXE%" (
-    echo Error: Python virtual environment not found. 
-    echo Please ensure the .venv folder is included.
+:: Check if EXE exists
+if not exist "%EXE_PATH%" (
+    echo Error: SuprajitQualityPortal.exe not found!
+    echo Please make sure this script is in the same folder as the .exe.
     pause
     exit /b 1
 )
@@ -48,7 +47,7 @@ if not exist "%NSSM_EXE%" (
 
 echo.
 echo Installing %SERVICE_NAME% as a Windows Service...
-"%NSSM_EXE%" install %SERVICE_NAME% "%PYTHON_EXE%" "%SCRIPT_PATH%"
+"%NSSM_EXE%" install %SERVICE_NAME% "%EXE_PATH%"
 "%NSSM_EXE%" set %SERVICE_NAME% AppDirectory "%APP_DIR%"
 "%NSSM_EXE%" set %SERVICE_NAME% DisplayName "Suprajit Quality Data Portal"
 "%NSSM_EXE%" set %SERVICE_NAME% Description "Runs the internal factory web portal for N-1 Excel ingestion and search."
