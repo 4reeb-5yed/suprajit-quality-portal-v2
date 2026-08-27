@@ -131,7 +131,7 @@ class SyncEngine:
                     logger.warning(f"Failed to parse filename metadata for: {filename_only}")
                     continue
                 
-                logger.info(f"Parsed metadata -> Recipe: {parsed['recipe_name']}, Serial: {parsed['serial_raw']}")
+                logger.info(f"Parsed metadata -> Recipe: {parsed['recipe_name']}, Date: {parsed['report_date']}, Time: {parsed['report_time']}, Serial: {parsed['serial_raw']}")
                 
                 file_hash = hash_file(filepath)
                 if file_hash in existing_hashes:
