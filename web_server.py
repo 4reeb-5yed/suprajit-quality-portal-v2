@@ -1,4 +1,5 @@
 import logging
+from logging.handlers import RotatingFileHandler
 from waitress import serve
 from app import create_app
 from app.config import get_config
@@ -13,7 +14,7 @@ logging.basicConfig(
     level=logging.INFO, 
     format='%(asctime)s [%(levelname)s] %(message)s',
     handlers=[
-        logging.FileHandler(log_file_path, encoding='utf-8'),
+        RotatingFileHandler(log_file_path, maxBytes=5*1024*1024, backupCount=5, encoding='utf-8'),
         logging.StreamHandler(sys.stdout)
     ]
 )
