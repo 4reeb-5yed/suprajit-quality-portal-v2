@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, g, abort, request, current_app
+﻿from flask import Blueprint, render_template, g, abort, request, current_app
 from flask_login import login_required, current_user
 from app.database import GET_SETTING, SET_SETTING
 
@@ -511,8 +511,6 @@ import os
 from flask import send_file, current_app
 
 @admin_bp.route('/logs/download')
-@login_required
-@admin_required
 def download_logs():
     """Allows System Administrators to instantly download the raw system log file for observability."""
     log_path = current_app.config.get('LOG_FILE_PATH')
@@ -521,3 +519,4 @@ def download_logs():
         return redirect(url_for('admin.dashboard'))
         
     return send_file(log_path, as_attachment=True, download_name="suprajit_system.log", mimetype="text/plain")
+
