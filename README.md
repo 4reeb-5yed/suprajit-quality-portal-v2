@@ -45,3 +45,13 @@ copy .env.example .env
 # 4. Build executable
 .\build.bat
 ```
+
+## 🐳 Docker Deployment (Alternative)
+For advanced IT teams that prefer containerization over the standalone `.exe`:
+```bash
+# 1. Configure your .env file
+copy .env.example .env
+
+# 2. Spin up the container in detached mode
+docker-compose up -d
+```

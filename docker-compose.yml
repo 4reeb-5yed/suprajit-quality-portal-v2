@@ -1,0 +1,16 @@
+﻿version: '3.8'
+
+services:
+  suprajit-portal:
+    build: .
+    container_name: suprajit_quality_portal
+    ports:
+      - "5000:5000"
+    volumes:
+      # Map the database folder to persist data
+      - ./data:/app/data
+      # Map the factory reports folder
+      - ./storage:/app/storage
+    env_file:
+      - .env
+    restart: unless-stopped
