@@ -81,4 +81,17 @@ def download(report_id):
                  (current_user.id, report_id, 'download', request.remote_addr))
     g.db.commit()
     
-    return send_file(target_path, as_attachment=True, download_name=row['original_filename'])
+    
+        try:
+            log_conn = get_connection(current_app.config['DATABASE_PATH'])
+            log_conn.execute(
+                "INSERT INTO audit_logs (username, action, target_info, ip_address) VALUES (?, ?, ?, ?)",
+                (current_user.username, "DOWNLOAD", report['original_filename'], request.remote_addr)
+            )
+            log_conn.commit()
+            log_conn.close()
+        except Exception as e:
+            current_app.logger.error(f"Audit log failed: {e}")
+            
+        return send_file(
+target_path, as_attachment=True, download_name=row['original_filename'])

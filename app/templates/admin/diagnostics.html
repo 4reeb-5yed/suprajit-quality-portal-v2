@@ -90,6 +90,40 @@
                 {% endif %}
             {% endfor %}
         </div>
+
+        <!-- Security Audit Trail -->
+        <div class="card bg-base-100 shadow-xl mt-8">
+            <div class="card-body">
+                <h3 class="font-bold text-lg border-b pb-2 mb-4"><i class="fa-solid fa-shield-halved text-green-500 mr-2"></i> Security & Download Audit Trail</h3>
+                <div class="overflow-x-auto max-h-96">
+                    <table class="table table-sm table-zebra w-full">
+                        <thead class="sticky top-0 bg-base-200">
+                            <tr>
+                                <th>Timestamp (UTC)</th>
+                                <th>User</th>
+                                <th>Action</th>
+                                <th>File / Target</th>
+                                <th>IP Address</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for log in audit_logs %}
+                            <tr>
+                                <td class="whitespace-nowrap text-xs text-gray-500">{{ log.timestamp }}</td>
+                                <td><span class="badge badge-ghost font-semibold">{{ log.username }}</span></td>
+                                <td><span class="badge badge-info text-white text-xs">{{ log.action }}</span></td>
+                                <td class="text-xs font-mono">{{ log.target_info }}</td>
+                                <td class="text-xs text-gray-500">{{ log.ip_address }}</td>
+                            </tr>
+                            {% else %}
+                            <tr><td colspan="5" class="text-center text-gray-500 py-6">No audit logs found.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}
+
