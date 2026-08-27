@@ -56,7 +56,7 @@ def search_results():
         SELECT * FROM reports 
         WHERE {where_clause}
         ORDER BY report_date DESC, report_time DESC
-        LIMIT 100
+        
     """
         
     reports = g.db.execute(query, params).fetchall()
