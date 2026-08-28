@@ -4,45 +4,66 @@ An enterprise-grade, lightweight Quality Management System (QMS) built for Windo
 
 ## Quick Start (Development)
 
-To clone the repository and run the portal in a local development environment, run the exact commands below:
+Follow these steps to set up the repository on your local machine. **Each command below can be copied and run individually.**
 
+**1. Clone the repository:**
 ```bash
-# 1. Clone the repository
 git clone https://github.com/4reeb-5yed/suprajit-quality-portal-v2.git
+```
+
+**2. Enter the directory:**
+```bash
 cd suprajit-quality-portal-v2
+```
 
-# 2. Create and activate a Python Virtual Environment
+**3. Create a Python Virtual Environment:**
+```bash
 python -m venv .venv
-# On Windows Command Prompt:
+```
+
+**4. Activate the Virtual Environment (Windows Command Prompt):**
+```cmd
 .venv\Scripts\activate.bat
-# On Windows PowerShell:
+```
+
+*(Or, if you are using Windows PowerShell, use this instead):*
+```powershell
 .venv\Scripts\Activate.ps1
+```
 
-# 3. Install required dependencies
+**5. Install all required dependencies:**
+```bash
 pip install -r requirements.txt
+```
 
-# 4. Run the local development server (with hot-reloading)
+**6. Run the local development server:**
+```bash
 python run.py
 ```
 *Note: The application will be available at `http://localhost:5000`. The default admin login is created automatically (Username: `bootstrap_admin`, Password: `admin123`). You will be forced to change this upon first login.*
 
+---
+
 ## Running the Automated Test Suite
 
-We enforce a strict Three-Way Defense Pipeline. To verify the system's mathematical integrity before building:
+We enforce a strict Three-Way Defense Pipeline. To verify the system's mathematical integrity before building, run this command:
 
 ```bash
 python -m pytest tests/test_sync_engine_dimensions.py tests/test_ultimate.py -v
 ```
 
+---
+
 ## Compiling for Production (Windows .exe)
 
-To compile the entire Python ecosystem into a single standalone `.exe` (which runs via the Waitress production server):
+To compile the entire Python ecosystem into a single standalone `.exe` (which runs via the Waitress production server), run the automated build script:
 
-```bash
-# Run the automated build script
+```cmd
 .\build.bat
 ```
 This will generate the production package in the `dist/SuprajitQualityPortal` folder.
+
+---
 
 ## Production Execution
 
