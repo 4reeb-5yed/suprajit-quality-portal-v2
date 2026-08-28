@@ -24,7 +24,8 @@ jobs:
       env:
         PYTHONPATH: .
       run: |
-        python -m pytest tests/test_ultimate.py tests/test_sync_engine_dimensions.py -v --cov=app --cov-report=term
+        python -c "import tomllib; tomllib.load(open('pyproject.toml','rb'))"
+        python -m pytest tests/ -v --cov=app --cov-report=term
 
   build-and-smoke-test:
     needs: test-source
@@ -46,5 +47,6 @@ jobs:
         pyinstaller SuprajitQualityPortal.spec --noconfirm
     - name: Run Compiled EXE Smoke Test
       run: |
-        python tests/test_compiled_binary.py
+        python tests/smoke_test_binary.py
+
 
