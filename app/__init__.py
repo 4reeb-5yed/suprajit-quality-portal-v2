@@ -1,4 +1,4 @@
-from flask import Flask, g
+﻿from flask import Flask, g
 from flask_login import LoginManager
 from flask_wtf.csrf import CSRFProtect
 
@@ -94,7 +94,6 @@ def create_app():
     # Blueprints (Routes)
     from app.routes.auth import auth_bp
     from app.routes.portal import portal_bp
-    from app.routes.setup import setup_bp
     from app.routes.admin import admin_bp
     
     app.register_blueprint(auth_bp)
@@ -111,8 +110,7 @@ def create_app():
         response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
         return response
 
-    app.register_blueprint(setup_bp)
-
+    
     # Initialize Database Schema
     os.makedirs(os.path.dirname(app.config['DATABASE_PATH']), exist_ok=True)
     with app.app_context():
@@ -163,3 +161,5 @@ def create_app():
     start_background_scheduler(app)
 
     return app
+
+
