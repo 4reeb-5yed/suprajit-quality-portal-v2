@@ -62,13 +62,14 @@ jobs:
       run: |
         Compress-Archive -Path dist\SuprajitQualityPortal -DestinationPath SuprajitQualityPortal_V2.zip -Force
     - name: Upload to Release
-            uses: softprops/action-gh-release@v2
+      uses: softprops/action-gh-release@v2
       with:
         name: Suprajit Quality Portal V2
         tag_name: v2.0.0
         files: SuprajitQualityPortal_V2.zip
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
 
 
 
