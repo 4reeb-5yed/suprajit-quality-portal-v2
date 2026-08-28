@@ -506,7 +506,7 @@ def download_logs():
 
 @admin_bp.route('/evidence')
 def evidence_dashboard():
-    "\""Security & Quality Evidence Dashboard as required by ISO 9001/ASVS 5.0"\""
+    """Security & Quality Evidence Dashboard as required by ISO 9001/ASVS 5.0"""
     # Security Metrics
     asvs_verified = "153 / 153"
     critical_findings = 0
