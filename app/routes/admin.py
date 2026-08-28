@@ -517,8 +517,8 @@ def evidence_dashboard():
     """Security & Quality Evidence Dashboard as required by ISO 9001/ASVS 5.0"""
     
     # 1. INDEXING
-    total_discovered = g.db.execute("SELECT SUM(files_processed + files_skipped + files_failed) FROM batch_runs").fetchone()[0] or 0
-    total_indexed = g.db.execute("SELECT SUM(files_processed) FROM batch_runs").fetchone()[0] or 0
+    total_discovered = g.db.execute("SELECT SUM(files_scanned) FROM batch_runs").fetchone()[0] or 0
+    total_indexed = g.db.execute("SELECT SUM(files_inserted) FROM batch_runs").fetchone()[0] or 0
     processing_acc = "100%" if total_discovered > 0 else "N/A"
     index_integrity = f"{round((total_indexed/total_discovered)*100, 2)}%" if total_discovered > 0 else "N/A"
 
