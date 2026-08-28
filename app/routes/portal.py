@@ -73,7 +73,7 @@ def download_report(report_id):
     target_path = row['file_path']
     
     # SECURITY PATCH: Actually enforce is_safe_path
-    if not is_safe_path(target_path, current_app.config['STORAGE_FOLDER']):
+    if not is_safe_path(current_app.config['STORAGE_FOLDER'], target_path):
         current_app.logger.error(f"Path Traversal Attempt Blocked: {target_path}")
         abort(403)
     
@@ -86,3 +86,4 @@ def download_report(report_id):
     g.db.commit()
     
     return send_file(target_path, as_attachment=True, download_name=row['original_filename'])
+
