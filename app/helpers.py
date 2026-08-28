@@ -1,4 +1,4 @@
-import hashlib
+﻿import hashlib
 import os
 
 def hash_file(filepath: str, block_size: int = 65536) -> str:
@@ -30,8 +30,8 @@ def customer_scope(user):
 import base64
 from flask import current_app
 
+from cryptography.fernet import Fernet
 def get_cipher():
-    from cryptography.fernet import Fernet
     secret = current_app.config['SECRET_KEY']
     # Secret key is generated as token_hex(32) which is 64 hex chars (32 bytes).
     # Fernet requires a 32-byte url-safe base64 encoded key.
@@ -53,3 +53,4 @@ def decrypt_password(ciphertext: str) -> str:
     except Exception:
         # If decryption fails (e.g., legacy plaintext in dev), fail securely
         return ""
+
