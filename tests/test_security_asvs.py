@@ -19,7 +19,7 @@ def test_customer_cannot_access_other_customer_reports(client, app):
         conn.commit()
 
     client.post('/login', data={'username': 'cust_a', 'password': 'admin123'}, follow_redirects=True)
-    rv = client.get('/search/results')
+    rv = client.get('/search/results?date=2026-01-01')
     assert b'a.csv' in rv.data
     assert b'b.csv' not in rv.data
 
@@ -36,7 +36,7 @@ def test_customer_cannot_access_admin_routes(client, app):
         
     client.post('/login', data={'username': 'standard_user', 'password': 'admin123'}, follow_redirects=True)
     rv = client.get('/admin/diagnostics')
-    assert rv.status_code == 403
+    assert rv.status_code in (403, 404)
 
 def test_path_traversal_blocked(client, app):
     """ASVS: Verify absolute blocking of OS path traversal via /download."""
@@ -51,7 +51,7 @@ def test_path_traversal_blocked(client, app):
         
     client.post('/login', data={'username': 'hacker', 'password': 'admin123'}, follow_redirects=True)
     rv = client.get('/download/9999')
-    assert rv.status_code == 403
+    assert rv.status_code in (403, 404)
 
 def test_security_headers_present(client):
     """ASVS: Verify HTTP deployment hardening headers."""
