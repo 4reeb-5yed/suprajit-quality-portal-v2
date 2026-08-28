@@ -22,12 +22,16 @@
                         <h2 class="text-xl font-bold text-blue-900">{{ customer.company_name }}</h2>
                         <span class="badge badge-sm badge-ghost font-mono mt-1">{{ customer.id }}</span>
                     </div>
-                    <div>
-                        {% if customer.portal_suspended %}
-                            <span class="badge badge-error text-white text-xs">Suspended</span>
-                        {% else %}
-                            <span class="badge badge-success text-white text-xs">Active</span>
-                        {% endif %}
+                    <div class="flex items-center gap-2">
+                        <form method="POST" action="{{ url_for('admin.toggle_customer') }}" class="inline">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                            <input type="hidden" name="customer_id" value="{{ customer.id }}"/>
+                            {% if customer.portal_suspended %}
+                                <button type="submit" class="badge badge-error text-white text-xs cursor-pointer hover:opacity-80" title="Click to Unsuspend"><i class="fa-solid fa-ban mr-1"></i> Suspended</button>
+                            {% else %}
+                                <button type="submit" class="badge badge-success text-white text-xs cursor-pointer hover:opacity-80" title="Click to Suspend"><i class="fa-solid fa-check mr-1"></i> Active</button>
+                            {% endif %}
+                        </form>
                     </div>
                 </div>
 
@@ -43,16 +47,25 @@
                 </div>
 
                 <div class="text-xs text-gray-500">
-                    <strong>Allowed Recipe Pool:</strong>
+                    <div class="flex justify-between items-center mb-1">
+                        <strong>Allowed Recipe Pool:</strong>
+                        <button class="text-blue-600 hover:underline font-bold text-xs" onclick="document.getElementById('quickAddRecipeModal-{{ customer.id }}').showModal()">+ Add</button>
+                    </div>
                     {% set r_list = customer_recipes.get(customer.id, []) %}
                     {% if r_list %}
-                        <div class="flex flex-wrap gap-1 mt-1">
-                            {% for r in r_list[:3] %}
-                                <span class="badge badge-sm badge-outline text-gray-700">{{ r.recipe_name }}</span>
+                        <div class="flex flex-wrap gap-1.5 mt-1">
+                            {% for r in r_list %}
+                                <div class="badge badge-sm badge-outline text-gray-700 flex items-center gap-1">
+                                    <span>{{ r.recipe_name }}</span>
+                                    <form method="POST" action="{{ url_for('admin.delete_recipe') }}" onsubmit="return confirm('Revoke {{ r.recipe_name }}?');" class="inline">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                        <input type="hidden" name="customer_id" value="{{ customer.id }}"/>
+                                        <input type="hidden" name="recipe_name" value="{{ r.recipe_name }}"/>
+                                        <input type="hidden" name="redirect_url" value="{{ url_for('admin.customers') }}"/>
+                                        <button type="submit" class="text-red-500 hover:text-red-700 font-bold text-xs" title="Revoke">&times;</button>
+                                    </form>
+                                </div>
                             {% endfor %}
-                            {% if r_list|length > 3 %}
-                                <span class="badge badge-sm badge-neutral">+{{ r_list|length - 3 }} more</span>
-                            {% endif %}
                         </div>
                     {% else %}
                         <p class="italic text-gray-400 mt-1">No recipes assigned.</p>
