@@ -17,9 +17,6 @@
             <a href="{{ url_for('admin.customers') }}" class="btn btn-outline btn-sm">
                 <i class="fa-solid fa-arrow-left mr-1"></i> All Customers
             </a>
-            <button class="btn btn-primary suprajit-blue-bg border-none text-white btn-sm" onclick="addUserModal.showModal()">
-                <i class="fa-solid fa-user-plus mr-1"></i> Add User
-            </button>
         </div>
     </div>
 
@@ -34,7 +31,7 @@
         </div>
         <div class="bg-white border border-gray-200 rounded p-5 flex justify-between items-center">
             <div>
-                <div class="text-xs font-semibold text-gray-500 uppercase">Allowed Master Recipes</div>
+                <div class="text-xs font-semibold text-gray-500 uppercase">Allowed Recipes</div>
                 <div class="text-3xl font-bold text-blue-800 mt-1">{{ allowed_recipes|length }}</div>
             </div>
             <i class="fa-solid fa-tags text-4xl text-blue-100"></i>
@@ -54,7 +51,92 @@
         </div>
     </div>
 
-    <!-- Users Management Table -->
+    <!-- Company Allowed Recipes Section (FIRST) -->
+    <div class="bg-white border border-gray-200 rounded shadow-sm overflow-hidden">
+        <div class="p-5 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
+            <div>
+                <h2 class="text-lg font-bold text-gray-800"><i class="fa-solid fa-tags mr-2 text-blue-600"></i>Company Allowed Recipes</h2>
+                <p class="text-xs text-gray-500 mt-0.5">The pool of recipes available to {{ customer.company_name }}.</p>
+            </div>
+            <button class="btn btn-sm btn-outline text-blue-700" onclick="grantRecipeModal.showModal()">
+                <i class="fa-solid fa-plus mr-1"></i> Grant Recipe
+            </button>
+        </div>
+        <div class="p-5">
+            <div class="overflow-x-auto">
+                <table class="table table-zebra table-sm w-full border border-gray-200">
+                    <thead>
+                        <tr class="bg-gray-100 text-gray-600">
+                            <th>Recipe Name</th>
+                            <th class="text-right">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for r in allowed_recipes %}
+                        <tr>
+                            <td class="font-mono font-bold text-gray-800">{{ r.recipe_name }}</td>
+                            <td class="text-right">
+                                <form method="POST" action="{{ url_for('admin.delete_recipe') }}" onsubmit="return confirm('Revoke this recipe from the company?');" class="inline">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                    <input type="hidden" name="customer_id" value="{{ customer.id }}"/>
+                                    <input type="hidden" name="recipe_name" value="{{ r.recipe_name }}"/>
+                                    <input type="hidden" name="redirect_url" value="{{ url_for('admin.customer_detail', customer_id=customer.id) }}"/>
+                                    <button type="submit" class="btn btn-xs btn-error text-white"><i class="fa-solid fa-trash mr-1"></i> Revoke</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="2" class="text-center text-gray-500 py-6 italic">No recipes granted to this company yet. Users under this company will see zero reports.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Company Administrators Section (SECOND) -->
+    {% set company_admins = users|selectattr('role', 'equalto', 'company_admin')|list %}
+    <div class="bg-white border border-gray-200 rounded shadow-sm overflow-hidden">
+        <div class="p-5 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
+            <div>
+                <h2 class="text-lg font-bold text-gray-800"><i class="fa-solid fa-user-shield mr-2 text-blue-600"></i>Company Administrators</h2>
+                <p class="text-xs text-gray-500 mt-0.5">Admins who can manage users and recipe access for {{ customer.company_name }}.</p>
+            </div>
+            <button class="btn btn-sm btn-primary suprajit-blue-bg border-none text-white" onclick="addUserModal.showModal()">
+                <i class="fa-solid fa-user-plus mr-1"></i> Create Company Admin
+            </button>
+        </div>
+        <div class="p-5">
+            <div class="overflow-x-auto">
+                <table class="table table-zebra table-sm w-full border border-gray-200">
+                    <thead>
+                        <tr class="bg-gray-100 text-gray-600">
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Username</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ca in company_admins %}
+                        <tr>
+                            <td class="font-bold text-gray-800">{{ ca.display_name }}</td>
+                            <td class="text-gray-600">{{ ca.email or 'N/A' }}</td>
+                            <td class="font-mono">{{ ca.username }}</td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="3" class="text-center text-gray-500 py-6 italic">No company administrator assigned yet. Use "Create Company Admin" above.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Users Management Table (THIRD) -->
     <div class="bg-white border border-gray-200 rounded shadow-sm overflow-hidden">
         <div class="p-5 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
             <div>
@@ -146,7 +228,7 @@
                                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                 <input type="hidden" name="user_id" value="{{ u.id }}"/>
                                 <input type="hidden" name="customer_id" value="{{ customer.id }}"/>
-                                
+
                                 <div class="form-control">
                                     <label class="label font-bold text-gray-700">Access Mode</label>
                                     <div class="flex flex-col gap-2 p-3 bg-gray-50 rounded border border-gray-200">
@@ -169,7 +251,7 @@
                                             <span class="font-mono text-sm text-gray-800">{{ r.recipe_name }}</span>
                                         </label>
                                     {% else %}
-                                        <p class="text-xs text-gray-500 italic">No master recipes have been granted to this company yet.</p>
+                                        <p class="text-xs text-gray-500 italic">No recipes have been granted to this company yet.</p>
                                     {% endfor %}
                                 </div>
 
@@ -189,51 +271,6 @@
             </table>
         </div>
     </div>
-
-    <!-- Allowed Master Recipes Section -->
-    <div class="bg-white border border-gray-200 rounded shadow-sm overflow-hidden">
-        <div class="p-5 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
-            <div>
-                <h2 class="text-lg font-bold text-gray-800"><i class="fa-solid fa-tags mr-2 text-blue-600"></i>Company Master Allowed Recipes</h2>
-                <p class="text-xs text-gray-500 mt-0.5">The master pool of recipes available to {{ customer.company_name }}.</p>
-            </div>
-            <button class="btn btn-sm btn-outline text-blue-700" onclick="grantRecipeModal.showModal()">
-                <i class="fa-solid fa-plus mr-1"></i> Grant Recipe
-            </button>
-        </div>
-        <div class="p-5">
-            <div class="overflow-x-auto">
-                <table class="table table-zebra table-sm w-full border border-gray-200">
-                    <thead>
-                        <tr class="bg-gray-100 text-gray-600">
-                            <th>Recipe Name</th>
-                            <th class="text-right">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for r in allowed_recipes %}
-                        <tr>
-                            <td class="font-mono font-bold text-gray-800">{{ r.recipe_name }}</td>
-                            <td class="text-right">
-                                <form method="POST" action="{{ url_for('admin.delete_recipe') }}" onsubmit="return confirm('Revoke this recipe from the company?');" class="inline">
-                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                                    <input type="hidden" name="customer_id" value="{{ customer.id }}"/>
-                                    <input type="hidden" name="recipe_name" value="{{ r.recipe_name }}"/>
-                                    <input type="hidden" name="redirect_url" value="{{ url_for('admin.customer_detail', customer_id=customer.id) }}"/>
-                                    <button type="submit" class="btn btn-xs btn-error text-white"><i class="fa-solid fa-trash mr-1"></i> Revoke</button>
-                                </form>
-                            </td>
-                        </tr>
-                        {% else %}
-                        <tr>
-                            <td colspan="2" class="text-center text-gray-500 py-6 italic">No recipes granted to this company yet. Users under this company will see zero reports.</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
 </div>
 
 <!-- Add User Modal for this company -->
@@ -245,7 +282,7 @@
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
             <input type="hidden" name="customer_id" value="{{ customer.id }}"/>
             <input type="hidden" name="redirect_url" value="{{ url_for('admin.customer_detail', customer_id=customer.id) }}"/>
-            
+
             <div class="form-control">
                 <label class="label font-bold text-gray-700"><span class="label-text">Role</span></label>
                 <select name="role" class="select select-bordered select-sm w-full">
@@ -253,7 +290,7 @@
                     <option value="company_admin">Company Administrator (Can manage team)</option>
                 </select>
             </div>
-            
+
             <div class="form-control">
                 <label class="label font-bold text-gray-700"><span class="label-text">Username</span></label>
                 <input type="text" name="username" placeholder="e.g. {{ customer.id }}_rahul" required class="input input-sm input-bordered w-full" />
@@ -282,16 +319,16 @@
     <form method="dialog" class="modal-backdrop"><button>close</button></form>
 </dialog>
 
-<!-- Grant Master Recipe Modal -->
+<!-- Grant Recipe Modal -->
 <dialog id="grantRecipeModal" class="modal">
     <div class="modal-box bg-white">
         <form method="dialog"><button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">?</button></form>
-        <h3 class="font-bold text-lg text-blue-900 border-b pb-2 mb-4">Grant Master Recipe Access</h3>
+        <h3 class="font-bold text-lg text-blue-900 border-b pb-2 mb-4">Grant Recipe Access</h3>
         <form method="POST" action="{{ url_for('admin.add_recipe') }}" class="space-y-4">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
             <input type="hidden" name="customer_id" value="{{ customer.id }}"/>
             <input type="hidden" name="redirect_url" value="{{ url_for('admin.customer_detail', customer_id=customer.id) }}"/>
-            
+
             <div class="form-control">
                 <label class="label font-bold text-gray-700"><span class="label-text">Recipe Name / Prefix</span></label>
                 <input list="available-recipes-list" name="recipe_name" placeholder="Select or type recipe prefix..." required class="input input-bordered w-full" autocomplete="off" />

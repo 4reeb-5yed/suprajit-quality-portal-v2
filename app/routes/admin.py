@@ -147,8 +147,8 @@ def customers():
             customer_recipes[cid] = []
         customer_recipes[cid].append(r)
         
-    # Fetch all users
-    users_raw = g.db.execute("SELECT * FROM users WHERE role = 'customer_viewer'").fetchall()
+    # Fetch all users belonging to client companies
+    users_raw = g.db.execute("SELECT * FROM users WHERE customer_id IS NOT NULL ORDER BY id DESC").fetchall()
     customer_users = {}
     for u in users_raw:
         cid = u['customer_id']
@@ -359,6 +359,7 @@ def edit_customer():
     return __import__('flask').redirect(__import__('flask').url_for('admin.customers'))
 
 @admin_bp.route('/customers/suspend', methods=['POST'])
+@admin_bp.route('/customers/toggle', methods=['POST'], endpoint='toggle_customer')
 def suspend_customer():
     from app.database import TOGGLE_CUSTOMER_SUSPENSION
     from flask import request, flash
