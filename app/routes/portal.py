@@ -1,6 +1,7 @@
 ﻿from flask import Blueprint, render_template, request, g, send_file, abort, current_app
 from flask_login import login_required, current_user
 import os
+import time
 
 from app.helpers import customer_scope, is_safe_path
 from app.config import get_config
@@ -29,6 +30,8 @@ def search():
 @portal_bp.route('/search/results')
 @login_required
 def search_results():
+    start_time = time.time()
+
     recipe = request.args.get('recipe', '').strip()
     date_val = request.args.get('date', '').strip()
     serial = request.args.get('serial', '').strip()
@@ -59,6 +62,12 @@ def search_results():
     """
         
     reports = g.db.execute(query, params).fetchall()
+    latency_ms = (time.time() - start_time) * 1000
+    try:
+        g.db.execute("INSERT INTO search_metrics (latency_ms) VALUES (?)", (latency_ms,))
+        g.db.commit()
+    except Exception as e:
+        print("Metric error:", e)
     return render_template('partials/results_table.html', reports=reports)
 
 @portal_bp.route('/download/<int:report_id>')

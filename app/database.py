@@ -81,7 +81,13 @@ def ensure_schema(conn):
 
             CREATE INDEX IF NOT EXISTS idx_reports_recipe ON reports(recipe_name, report_date, serial_normalized);
 
-            CREATE TABLE IF NOT EXISTS audit_log (
+            
+            CREATE TABLE IF NOT EXISTS search_metrics (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                latency_ms REAL NOT NULL,
+                timestamp TEXT NOT NULL DEFAULT (datetime('now'))
+            );
+CREATE TABLE IF NOT EXISTS audit_log (
                 id          INTEGER PRIMARY KEY AUTOINCREMENT,
                 user_id     INTEGER NOT NULL,
                 report_id   INTEGER,
