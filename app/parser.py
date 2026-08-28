@@ -2,10 +2,10 @@ import re
 import os
 from typing import Dict, Optional
 
-# Expected format: {RECIPE}_{DD-MM-YYYY}_{HH.MM.SS}_{SERIAL}.xlsx
-# Example: EV_TPS_13-06-2026_22.33.21_12.xlsx
+# Expected format: {RECIPE}_{DD-MM-YYYY}_{HH.MM.SS}_{SERIAL}.xlsx (with optional Windows copy suffix like " (1)")
+# Example: EV_TPS_13-06-2026_22.33.21_12 (1).xlsx
 FILENAME_PATTERN = re.compile(
-    r"^(.+)_(\d{2}-\d{2}-\d{4})_(\d{2}\.\d{2}\.\d{2})_(\d+)\.xlsx$", 
+    r"^(.+)_(\d{2}-\d{2}-\d{4})_(\d{2}\.\d{2}\.\d{2})_([a-zA-Z0-9_-]+?)(?:\s*\(\d+\)|\s*-\s*Copy)*\.(?:xlsx|csv)$", 
     re.IGNORECASE
 )
 

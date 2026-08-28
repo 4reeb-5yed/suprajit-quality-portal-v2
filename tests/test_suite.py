@@ -1,4 +1,4 @@
-﻿import pytest
+import pytest
 import os
 import tempfile
 import sqlite3
@@ -15,12 +15,11 @@ from app.parser import parse_filename
 def app():
     # Setup isolated test database and config
     db_fd, db_path = tempfile.mkstemp(suffix='.db')
-    os.environ['DATABASE_PATH'] = db_path
     os.environ['STORAGE_BASE'] = tempfile.mkdtemp()
     
-    app = create_app()
-    app.config.update({
+    app = create_app({
         'TESTING': True,
+        'DATABASE_PATH': db_path,
         'WTF_CSRF_ENABLED': False,
         'WTF_CSRF_CHECK_DEFAULT': False
     })
@@ -33,14 +32,20 @@ def app():
         conn.execute("INSERT INTO customer_recipes (customer_id, recipe_name) VALUES ('suprajit', 'TEST_RECIPE')")
         
         pass_hash = generate_password_hash('admin123')
-        conn.execute("INSERT INTO users (username, password_hash, display_name, role) VALUES ('bootstrap_admin', ?, 'Administrator', 'admin')", (pass_hash,))
+        conn.execute("INSERT OR IGNORE INTO users (username, password_hash, display_name, role) VALUES ('bootstrap_admin', ?, 'Administrator', 'admin')", (pass_hash,))
         conn.commit()
         conn.close()
 
     yield app
 
-    os.close(db_fd)
-    os.unlink(db_path)
+    try:
+        os.close(db_fd)
+    except OSError:
+        pass
+    try:
+        os.unlink(db_path)
+    except OSError:
+        pass
 
 @pytest.fixture
 def client(app):
@@ -51,13 +56,14 @@ def client(app):
 # -----------------
 def test_parse_filename():
     assert parse_filename('EV_TPS_13-06-2026_22.33.21_12.xlsx')['recipe_name'] == 'EV_TPS'
+    assert parse_filename('EV_TPS_13-06-2026_22.33.21_12 (1).xlsx')['recipe_name'] == 'EV_TPS'
 
 # -----------------
 # 2. SYNC ENGINE TESTS
 # -----------------
 def test_sync_engine_ingestion(app):
     with app.app_context():
-        db_path = os.environ['DATABASE_PATH']
+        db_path = app.config['DATABASE_PATH']
         storage = os.environ['STORAGE_BASE']
         
         recipe_dir = os.path.join(storage, 'Test Reports', 'TEST_RECIPE')
@@ -81,9 +87,9 @@ def test_login_redirect_and_auth(client, app):
         rv = client.post('/login', data={'username': 'bootstrap_admin', 'password': 'admin123'}, follow_redirects=True)
         assert rv.status_code == 200
         
-        # Test trap logic explicitly
+        # Test bootstrap setup trap or direct settings access
         rv2 = client.get('/admin/settings', follow_redirects=True)
-        assert b"System Administrator" in rv2.data or b"System Initialization" in rv2.data
+        assert b"System Initialization" in rv2.data or b"System Configuration" in rv2.data
 
 def test_404_error_handler(client, app):
     rv = client.get('/favicon.ico')
