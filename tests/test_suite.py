@@ -83,10 +83,11 @@ def test_login_redirect_and_auth(client, app):
         
         # Test trap logic explicitly
         rv2 = client.get('/admin/settings', follow_redirects=True)
-        assert b"System Administrator" in rv2.data or b"Setup" in rv2.data
+        assert b"System Administrator" in rv2.data or b"System Initialization" in rv2.data
 
 def test_404_error_handler(client, app):
     rv = client.get('/favicon.ico')
     assert rv.status_code == 404
+
 
 
