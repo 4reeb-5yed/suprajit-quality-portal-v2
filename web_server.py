@@ -1,5 +1,4 @@
-import logging
-from logging.handlers import RotatingFileHandler
+﻿import logging
 from waitress import serve
 from app import create_app
 from app.config import get_config
@@ -7,22 +6,6 @@ from app.config import get_config
 import sys
 import os
 
-# If frozen (PyInstaller), log next to executable
-if getattr(sys, 'frozen', False):
-    log_dir = os.path.dirname(sys.executable)
-else:
-    log_dir = os.path.dirname(os.path.abspath(__file__))
-    
-log_file_path = os.path.join(log_dir, 'suprajit.log')
-
-logging.basicConfig(
-    level=logging.INFO, 
-    format='%(asctime)s [%(levelname)s] %(message)s',
-    handlers=[
-        RotatingFileHandler(log_file_path, maxBytes=5*1024*1024, backupCount=5, encoding='utf-8'),
-        logging.StreamHandler(sys.stdout)
-    ]
-)
 logger = logging.getLogger('waitress')
 
 if __name__ == '__main__':

@@ -332,7 +332,8 @@ def diagnostics():
     # Read the last 100 lines of the suprajit.log file
     log_lines = []
     try:
-        log_path = 'suprajit.log'
+        from flask import current_app
+        log_path = current_app.config.get('LOG_FILE_PATH')
         import os
         if os.path.exists(log_path):
             with open(log_path, 'r', encoding='utf-8') as f:
@@ -493,5 +494,6 @@ def download_logs():
         return redirect(url_for('admin.dashboard'))
         
     return send_file(log_path, as_attachment=True, download_name="suprajit_system.log", mimetype="text/plain")
+
 
 
