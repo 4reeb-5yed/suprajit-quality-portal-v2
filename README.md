@@ -1,69 +1,52 @@
-﻿# Suprajit Quality Portal (V2)
+﻿# Suprajit Quality Portal V2
 
-![Status](https://img.shields.io/badge/Status-Production-success)
-![Security](https://img.shields.io/badge/Security-OWASP_Compliant-blue)
-![Database](https://img.shields.io/badge/Database-SQLite_WAL-orange)
-![License](https://img.shields.io/badge/License-Proprietary-red)
+An enterprise-grade, lightweight Quality Management System (QMS) built for Windows Server. It automatically parses factory Excel reports, extracts metadata via Regex, stores it in a high-concurrency SQLite WAL database, and serves it to a multi-tenant customer portal.
 
-An enterprise-grade, offline-first Quality Management System (QMS) built specifically for Suprajit. Designed to ingest, index, and securely serve factory quality reports to external clients over the internet with zero IT maintenance overhead.
+## Quick Start (Development)
 
----
-
-## 1. Production Deployment
-
-This software is pre-compiled for deployment. The target server does not need Python installed.
-
-### Option A: Standard Windows Server Deployment (Recommended)
-1. Navigate to the **Releases** tab on GitHub and download the latest `SuprajitQualityPortal_V2.zip`.
-2. Unzip the folder to a permanent location on the factory server (e.g., `C:\Program Files\SuprajitPortal`).
-3. Inside the folder, rename `.env.example` to `.env`. Open it in Notepad and enter your SMTP email credentials.
-4. Right-click the `install_service.bat` file and select **"Run as Administrator"**. 
-5. The portal is now permanently running as a background Windows Service at `http://localhost:5000`.
-
-### Option B: Docker Containerization
-If your IT infrastructure prefers Linux or containerization:
-```bash
-git clone <repository-url>
-cd suprajit_v2
-copy .env.example .env
-# Edit .env with your SMTP credentials, then run:
-docker-compose up -d
-```
-
----
-
-## 2. Local Development & Source Execution
-
-To run, modify, or test the application directly from the Python source code:
+To clone the repository and run the portal in a local development environment, run the exact commands below:
 
 ```bash
 # 1. Clone the repository
-git clone <repository-url>
-cd suprajit_v2
+git clone https://github.com/4reeb-5yed/suprajit-quality-portal-v2.git
+cd suprajit-quality-portal-v2
 
-# 2. Create and activate a virtual environment
+# 2. Create and activate a Python Virtual Environment
 python -m venv .venv
-.venv\Scripts\activate
+# On Windows Command Prompt:
+.venv\Scripts\activate.bat
+# On Windows PowerShell:
+.venv\Scripts\Activate.ps1
 
-# 3. Install the application and dependencies
-pip install -e .
+# 3. Install required dependencies
+pip install -r requirements.txt
 
-# 4. Configure local environment variables
-copy .env.example .env
+# 4. Run the local development server (with hot-reloading)
+python run.py
+```
+*Note: The application will be available at `http://localhost:5000`. The default admin login is created automatically (Username: `bootstrap_admin`, Password: `admin123`). You will be forced to change this upon first login.*
 
-# 5. Run the production Waitress server
-python web_server.py
+## Running the Automated Test Suite
+
+We enforce a strict Three-Way Defense Pipeline. To verify the system's mathematical integrity before building:
+
+```bash
+python -m pytest tests/test_sync_engine_dimensions.py tests/test_ultimate.py -v
 ```
 
----
+## Compiling for Production (Windows .exe)
 
-## 3. Documentation Directory
+To compile the entire Python ecosystem into a single standalone `.exe` (which runs via the Waitress production server):
 
-All detailed manuals are categorized below:
-* [Deployment & IT Guide](docs/DEPLOYMENT.md) - Deep dive into network setup, Reverse Proxies, and HTTPS.
-* [Administrator Guide](docs/ADMIN_GUIDE.md) - How to onboard clients, map recipes, and use the Repair Dashboard.
-* [Security Policy](SECURITY.md) - Overview of OWASP defenses, Scrypt cryptography, and CSRF.
-* [Architecture & Decision Records](docs/ARCHITECTURE.md) - Why SQLite WAL and Waitress were chosen.
+```bash
+# Run the automated build script
+.\build.bat
+```
+This will generate the production package in the `dist/SuprajitQualityPortal` folder.
 
----
-*Copyright (c) 2026 Areeb Syed. All Rights Reserved.*
+## Production Execution
+
+1. Copy the contents of `dist/SuprajitQualityPortal` to your server's `Z:\SuprajitQualityPortal_V2` drive.
+2. Double-click `SuprajitQualityPortal.exe`.
+3. The server will run in the background on Port 5000 (accessible across the LAN via the server's IP address).
+4. Configure the "Watched Folder" path in the Admin -> Settings UI to point to your factory's Excel output directory.
