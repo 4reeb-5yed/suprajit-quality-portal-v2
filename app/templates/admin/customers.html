@@ -4,160 +4,74 @@
 <div class="space-y-8">
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-            <h1 class="text-3xl font-bold text-gray-800"><i class="fa-solid fa-building text-blue-800 mr-2"></i>Customer Management</h1>
-            <p class="text-sm text-gray-500 mt-1">Manage tenants and map their isolated network folder paths.</p>
+            <h1 class="text-3xl font-bold text-gray-800"><i class="fa-solid fa-building text-blue-800 mr-2"></i>Customer Directory</h1>
+            <p class="text-sm text-gray-500 mt-1">Overview of registered client companies, allowed recipe pools, and team sizes.</p>
         </div>
         <button class="btn btn-primary suprajit-blue-bg border-none text-white shadow" onclick="addCustomerModal.showModal()">
-            <i class="fa-solid fa-plus mr-1"></i> Add New Customer
+            <i class="fa-solid fa-plus mr-1"></i> Register New Customer
         </button>
     </div>
 
-    <!-- Customers List -->
-    <div class="grid grid-cols-1 gap-6">
+    <!-- Clean Customer Summary Cards Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {% for customer in customers %}
-        <div class="bg-white border border-gray-200 rounded shadow-sm overflow-hidden">
-            <div class="p-5 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
-                <div>
-                    <h2 class="text-xl font-bold text-blue-900">{{ customer.company_name }}</h2>
-                    <p class="text-xs text-gray-500 font-mono mt-1">Tenant ID: {{ customer.id }}</p>
-                </div>
-                <div class="flex items-center gap-2">
-                    <form method="POST" action="{{ url_for('admin.suspend_customer') }}">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                        <input type="hidden" name="customer_id" value="{{ customer.id }}"/>
-                        {% if customer.portal_suspended %}
-                            <input type="hidden" name="portal_suspended" value="0"/>
-                            <button type="submit" class="btn btn-sm btn-outline text-success" title="Restore Portal Access">
-                                <i class="fa-solid fa-play"></i> Restore Access
-                            </button>
-                        {% else %}
-                            <input type="hidden" name="portal_suspended" value="1"/>
-                            <button type="submit" class="btn btn-sm btn-outline text-warning" title="Suspend Portal Access">
-                                <i class="fa-solid fa-pause"></i> Suspend Portal
-                            </button>
-                        {% endif %}
-                    </form>
-                    
-                    <button class="btn btn-sm btn-ghost text-blue-700" onclick="document.getElementById('editCustomerModal-{{ customer.id }}').showModal()">
-                        <i class="fa-solid fa-edit"></i> Edit
-                    </button>
-                    <button class="btn btn-sm btn-ghost text-red-600" onclick="document.getElementById('deleteCustomerModal-{{ customer.id }}').showModal()">
-                        <i class="fa-solid fa-trash"></i> Delete
-                    </button>
-                </div>
-            </div>
-            
+        <div class="bg-white border border-gray-200 rounded shadow-sm hover:shadow-md transition flex flex-col justify-between overflow-hidden">
             <div class="p-6">
-                <!-- Recipes/Folders Section -->
-                <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-sm font-bold text-gray-700 uppercase tracking-wider"><i class="fa-solid fa-tags mr-2 text-blue-500"></i>Allowed Recipes</h3>
-                    <button class="btn btn-sm btn-outline text-blue-700" onclick="document.getElementById('addRecipeModal-{{ customer.id }}').showModal()">
-                        <i class="fa-solid fa-key mr-1"></i> Grant Recipe Access
-                    </button>
-                </div>
-                
-                <div class="overflow-x-auto mb-8">
-                    <table class="table table-zebra table-sm w-full border border-gray-200">
-                        <thead>
-                            <tr class="bg-gray-100 text-gray-600">
-                                <th>Recipe Name</th>
-                                <th class="text-right">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% set recipes = customer_recipes.get(customer.id, []) %}
-                            {% if recipes %}
-                                {% for r in recipes %}
-                                <tr>
-                                    <td class="font-mono font-bold text-gray-700">
-                                        {{ r.recipe_name }}
-                                    </td>
-                                    <td class="text-right">
-                                        <div class="flex justify-end gap-2">
-                                            <form method="POST" action="{{ url_for('admin.delete_recipe') }}" onsubmit="return confirm('Remove access to this recipe?');">
-                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                                                <input type="hidden" name="customer_id" value="{{ customer.id }}"/>
-                                                <input type="hidden" name="recipe_name" value="{{ r.recipe_name }}"/>
-                                                <button type="submit" class="btn btn-xs btn-error text-white" title="Remove Access"><i class="fa-solid fa-unlink"></i> Revoke</button>
-                                            </form>
-                                        </div>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            {% else %}
-                            <tr>
-                                <td colspan="2" class="text-center text-gray-500 py-4 italic">No recipes granted yet. This customer's portal will be empty.</td>
-                            </tr>
-                            {% endif %}
-                        </tbody>
-                    </table>
+                <div class="flex justify-between items-start mb-3">
+                    <div>
+                        <h2 class="text-xl font-bold text-blue-900">{{ customer.company_name }}</h2>
+                        <span class="badge badge-sm badge-ghost font-mono mt-1">{{ customer.id }}</span>
+                    </div>
+                    <div>
+                        {% if customer.portal_suspended %}
+                            <span class="badge badge-error text-white text-xs">Suspended</span>
+                        {% else %}
+                            <span class="badge badge-success text-white text-xs">Active</span>
+                        {% endif %}
+                    </div>
                 </div>
 
-                <!-- Access Management Section -->
-                <div class="flex items-center justify-between mb-4 pt-4 border-t border-gray-200">
-                    <h3 class="text-sm font-bold text-gray-700 uppercase tracking-wider"><i class="fa-solid fa-user-shield mr-2 text-green-600"></i>Customer Login Access</h3>
-                    <button class="btn btn-sm btn-outline text-green-700" onclick="document.getElementById('addUserModal-{{ customer.id }}').showModal()">
-                        <i class="fa-solid fa-user-plus mr-1"></i> Add Login Account
+                <div class="grid grid-cols-2 gap-3 my-4 p-3 bg-gray-50 rounded text-center border border-gray-100">
+                    <div>
+                        <div class="text-2xl font-bold text-gray-800">{{ customer_users.get(customer.id, [])|length }}</div>
+                        <div class="text-xs text-gray-500 uppercase font-semibold">Users</div>
+                    </div>
+                    <div>
+                        <div class="text-2xl font-bold text-blue-800">{{ customer_recipes.get(customer.id, [])|length }}</div>
+                        <div class="text-xs text-gray-500 uppercase font-semibold">Recipes</div>
+                    </div>
+                </div>
+
+                <div class="text-xs text-gray-500">
+                    <strong>Allowed Recipe Pool:</strong>
+                    {% set r_list = customer_recipes.get(customer.id, []) %}
+                    {% if r_list %}
+                        <div class="flex flex-wrap gap-1 mt-1">
+                            {% for r in r_list[:3] %}
+                                <span class="badge badge-sm badge-outline text-gray-700">{{ r.recipe_name }}</span>
+                            {% endfor %}
+                            {% if r_list|length > 3 %}
+                                <span class="badge badge-sm badge-neutral">+{{ r_list|length - 3 }} more</span>
+                            {% endif %}
+                        </div>
+                    {% else %}
+                        <p class="italic text-gray-400 mt-1">No recipes assigned.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="p-4 bg-gray-50 border-t border-gray-100 flex items-center justify-between gap-2">
+                <div class="flex gap-1">
+                    <button class="btn btn-xs btn-ghost text-gray-600" onclick="document.getElementById('editCustomerModal-{{ customer.id }}').showModal()" title="Rename Company">
+                        <i class="fa-solid fa-edit"></i>
+                    </button>
+                    <button class="btn btn-xs btn-ghost text-red-600" onclick="document.getElementById('deleteCustomerModal-{{ customer.id }}').showModal()" title="Delete Customer">
+                        <i class="fa-solid fa-trash"></i>
                     </button>
                 </div>
-                
-                <div class="overflow-x-auto">
-                    <table class="table table-zebra table-sm w-full border border-gray-200">
-                        <thead>
-                            <tr class="bg-gray-100 text-gray-600">
-                                <th>Username</th>
-                                <th>Contact Email</th>
-                                <th>Status</th>
-                                <th class="text-right">Access Control</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% set users = customer_users.get(customer.id, []) %}
-                            {% if users %}
-                                {% for u in users %}
-                                <tr>
-                                    <td class="font-bold text-gray-800">{{ u.username }}</td>
-                                    <td class="text-gray-600">{{ u.email or 'N/A' }}</td>
-                                    <td>
-                                        {% if u.is_active %}
-                                            <span class="badge badge-success badge-sm text-white">Active</span>
-                                        {% else %}
-                                            <span class="badge badge-error badge-sm text-white">Revoked</span>
-                                        {% endif %}
-                                    </td>
-                                    <td class="text-right">
-                                        <div class="flex justify-end gap-2">
-                                            <form method="POST" action="{{ url_for('admin.toggle_user') }}">
-                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                                                <input type="hidden" name="user_id" value="{{ u.id }}"/>
-                                                {% if u.is_active %}
-                                                    <input type="hidden" name="is_active" value="0"/>
-                                                    <button type="submit" class="btn btn-xs btn-error btn-outline"><i class="fa-solid fa-ban"></i> Suspend</button>
-                                                {% else %}
-                                                    <input type="hidden" name="is_active" value="1"/>
-                                                    <button type="submit" class="btn btn-xs btn-success text-white"><i class="fa-solid fa-check"></i> Restore</button>
-                                                {% endif %}
-                                            </form>
-                                            
-                                            <form method="POST" action="{{ url_for('admin.delete_user') }}" onsubmit="return confirm('Are you sure you want to permanently delete this user account?');">
-                                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                                                <input type="hidden" name="user_id" value="{{ u.id }}"/>
-                                                <button type="submit" class="btn btn-xs btn-error text-white" title="Delete User">
-                                                    <i class="fa-solid fa-trash"></i>
-                                                </button>
-                                            </form>
-                                        </div>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            {% else %}
-                            <tr>
-                                <td colspan="4" class="text-center text-gray-500 py-4 italic">No login accounts. This customer cannot access the portal.</td>
-                            </tr>
-                            {% endif %}
-                        </tbody>
-                    </table>
-                </div>
+                <a href="{{ url_for('admin.customer_detail', customer_id=customer.id) }}" class="btn btn-sm btn-primary suprajit-blue-bg border-none text-white">
+                    Manage Customer <i class="fa-solid fa-arrow-right ml-1"></i>
+                </a>
             </div>
         </div>
 
@@ -188,7 +102,7 @@
             <div class="modal-box bg-white">
                 <form method="dialog"><button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button></form>
                 <h3 class="font-bold text-lg text-red-700 border-b pb-2 mb-4">Confirm Deletion</h3>
-                <p class="py-4">Are you sure you want to delete <strong>{{ customer.company_name }}</strong>? This will permanently delete the customer, their users, all mapped folders, and their historical data. The background engine will stop pulling their data.</p>
+                <p class="py-4 text-sm text-gray-700">Are you sure you want to delete <strong>{{ customer.company_name }}</strong>? This will permanently delete the customer, their users, recipe mappings, and historical batch links.</p>
                 <form method="POST" action="{{ url_for('admin.delete_customer') }}">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                     <input type="hidden" name="customer_id" value="{{ customer.id }}">
@@ -199,110 +113,15 @@
             </div>
             <form method="dialog" class="modal-backdrop"><button>close</button></form>
         </dialog>
-
-        <!-- Add User Modal -->
-        <dialog id="addUserModal-{{ customer.id }}" class="modal">
-            <div class="modal-box bg-white">
-                <form method="dialog"><button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button></form>
-                <h3 class="font-bold text-lg text-green-700 border-b pb-2 mb-4">Add Login Account for {{ customer.company_name }}</h3>
-                <form method="POST" action="{{ url_for('admin.add_user') }}" class="space-y-3">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                    <input type="hidden" name="customer_id" value="{{ customer.id }}">
-                    
-                    <div class="form-control">
-                        <label class="label"><span class="label-text font-bold">Username</span></label>
-                        <input type="text" name="username" placeholder="e.g. {{ customer.id }}_user1" required class="input input-sm input-bordered w-full" />
-                    </div>
-                    <div class="form-control">
-                        <label class="label"><span class="label-text font-bold">Display Name</span></label>
-                        <input type="text" name="display_name" placeholder="e.g. John Doe" required class="input input-sm input-bordered w-full" />
-                    </div>
-                    <div class="form-control">
-                        <label class="label"><span class="label-text font-bold">Contact Email</span></label>
-                        <input type="email" name="email" placeholder="Required for password resets" required class="input input-sm input-bordered w-full" />
-                    </div>
-                    <div class="form-control">
-                        <label class="label"><span class="label-text font-bold">Temporary Password</span></label>
-                        <input type="text" name="password" required class="input input-sm input-bordered w-full" />
-                    </div>
-                    <div class="modal-action mt-4">
-                        <button type="submit" class="btn btn-success text-white w-full">Create Account</button>
-                    </div>
-                </form>
-            </div>
-            <form method="dialog" class="modal-backdrop"><button>close</button></form>
-        </dialog>
-
-        <!-- Add Recipe Modal specific to this customer -->
-        <dialog id="addRecipeModal-{{ customer.id }}" class="modal">
-            <div class="modal-box bg-white">
-                <form method="dialog"><button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">?</button></form>
-                <h3 class="font-bold text-lg text-blue-900 border-b pb-2 mb-4">Grant Recipe Access to {{ customer.company_name }}</h3>
-                <form method="POST" action="{{ url_for('admin.add_recipe') }}" class="space-y-4">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                    <input type="hidden" name="customer_id" value="{{ customer.id }}">
-                    
-                    <div class="form-control">
-                        <label class="label"><span class="label-text font-bold">Recipe Prefix (e.g. EV_TPS)</span></label>
-                        <input list="recipes-list" name="recipe_name" placeholder="Type or select a recipe..." required class="input input-bordered w-full" autocomplete="off" />
-                        <datalist id="recipes-list">
-                            {% for r in available_recipes %}
-                            <option value="{{ r }}">
-                            {% endfor %}
-                        </datalist>
-                    </div>
-
-                    <div class="modal-action mt-6">
-                        <button type="submit" class="btn btn-primary suprajit-blue-bg border-none text-white w-full">Grant Access</button>
-                    </div>
-                </form>
-            </div>
-            <form method="dialog" class="modal-backdrop"><button>close</button></form>
-        </dialog>
-        
         {% else %}
-        <div class="bg-white border border-gray-200 rounded shadow-sm p-12 text-center">
-            <i class="fa-solid fa-buildings text-6xl text-gray-300 mb-4"></i>
-            <h2 class="text-xl font-bold text-gray-700">No Customers Configured</h2>
-            <p class="text-gray-500 mt-2">You must add customers before mapping folders.</p>
+        <div class="col-span-3 bg-white border border-gray-200 rounded shadow-sm p-12 text-center">
+            <i class="fa-solid fa-building text-6xl text-gray-300 mb-4"></i>
+            <h2 class="text-xl font-bold text-gray-700">No Customers Registered Yet</h2>
+            <p class="text-gray-500 mt-2">Click "Register New Customer" above to create your first client company.</p>
         </div>
         {% endfor %}
     </div>
 </div>
-
-
-<!-- Add Master Admin Modal -->
-<dialog id="addAdminModal" class="modal">
-    <div class="modal-box bg-white">
-        <form method="dialog"><button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button></form>
-        <h3 class="font-bold text-lg text-gray-800 border-b pb-2 mb-4"><i class="fa-solid fa-user-shield text-blue-600 mr-2"></i>Create Master Administrator</h3>
-        <form method="POST" action="{{ url_for('admin.add_user') }}" class="space-y-3">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-            <input type="hidden" name="role" value="admin">
-            
-            <div class="form-control">
-                <label class="label"><span class="label-text font-bold">Username</span></label>
-                <input type="text" name="username" placeholder="e.g. john_it" required class="input input-sm input-bordered w-full" />
-            </div>
-            <div class="form-control">
-                <label class="label"><span class="label-text font-bold">Display Name</span></label>
-                <input type="text" name="display_name" placeholder="e.g. John Doe" required class="input input-sm input-bordered w-full" />
-            </div>
-            <div class="form-control">
-                <label class="label"><span class="label-text font-bold">Contact Email</span></label>
-                <input type="email" name="email" placeholder="Required for password resets" required class="input input-sm input-bordered w-full" />
-            </div>
-            <div class="form-control">
-                <label class="label"><span class="label-text font-bold">Temporary Password</span></label>
-                <input type="text" name="password" required class="input input-sm input-bordered w-full" />
-            </div>
-            <div class="modal-action mt-4">
-                <button type="submit" class="btn bg-gray-800 text-white w-full border-none hover:bg-gray-700">Create Administrator</button>
-            </div>
-        </form>
-    </div>
-    <form method="dialog" class="modal-backdrop"><button>close</button></form>
-</dialog>
 
 <!-- Add Customer Modal -->
 <dialog id="addCustomerModal" class="modal">
@@ -314,6 +133,7 @@
             <div class="form-control">
                 <label class="label"><span class="label-text font-bold">Customer ID (Tenant ID)</span></label>
                 <input type="text" name="id" placeholder="e.g. tvs" required pattern="[a-zA-Z0-9_-]+" title="No spaces allowed" class="input input-bordered w-full font-mono" />
+                <label class="label"><span class="label-text-alt text-gray-500">Short unique code (e.g. tvs, mahindra, tata).</span></label>
             </div>
             <div class="form-control">
                 <label class="label"><span class="label-text font-bold">Company Name</span></label>

@@ -42,12 +42,20 @@ def ensure_schema(conn):
                 display_name    TEXT NOT NULL,
                 role            TEXT NOT NULL DEFAULT 'customer_viewer',
                 customer_id     TEXT,
+                access_mode     TEXT NOT NULL DEFAULT 'ALL',
                 is_active       INTEGER NOT NULL DEFAULT 1,
                 failed_attempts INTEGER NOT NULL DEFAULT 0,
                 locked_until    TEXT,
                 last_login_at   TEXT,
                 created_at      TEXT NOT NULL DEFAULT (datetime('now')),
                 FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE CASCADE
+            );
+
+            CREATE TABLE IF NOT EXISTS user_recipes (
+                user_id     INTEGER NOT NULL,
+                recipe_name TEXT NOT NULL,
+                PRIMARY KEY (user_id, recipe_name),
+                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
             );
 
             CREATE TABLE IF NOT EXISTS batch_runs (
@@ -153,15 +161,21 @@ GET_CUSTOMER_RECIPES = "SELECT recipe_name FROM customer_recipes WHERE customer_
 INSERT_CUSTOMER_RECIPE = "INSERT INTO customer_recipes (customer_id, recipe_name) VALUES (?, ?)"
 DELETE_CUSTOMER_RECIPE = "DELETE FROM customer_recipes WHERE customer_id = ? AND recipe_name = ?"
 
+# User Recipes (Granular Access)
+GET_USER_RECIPES = "SELECT recipe_name FROM user_recipes WHERE user_id = ?"
+INSERT_USER_RECIPE = "INSERT OR IGNORE INTO user_recipes (user_id, recipe_name) VALUES (?, ?)"
+DELETE_USER_RECIPES = "DELETE FROM user_recipes WHERE user_id = ?"
+
 # Users
 GET_USER_BY_USERNAME = "SELECT * FROM users WHERE username = ?"
 GET_USER_BY_EMAIL = "SELECT * FROM users WHERE email = ?"
 GET_USER_BY_ID = "SELECT * FROM users WHERE id = ?"
 GET_USERS_BY_CUSTOMER = "SELECT * FROM users WHERE customer_id = ?"
-INSERT_USER = "INSERT INTO users (username, email, password_hash, display_name, role, customer_id) VALUES (?, ?, ?, ?, ?, ?)"
+INSERT_USER = "INSERT INTO users (username, email, password_hash, display_name, role, customer_id, access_mode) VALUES (?, ?, ?, ?, ?, ?, ?)"
 UPDATE_USER_PASSWORD = "UPDATE users SET password_hash = ? WHERE id = ?"
 UPDATE_USER_LOCKOUT = "UPDATE users SET failed_attempts = ?, locked_until = ? WHERE id = ?"
 TOGGLE_USER_ACCESS = "UPDATE users SET is_active = ? WHERE id = ?"
+UPDATE_USER_ACCESS_MODE = "UPDATE users SET access_mode = ? WHERE id = ?"
 
 # Reports
 INSERT_REPORT = """

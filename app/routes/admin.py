@@ -182,6 +182,55 @@ def add_customer():
             
     return __import__('flask').redirect(__import__('flask').url_for('admin.customers'))
 
+@admin_bp.route('/customers/<customer_id>', methods=['GET'])
+def customer_detail(customer_id):
+    from app.database import GET_CUSTOMER_BY_ID, GET_USERS_BY_CUSTOMER, GET_CUSTOMER_RECIPES
+    customer = g.db.execute(GET_CUSTOMER_BY_ID, (customer_id,)).fetchone()
+    if not customer:
+        flash("Customer not found.", "error")
+        return redirect(url_for('admin.customers'))
+        
+    users = g.db.execute(GET_USERS_BY_CUSTOMER, (customer_id,)).fetchall()
+    allowed_recipes = g.db.execute("SELECT * FROM customer_recipes WHERE customer_id = ? ORDER BY recipe_name", (customer_id,)).fetchall()
+    available_recipes = [r['recipe_name'] for r in g.db.execute("SELECT DISTINCT recipe_name FROM reports ORDER BY recipe_name").fetchall()]
+    
+    # Fetch granular assignments for each user
+    user_assigned_recipes = {}
+    user_recipe_counts = {}
+    for u in users:
+        u_recipes = [row['recipe_name'] for row in g.db.execute("SELECT recipe_name FROM user_recipes WHERE user_id = ?", (u['id'],)).fetchall()]
+        user_assigned_recipes[u['id']] = u_recipes
+        user_recipe_counts[u['id']] = len(u_recipes)
+        
+    return render_template('admin/customer_detail.html',
+                           customer=customer,
+                           users=users,
+                           allowed_recipes=allowed_recipes,
+                           available_recipes=available_recipes,
+                           user_assigned_recipes=user_assigned_recipes,
+                           user_recipe_counts=user_recipe_counts)
+
+@admin_bp.route('/customers/update_user_permissions', methods=['POST'])
+def update_user_recipe_permissions():
+    from app.database import UPDATE_USER_ACCESS_MODE, DELETE_USER_RECIPES, INSERT_USER_RECIPE
+    user_id = request.form.get('user_id')
+    customer_id = request.form.get('customer_id')
+    access_mode = request.form.get('access_mode', 'ALL')
+    selected_recipes = request.form.getlist('selected_recipes')
+    
+    if user_id:
+        g.db.execute(UPDATE_USER_ACCESS_MODE, (access_mode, user_id))
+        g.db.execute(DELETE_USER_RECIPES, (user_id,))
+        if access_mode == 'CUSTOM':
+            for r_name in selected_recipes:
+                g.db.execute(INSERT_USER_RECIPE, (user_id, r_name.strip()))
+        g.db.commit()
+        flash("Recipe access permissions updated successfully.", "success")
+        
+    if customer_id:
+        return redirect(url_for('admin.customer_detail', customer_id=customer_id))
+    return redirect(url_for('admin.customers'))
+
 @admin_bp.route('/customers/add_user', methods=['POST'])
 def add_user():
     from app.database import INSERT_USER
@@ -194,9 +243,13 @@ def add_user():
     email = request.form.get('email', '').strip() or None
     password = request.form.get('password', '')
     display_name = request.form.get('display_name', '').strip() or username
+    access_mode = request.form.get('access_mode', 'ALL')
+    redirect_url = request.form.get('redirect_url')
     
     if not username or not password:
         flash("Username and password are required.", "error")
+        if redirect_url:
+            return redirect(redirect_url)
         if role == 'admin':
             return __import__('flask').redirect(__import__('flask').url_for('admin.settings'))
         return __import__('flask').redirect(__import__('flask').url_for('admin.customers'))
@@ -204,7 +257,7 @@ def add_user():
     pwd_hash = generate_password_hash(password)
     
     try:
-        g.db.execute(INSERT_USER, (username, email, pwd_hash, display_name, role, customer_id))
+        g.db.execute(INSERT_USER, (username, email, pwd_hash, display_name, role, customer_id, access_mode))
         g.db.commit()
         
         # Send welcome email if email was provided
@@ -226,6 +279,8 @@ def add_user():
         flash(f"Database Error: {e}", "error")
         print(f"User Creation Error: {e}")
         
+    if redirect_url:
+        return redirect(redirect_url)
     if role == 'admin':
         return __import__('flask').redirect(__import__('flask').url_for('admin.settings'))
     return __import__('flask').redirect(__import__('flask').url_for('admin.customers'))
@@ -237,6 +292,7 @@ def toggle_user():
 
     user_id = request.form.get('user_id')
     new_status = int(request.form.get('is_active', 1))
+    redirect_url = request.form.get('redirect_url')
 
     if user_id:
         g.db.execute(TOGGLE_USER_ACCESS, (new_status, user_id))
@@ -244,6 +300,8 @@ def toggle_user():
         action = 'Granted' if new_status == 1 else 'Revoked'
         flash(f'Access {action} successfully.', 'success')
 
+    if redirect_url:
+        return redirect(redirect_url)
     return __import__('flask').redirect(__import__('flask').url_for('admin.customers'))
 
 @admin_bp.route('/customers/add_recipe', methods=['POST'])
@@ -253,6 +311,7 @@ def add_recipe():
     
     customer_id = request.form.get('customer_id')
     recipe_name = request.form.get('recipe_name', '').strip()
+    redirect_url = request.form.get('redirect_url')
     
     if not recipe_name:
         flash("Recipe prefix is required.", "error")
@@ -264,6 +323,8 @@ def add_recipe():
         except Exception as e:
             flash(f"Database Error: {e}", "error")
             
+    if redirect_url:
+        return redirect(redirect_url)
     return __import__('flask').redirect(__import__('flask').url_for('admin.customers'))
 
 @admin_bp.route('/customers/delete_recipe', methods=['POST'])
@@ -273,11 +334,14 @@ def delete_recipe():
     
     customer_id = request.form.get('customer_id')
     recipe_name = request.form.get('recipe_name')
+    redirect_url = request.form.get('redirect_url')
     if customer_id and recipe_name:
         g.db.execute(DELETE_CUSTOMER_RECIPE, (customer_id, recipe_name))
         g.db.commit()
         flash("Recipe access removed successfully.", "success")
         
+    if redirect_url:
+        return redirect(redirect_url)
     return __import__('flask').redirect(__import__('flask').url_for('admin.customers'))
 @admin_bp.route('/customers/edit', methods=['POST'])
 def edit_customer():

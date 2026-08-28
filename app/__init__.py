@@ -1,4 +1,4 @@
-﻿from flask import Flask, g
+from flask import Flask, g
 from flask_login import LoginManager
 from flask_wtf.csrf import CSRFProtect
 from flask_limiter import Limiter
@@ -92,10 +92,12 @@ def create_app(test_config=None):
     from app.routes.auth import auth_bp
     from app.routes.portal import portal_bp
     from app.routes.admin import admin_bp
+    from app.routes.company import company_bp
     
     app.register_blueprint(auth_bp)
     app.register_blueprint(portal_bp)
     app.register_blueprint(admin_bp, url_prefix='/admin')
+    app.register_blueprint(company_bp)
 
     @app.after_request
     def add_security_headers(response):
@@ -148,5 +150,3 @@ def create_app(test_config=None):
     start_background_scheduler(app)
 
     return app
-
-

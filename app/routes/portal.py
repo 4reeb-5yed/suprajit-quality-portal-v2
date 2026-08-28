@@ -1,4 +1,4 @@
-﻿from flask import Blueprint, render_template, request, g, send_file, abort, current_app
+from flask import Blueprint, render_template, request, g, send_file, abort, current_app
 from flask_login import login_required, current_user
 import os
 import time
@@ -22,6 +22,9 @@ def search():
     if current_user.is_admin:
         query = "SELECT DISTINCT recipe_name FROM reports ORDER BY recipe_name"
         recipes = g.db.execute(query).fetchall()
+    elif getattr(current_user, 'access_mode', 'ALL') == 'CUSTOM':
+        query = "SELECT DISTINCT recipe_name FROM user_recipes WHERE user_id = ? ORDER BY recipe_name"
+        recipes = g.db.execute(query, [int(current_user.id)]).fetchall()
     else:
         query = "SELECT DISTINCT recipe_name FROM customer_recipes WHERE customer_id = ? ORDER BY recipe_name"
         recipes = g.db.execute(query, [current_user.customer_id]).fetchall()

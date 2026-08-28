@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="space-y-8">
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-200 pb-4">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-800 flex items-center gap-2">
+                <i class="fa-solid fa-users-gear text-blue-800"></i> {{ customer.company_name }} Management
+            </h1>
+            <p class="text-sm text-gray-500 mt-1">Manage team members, roles, and recipe access for your organization.</p>
+        </div>
+        <button class="btn btn-primary suprajit-blue-bg border-none text-white shadow" onclick="addUserModal.showModal()">
+            <i class="fa-solid fa-user-plus mr-1"></i> Add Team Member
+        </button>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="bg-white border border-gray-200 rounded p-6 flex justify-between items-center shadow-sm">
+            <div>
+                <div class="text-xs font-semibold text-gray-500 uppercase">Active Team Members</div>
+                <div class="text-3xl font-bold text-gray-800 mt-1">{{ users|length }}</div>
+            </div>
+            <i class="fa-solid fa-users text-4xl text-blue-100"></i>
+        </div>
+        <div class="bg-white border border-gray-200 rounded p-6 flex justify-between items-center shadow-sm">
+            <div>
+                <div class="text-xs font-semibold text-gray-500 uppercase">Allowed Company Recipes</div>
+                <div class="text-3xl font-bold text-blue-800 mt-1">{{ allowed_recipes|length }}</div>
+            </div>
+            <i class="fa-solid fa-tags text-4xl text-blue-100"></i>
+        </div>
+    </div>
+
+    <!-- Users Table -->
+    <div class="bg-white border border-gray-200 rounded shadow-sm overflow-hidden">
+        <div class="p-5 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
+            <h2 class="text-lg font-bold text-gray-800">Team Roster & Recipe Access</h2>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="table table-zebra w-full text-sm">
+                <thead>
+                    <tr class="bg-gray-100 text-gray-600">
+                        <th>Username</th>
+                        <th>Display Name</th>
+                        <th>Email</th>
+                        <th>Role</th>
+                        <th>Recipe Access Mode</th>
+                        <th>Status</th>
+                        <th class="text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for u in users %}
+                    <tr>
+                        <td class="font-bold text-gray-800">{{ u.username }}</td>
+                        <td>{{ u.display_name }}</td>
+                        <td class="text-gray-600">{{ u.email or 'N/A' }}</td>
+                        <td>
+                            {% if u.role == 'company_admin' %}
+                                <span class="badge badge-primary badge-sm text-white font-semibold">Company Admin</span>
+                            {% else %}
+                                <span class="badge badge-ghost badge-sm text-gray-700">Viewer</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if u.access_mode == 'CUSTOM' %}
+                                <span class="badge badge-warning badge-sm text-xs font-semibold">Custom ({{ user_recipe_counts.get(u.id, 0) }} recipes)</span>
+                            {% else %}
+                                <span class="badge badge-info text-white badge-sm text-xs">All Company Recipes</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if u.is_active %}
+                                <span class="badge badge-success badge-sm text-white">Active</span>
+                            {% else %}
+                                <span class="badge badge-error badge-sm text-white">Disabled</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-right">
+                            <div class="flex justify-end gap-1">
+                                <button class="btn btn-xs btn-outline" onclick="document.getElementById('editPermissionsModal-{{ u.id }}').showModal()" title="Configure Recipe Access">
+                                    <i class="fa-solid fa-sliders"></i> Permissions
+                                </button>
+                                <form method="POST" action="{{ url_for('company.toggle_user') }}" class="inline">
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                    <input type="hidden" name="user_id" value="{{ u.id }}"/>
+                                    {% if u.is_active %}
+                                        <input type="hidden" name="is_active" value="0"/>
+                                        <button type="submit" class="btn btn-xs btn-error btn-outline" title="Suspend User"><i class="fa-solid fa-ban"></i></button>
+                                    {% else %}
+                                        <input type="hidden" name="is_active" value="1"/>
+                                        <button type="submit" class="btn btn-xs btn-success text-white" title="Enable User"><i class="fa-solid fa-check"></i></button>
+                                    {% endif %}
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+
+                    <!-- Permissions Modal -->
+                    <dialog id="editPermissionsModal-{{ u.id }}" class="modal">
+                        <div class="modal-box bg-white max-w-xl">
+                            <form method="dialog"><button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">?</button></form>
+                            <h3 class="font-bold text-lg text-gray-800 border-b pb-2 mb-4">
+                                <i class="fa-solid fa-sliders text-blue-600 mr-2"></i>Configure Recipe Access: {{ u.display_name }}
+                            </h3>
+                            <form method="POST" action="{{ url_for('company.update_user_recipe_permissions') }}" class="space-y-4">
+                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                <input type="hidden" name="user_id" value="{{ u.id }}"/>
+                                
+                                <div class="form-control">
+                                    <label class="label font-bold text-gray-700">Access Mode</label>
+                                    <div class="flex flex-col gap-2 p-3 bg-gray-50 rounded border border-gray-200">
+                                        <label class="cursor-pointer flex items-center gap-2">
+                                            <input type="radio" name="access_mode" value="ALL" class="radio radio-primary radio-sm" {% if u.access_mode != 'CUSTOM' %}checked{% endif %} onchange="document.getElementById('company-custom-recipes-list-{{ u.id }}').classList.add('hidden')" />
+                                            <span class="text-sm font-semibold">All Company Recipes (Default)</span>
+                                        </label>
+                                        <label class="cursor-pointer flex items-center gap-2">
+                                            <input type="radio" name="access_mode" value="CUSTOM" class="radio radio-primary radio-sm" {% if u.access_mode == 'CUSTOM' %}checked{% endif %} onchange="document.getElementById('company-custom-recipes-list-{{ u.id }}').classList.remove('hidden')" />
+                                            <span class="text-sm font-semibold">Custom Recipe Selection</span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div id="company-custom-recipes-list-{{ u.id }}" class="{% if u.access_mode != 'CUSTOM' %}hidden{% endif %} space-y-2 border border-gray-200 rounded p-3 bg-gray-50 max-h-60 overflow-y-auto">
+                                    <div class="text-xs font-bold text-gray-500 uppercase mb-2">Select Allowed Recipes for this User:</div>
+                                    {% for r in allowed_recipes %}
+                                        <label class="flex items-center gap-2 py-1 px-2 hover:bg-white rounded cursor-pointer">
+                                            <input type="checkbox" name="selected_recipes" value="{{ r.recipe_name }}" class="checkbox checkbox-sm checkbox-primary" {% if r.recipe_name in user_assigned_recipes.get(u.id, []) %}checked{% endif %} />
+                                            <span class="font-mono text-sm text-gray-800">{{ r.recipe_name }}</span>
+                                        </label>
+                                    {% else %}
+                                        <p class="text-xs text-gray-500 italic">No master recipes assigned to your company by IT.</p>
+                                    {% endfor %}
+                                </div>
+
+                                <div class="modal-action mt-6">
+                                    <button type="submit" class="btn btn-primary suprajit-blue-bg border-none text-white w-full">Save Permissions</button>
+                                </div>
+                            </form>
+                        </div>
+                        <form method="dialog" class="modal-backdrop"><button>close</button></form>
+                    </dialog>
+                    {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center text-gray-500 py-8 italic">No team members registered yet.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Add User Modal for Company Admin -->
+<dialog id="addUserModal" class="modal">
+    <div class="modal-box bg-white">
+        <form method="dialog"><button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">?</button></form>
+        <h3 class="font-bold text-lg text-blue-900 border-b pb-2 mb-4">Add Team Member</h3>
+        <form method="POST" action="{{ url_for('company.add_user') }}" class="space-y-3">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            
+            <div class="form-control">
+                <label class="label font-bold text-gray-700"><span class="label-text">Role</span></label>
+                <select name="role" class="select select-bordered select-sm w-full">
+                    <option value="customer_viewer" selected>Viewer (Standard Search & Download)</option>
+                    <option value="company_admin">Co-Administrator (Can manage team)</option>
+                </select>
+            </div>
+            
+            <div class="form-control">
+                <label class="label font-bold text-gray-700"><span class="label-text">Username</span></label>
+                <input type="text" name="username" placeholder="e.g. {{ customer.id }}_rahul" required class="input input-sm input-bordered w-full" />
+            </div>
+
+            <div class="form-control">
+                <label class="label font-bold text-gray-700"><span class="label-text">Full Name</span></label>
+                <input type="text" name="display_name" placeholder="e.g. Rahul Sharma" required class="input input-sm input-bordered w-full" />
+            </div>
+
+            <div class="form-control">
+                <label class="label font-bold text-gray-700"><span class="label-text">Contact Email</span></label>
+                <input type="email" name="email" placeholder="e.g. rahul@{{ customer.id }}.com" required class="input input-sm input-bordered w-full" />
+            </div>
+
+            <div class="form-control">
+                <label class="label font-bold text-gray-700"><span class="label-text">Temporary Password</span></label>
+                <input type="text" name="password" required class="input input-sm input-bordered w-full" />
+            </div>
+
+            <div class="modal-action mt-6">
+                <button type="submit" class="btn btn-primary suprajit-blue-bg border-none text-white w-full">Create Team Account</button>
+            </div>
+        </form>
+    </div>
+    <form method="dialog" class="modal-backdrop"><button>close</button></form>
+</dialog>
+{% endblock %}

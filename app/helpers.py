@@ -1,4 +1,4 @@
-﻿import hashlib
+import hashlib
 import os
 
 def hash_file(filepath: str, block_size: int = 65536) -> str:
@@ -22,9 +22,14 @@ def customer_scope(user):
     if user.is_admin:
         return "1=1", []
     
-    # Securely scope standard users to only their allowed recipes
-    where = "recipe_name IN (SELECT recipe_name FROM customer_recipes WHERE customer_id = ?)"
-    params = [user.customer_id]
+    # Custom recipe assignment vs Company-wide allowed recipes
+    if getattr(user, 'access_mode', 'ALL') == 'CUSTOM':
+        where = "recipe_name IN (SELECT recipe_name FROM user_recipes WHERE user_id = ?)"
+        params = [int(user.id)]
+    else:
+        where = "recipe_name IN (SELECT recipe_name FROM customer_recipes WHERE customer_id = ?)"
+        params = [user.customer_id]
+        
     return where, params
 
 import base64
