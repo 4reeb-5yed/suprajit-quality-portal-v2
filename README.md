@@ -1,6 +1,6 @@
 ﻿# Suprajit Quality Portal V2
 
-An enterprise-grade, lightweight Quality Management System (QMS) built for Windows Server. It automatically parses factory Excel reports, extracts metadata via Regex, stores it in a high-concurrency SQLite WAL database, and serves it to a multi-tenant customer portal.
+An enterprise-grade, lightweight Multi-Tenant Quality Report Indexing, Traceability, and Retrieval System built for Windows Server. It automatically parses factory Excel reports, extracts metadata via Regex, stores it in a high-concurrency SQLite WAL database, and serves it to a multi-tenant customer portal.
 
 ## Quick Start (Development)
 
@@ -71,4 +71,5 @@ This will generate the production package in the `dist/SuprajitQualityPortal` fo
 2. Double-click `SuprajitQualityPortal.exe`.
 3. The server will run in the background on Port 5000 (accessible across the LAN via the server's IP address).
 4. Configure the "Watched Folder" path in the Admin -> Settings UI to point to your factory's Excel output directory.
+
 
