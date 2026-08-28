@@ -1,4 +1,4 @@
-﻿{% extends "base.html" %}
+{% extends "base.html" %}
 {% block content %}
 <div class="space-y-6">
     <div class="flex justify-between items-center bg-white border border-gray-200 rounded shadow-sm p-6">
@@ -71,7 +71,7 @@
                     <input type="hidden" name="action" value="purge_date"/>
                     <div class="flex gap-2">
                         <input type="date" name="target_date" required class="input input-bordered flex-1" />
-                        <button type="submit" class="btn btn-error text-white"><i class="fa-solid fa-skull"></i> Purge Data</button>
+                        <button type="submit" class="btn btn-error text-white"><i class="fa-solid fa-triangle-exclamation mr-1"></i> Purge Batch Data</button>
                     </div>
                 </form>
             </div>

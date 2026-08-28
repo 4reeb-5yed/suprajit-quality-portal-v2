@@ -4,20 +4,16 @@
 <div class="space-y-8">
     
     <div class="flex items-center justify-between">
-        <h1 class="text-3xl font-bold text-gray-800"><i class="fa-solid fa-chart-pie text-blue-800 mr-2"></i>Admin Dashboard</h1>
-        <div class="text-sm text-gray-500">System Health Overview</div>
+        <div>
+            <h1 class="text-3xl font-bold text-gray-800"><i class="fa-solid fa-chart-pie text-blue-800 mr-2"></i>Executive Quality Dashboard</h1>
+            <p class="text-sm text-gray-500 mt-1">High-level factory throughput, customer metrics, and recent automated batch status.</p>
         </div>
-        <div class="flex gap-2">
-            <form method="POST" action="{{ url_for('admin.trigger_sync') }}" class="inline">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                <button type="submit" class="btn btn-primary suprajit-blue-bg border-none btn-sm text-white shadow">
-                    <i class="fa-solid fa-rotate mr-1"></i> Force Sync Now
-                </button>
-            </form>
+        <div>
             <a href="{{ url_for('admin.download_logs') }}" class="btn btn-outline btn-sm">
-                <i class="fa-solid fa-bug mr-1"></i> Download Logs
+                <i class="fa-solid fa-file-lines mr-1"></i> Download Logs
             </a>
         </div>
+    </div>
 
     <!-- Stats Row -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">

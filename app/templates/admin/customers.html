@@ -62,6 +62,12 @@
 
             <div class="p-4 bg-gray-50 border-t border-gray-100 flex items-center justify-between gap-2">
                 <div class="flex gap-1">
+                    <button class="btn btn-xs btn-outline btn-primary" onclick="document.getElementById('quickAddUserModal-{{ customer.id }}').showModal()" title="Add User to {{ customer.company_name }}">
+                        <i class="fa-solid fa-user-plus mr-1"></i> User
+                    </button>
+                    <button class="btn btn-xs btn-outline btn-neutral" onclick="document.getElementById('quickAddRecipeModal-{{ customer.id }}').showModal()" title="Add Recipe to {{ customer.company_name }}">
+                        <i class="fa-solid fa-plus mr-1"></i> Recipe
+                    </button>
                     <button class="btn btn-xs btn-ghost text-gray-600" onclick="document.getElementById('editCustomerModal-{{ customer.id }}').showModal()" title="Rename Company">
                         <i class="fa-solid fa-edit"></i>
                     </button>
@@ -70,10 +76,69 @@
                     </button>
                 </div>
                 <a href="{{ url_for('admin.customer_detail', customer_id=customer.id) }}" class="btn btn-sm btn-primary suprajit-blue-bg border-none text-white">
-                    Manage Customer <i class="fa-solid fa-arrow-right ml-1"></i>
+                    Details <i class="fa-solid fa-arrow-right ml-1"></i>
                 </a>
             </div>
         </div>
+
+        <!-- Quick Add User Modal -->
+        <dialog id="quickAddUserModal-{{ customer.id }}" class="modal">
+            <div class="modal-box bg-white">
+                <form method="dialog"><button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button></form>
+                <h3 class="font-bold text-lg text-blue-900 border-b pb-2 mb-4"><i class="fa-solid fa-user-plus mr-2"></i>Add User to {{ customer.company_name }}</h3>
+                <form method="POST" action="{{ url_for('admin.add_user') }}" class="space-y-3">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    <input type="hidden" name="customer_id" value="{{ customer.id }}">
+                    <input type="hidden" name="redirect_url" value="{{ url_for('admin.customers') }}">
+                    
+                    <div class="form-control">
+                        <label class="label"><span class="label-text font-bold">Username</span></label>
+                        <input type="text" name="username" required placeholder="e.g. {{ customer.id }}_tech1" class="input input-sm input-bordered w-full" />
+                    </div>
+                    <div class="form-control">
+                        <label class="label"><span class="label-text font-bold">Display Name</span></label>
+                        <input type="text" name="display_name" placeholder="e.g. John Doe" class="input input-sm input-bordered w-full" />
+                    </div>
+                    <div class="form-control">
+                        <label class="label"><span class="label-text font-bold">Role</span></label>
+                        <select name="role" class="select select-sm select-bordered w-full">
+                            <option value="customer_viewer">Company User (Viewer)</option>
+                            <option value="company_admin">Company Admin (Team Manager)</option>
+                        </select>
+                    </div>
+                    <div class="form-control">
+                        <label class="label"><span class="label-text font-bold">Temporary Password</span></label>
+                        <input type="text" name="password" required placeholder="Enter password" class="input input-sm input-bordered w-full" />
+                    </div>
+                    <div class="modal-action mt-4">
+                        <button type="submit" class="btn btn-primary suprajit-blue-bg border-none text-white w-full">Create User</button>
+                    </div>
+                </form>
+            </div>
+            <form method="dialog" class="modal-backdrop"><button>close</button></form>
+        </dialog>
+
+        <!-- Quick Add Recipe Modal -->
+        <dialog id="quickAddRecipeModal-{{ customer.id }}" class="modal">
+            <div class="modal-box bg-white">
+                <form method="dialog"><button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button></form>
+                <h3 class="font-bold text-lg text-blue-900 border-b pb-2 mb-4"><i class="fa-solid fa-cube mr-2"></i>Add Allowed Recipe to {{ customer.company_name }}</h3>
+                <form method="POST" action="{{ url_for('admin.add_recipe') }}" class="space-y-3">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                    <input type="hidden" name="customer_id" value="{{ customer.id }}">
+                    <input type="hidden" name="redirect_url" value="{{ url_for('admin.customers') }}">
+                    
+                    <div class="form-control">
+                        <label class="label"><span class="label-text font-bold">Recipe Name</span></label>
+                        <input type="text" name="recipe_name" required placeholder="e.g. I-QUBE-BATTERY" class="input input-sm input-bordered w-full" />
+                    </div>
+                    <div class="modal-action mt-4">
+                        <button type="submit" class="btn btn-primary suprajit-blue-bg border-none text-white w-full">Add Recipe</button>
+                    </div>
+                </form>
+            </div>
+            <form method="dialog" class="modal-backdrop"><button>close</button></form>
+        </dialog>
 
         <!-- Edit Customer Modal -->
         <dialog id="editCustomerModal-{{ customer.id }}" class="modal">

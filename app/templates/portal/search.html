@@ -13,9 +13,14 @@
             </div>
         </div>
         
-        <!-- HTMX powers this form. Any change or submit instantly refreshes the results-container -->
-        <form id="search-form" hx-get="{{ url_for('portal.search_results') }}" hx-target="#results-container" hx-trigger="submit" hx-on::after-request="this.reset()" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+        <!-- HTMX powers this form. Any change or submit instantly refreshes the results-container without reloading the page -->
+        <form id="search-form" 
+              hx-get="{{ url_for('portal.search_results') }}" 
+              hx-target="#results-container" 
+              hx-swap="innerHTML"
+              hx-trigger="submit, keyup changed delay:300ms from:input[name='serial'], change from:select[name='recipe'], change from:input[name='date']"
+              onsubmit="event.preventDefault();"
+              class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
             
             <div class="form-control">
                 <label class="label"><span class="label-text font-bold text-gray-700">Recipe</span></label>
