@@ -23,12 +23,14 @@
                         <span class="badge badge-sm badge-ghost font-mono mt-1">{{ customer.id }}</span>
                     </div>
                     <div class="flex items-center gap-2">
-                        <form method="POST" action="{{ url_for('admin.toggle_customer') }}" class="inline">
+                        <form method="POST" action="{{ url_for('admin.suspend_customer') }}" class="inline">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                             <input type="hidden" name="customer_id" value="{{ customer.id }}"/>
                             {% if customer.portal_suspended %}
+                                <input type="hidden" name="portal_suspended" value="0"/>
                                 <button type="submit" class="badge badge-error text-white text-xs cursor-pointer hover:opacity-80" title="Click to Unsuspend"><i class="fa-solid fa-ban mr-1"></i> Suspended</button>
                             {% else %}
+                                <input type="hidden" name="portal_suspended" value="1"/>
                                 <button type="submit" class="badge badge-success text-white text-xs cursor-pointer hover:opacity-80" title="Click to Suspend"><i class="fa-solid fa-check mr-1"></i> Active</button>
                             {% endif %}
                         </form>

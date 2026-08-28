@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, g, abort, request, current_app
+from flask import Blueprint, render_template, g, abort, request, current_app, redirect, url_for, flash
 from flask_login import login_required, current_user
 from app.database import GET_SETTING, SET_SETTING
 
@@ -307,12 +307,12 @@ def toggle_user():
 @admin_bp.route('/customers/add_recipe', methods=['POST'])
 def add_recipe():
     from app.database import INSERT_CUSTOMER_RECIPE
-    from flask import request, flash
-    
+    from flask import request, flash, redirect, url_for
+
     customer_id = request.form.get('customer_id')
     recipe_name = request.form.get('recipe_name', '').strip()
     redirect_url = request.form.get('redirect_url')
-    
+
     if not recipe_name:
         flash("Recipe prefix is required.", "error")
     else:
@@ -322,16 +322,16 @@ def add_recipe():
             flash(f"Recipe access granted.", "success")
         except Exception as e:
             flash(f"Database Error: {e}", "error")
-            
+
     if redirect_url:
         return redirect(redirect_url)
-    return __import__('flask').redirect(__import__('flask').url_for('admin.customers'))
+    return redirect(url_for('admin.customers'))
 
 @admin_bp.route('/customers/delete_recipe', methods=['POST'])
 def delete_recipe():
     from app.database import DELETE_CUSTOMER_RECIPE
-    from flask import request, flash
-    
+    from flask import request, flash, redirect, url_for
+
     customer_id = request.form.get('customer_id')
     recipe_name = request.form.get('recipe_name')
     redirect_url = request.form.get('redirect_url')
@@ -339,10 +339,10 @@ def delete_recipe():
         g.db.execute(DELETE_CUSTOMER_RECIPE, (customer_id, recipe_name))
         g.db.commit()
         flash("Recipe access removed successfully.", "success")
-        
+
     if redirect_url:
         return redirect(redirect_url)
-    return __import__('flask').redirect(__import__('flask').url_for('admin.customers'))
+    return redirect(url_for('admin.customers'))
 @admin_bp.route('/customers/edit', methods=['POST'])
 def edit_customer():
     from app.database import UPDATE_CUSTOMER
@@ -425,7 +425,7 @@ def diagnostics():
     sync_time_str = sync_time_row['value'] if sync_time_row else "02:00"
     
     audit_logs = g.db.execute("""
-        SELECT a.id, a.timestamp, a.action, a.client_ip as ip_address,
+        SELECT a.id, a.created_at as timestamp, a.action, a.client_ip as ip_address,
                COALESCE(u.display_name, u.username, 'System') as display_name,
                COALESCE(u.username, 'System') as username,
                COALESCE(u.role, 'system') as role,
