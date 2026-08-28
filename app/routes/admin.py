@@ -1,4 +1,4 @@
-﻿from flask import Blueprint, render_template, g, abort, request, current_app
+from flask import Blueprint, render_template, g, abort, request, current_app
 from flask_login import login_required, current_user
 from app.database import GET_SETTING, SET_SETTING
 
@@ -188,34 +188,28 @@ def add_user():
     from flask import request, flash
     from werkzeug.security import generate_password_hash
     
-    customer_id = request.form.get('customer_id')
+    customer_id = request.form.get('customer_id') or None
+    role = request.form.get('role', 'customer_viewer')
     username = request.form.get('username', '').strip()
-    email = request.form.get('email', '').strip()
+    email = request.form.get('email', '').strip() or None
     password = request.form.get('password', '')
-    display_name = request.form.get('display_name', '').strip()
+    display_name = request.form.get('display_name', '').strip() or username
     
-
     if not username or not password:
         flash("Username and password are required.", "error")
+        if role == 'admin':
+            return __import__('flask').redirect(__import__('flask').url_for('admin.settings'))
         return __import__('flask').redirect(__import__('flask').url_for('admin.customers'))
-        
-    # Enterprise Password Complexity Enforcer
-    import re
-    if len(password) < 8 or not re.search(r"\d", password) or not re.search(r"[A-Z]", password) or not re.search(r"[@$!%*?&#]", password):
-        flash("Password must be at least 8 characters long and contain a number, an uppercase letter, and a special character.", "error")
-        return __import__('flask').redirect(__import__('flask').url_for('admin.customers'))
-
         
     pwd_hash = generate_password_hash(password)
     
     try:
-        g.db.execute(INSERT_USER, (username, email, pwd_hash, display_name, 'customer_viewer', customer_id))
+        g.db.execute(INSERT_USER, (username, email, pwd_hash, display_name, role, customer_id))
         g.db.commit()
         
         # Send welcome email if email was provided
         if email:
             from app.mail import send_welcome_email
-            # Run in a separate thread so the admin page doesn't hang if SMTP is slow
             import threading
             from flask import current_app
             app_context = current_app._get_current_object().app_context()
@@ -225,13 +219,15 @@ def add_user():
                 with app_context:
                     send_welcome_email(email, username, password, url)
             threading.Thread(target=background_mail, args=(host_login,)).start()
-            flash(f"Login account '{username}' created. A welcome email is being sent to {email}.", "success")
+            flash(f"Account '{username}' created. A welcome email is being sent to {email}.", "success")
         else:
-            flash(f"Login account '{username}' created successfully.", "success")
+            flash(f"Account '{username}' created successfully.", "success")
     except Exception as e:
         flash(f"Database Error: {e}", "error")
         print(f"User Creation Error: {e}")
         
+    if role == 'admin':
+        return __import__('flask').redirect(__import__('flask').url_for('admin.settings'))
     return __import__('flask').redirect(__import__('flask').url_for('admin.customers'))
 
 @admin_bp.route('/customers/toggle_user', methods=['POST'])
@@ -364,13 +360,24 @@ def diagnostics():
     sync_time_row = g.db.execute(GET_SETTING, ('sync_time',)).fetchone()
     sync_time_str = sync_time_row['value'] if sync_time_row else "02:00"
     
+    audit_logs = g.db.execute("""
+        SELECT a.id, a.created_at as timestamp, a.action, a.client_ip as ip_address, 
+               u.username as username, 
+               COALESCE(r.original_filename, a.detail, 'System') as target_info
+        FROM audit_log a
+        LEFT JOIN users u ON a.user_id = u.id
+        LEFT JOIN reports r ON a.report_id = r.id
+        ORDER BY a.id DESC LIMIT 100
+    """).fetchall()
+    
     return __import__('flask').render_template('admin/diagnostics.html', 
                                                log_lines=log_lines, 
                                                last_run=last_run,
                                                db_size_mb=db_size_mb,
                                                total_reports=total_reports,
                                                total_customers=total_customers,
-                                               sync_time_str=sync_time_str)
+                                               sync_time_str=sync_time_str,
+                                               audit_logs=audit_logs)
 
 
 @admin_bp.route('/repair', methods=['GET', 'POST'])
