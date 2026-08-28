@@ -51,6 +51,12 @@ class SyncEngine:
                 return [p.strip() for p in row['value'].split(';') if p.strip()]
         except Exception as e:
             logger.error(f"Error reading root_search_path from DB: {e}")
+            
+        # Fallback to environment variable / .env if DB setting is not initialized
+        env_roots = os.getenv("ROOT_SEARCH_PATH", "").strip()
+        if env_roots:
+            return [p.strip() for p in env_roots.split(';') if p.strip()]
+            
         return []
 
     def scan_folder(self, folder_path: str, target_date: date) -> List[str]:

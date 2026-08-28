@@ -93,34 +93,55 @@ def settings():
         dev_email = request.form.get('developer_email')
         tel_freq = request.form.get('telemetry_frequency')
         
-        if new_time: g.db.execute(SET_SETTING, ('sync_time', new_time))
-        if new_storage: g.db.execute(SET_SETTING, ('root_search_path', new_storage))
-        if m_srv is not None: g.db.execute(SET_SETTING, ('mail_server', m_srv))
-        if m_prt is not None: g.db.execute(SET_SETTING, ('mail_port', m_prt))
-        if m_usr is not None: g.db.execute(SET_SETTING, ('mail_username', m_usr))
+        env_updates = {}
+        if new_time: 
+            g.db.execute(SET_SETTING, ('sync_time', new_time))
+            env_updates['SYNC_TIME'] = new_time
+        if new_storage: 
+            g.db.execute(SET_SETTING, ('root_search_path', new_storage))
+            env_updates['ROOT_SEARCH_PATH'] = new_storage
+        if m_srv is not None: 
+            g.db.execute(SET_SETTING, ('mail_server', m_srv))
+            env_updates['MAIL_SERVER'] = m_srv
+        if m_prt is not None: 
+            g.db.execute(SET_SETTING, ('mail_port', m_prt))
+            env_updates['MAIL_PORT'] = m_prt
+        if m_usr is not None: 
+            g.db.execute(SET_SETTING, ('mail_username', m_usr))
+            env_updates['MAIL_USERNAME'] = m_usr
         if m_pwd: 
-                from app.helpers import encrypt_password
-                g.db.execute(SET_SETTING, ('mail_password', encrypt_password(m_pwd)))
-        if dev_email is not None: g.db.execute(SET_SETTING, ('developer_email', dev_email))
-        if tel_freq is not None: g.db.execute(SET_SETTING, ('telemetry_frequency', tel_freq))
+            from app.helpers import encrypt_password
+            g.db.execute(SET_SETTING, ('mail_password', encrypt_password(m_pwd)))
+            env_updates['MAIL_PASSWORD'] = m_pwd
+        if dev_email is not None: 
+            g.db.execute(SET_SETTING, ('developer_email', dev_email))
+            env_updates['DEVELOPER_EMAIL'] = dev_email
+        if tel_freq is not None: 
+            g.db.execute(SET_SETTING, ('telemetry_frequency', tel_freq))
+            env_updates['TELEMETRY_FREQUENCY'] = tel_freq
             
         g.db.commit()
-        flash("System configuration updated.", "success")
+        
+        # Two-Way Synchronization to .env file (with encrypted passwords)
+        from app.helpers import sync_env_file
+        sync_env_file(env_updates)
+        
+        flash("System configuration updated and synced with environment.", "success")
         return __import__('flask').redirect(__import__('flask').url_for('admin.settings'))
         
     def get_val(key, default):
         row = g.db.execute(GET_SETTING, (key,)).fetchone()
-        return row['value'] if row else default
+        return row['value'] if (row and row['value'] is not None) else default
         
-    sync_time = get_val('sync_time', '01:00')
-    root_search_path = get_val('root_search_path', '')
+    sync_time = get_val('sync_time', current_app.config.get('SYNC_TIME', '01:00'))
+    root_search_path = get_val('root_search_path', current_app.config.get('ROOT_SEARCH_PATH', ''))
     
-    m_srv = get_val('mail_server', 'smtp.gmail.com')
-    m_prt = get_val('mail_port', '587')
-    m_usr = get_val('mail_username', '')
-    has_mail_pwd = bool(get_val('mail_password', ''))
-    dev_email = get_val('developer_email', '')
-    tel_freq = get_val('telemetry_frequency', 'daily')
+    m_srv = get_val('mail_server', current_app.config.get('MAIL_SERVER', 'smtp.gmail.com'))
+    m_prt = get_val('mail_port', current_app.config.get('MAIL_PORT', '587'))
+    m_usr = get_val('mail_username', current_app.config.get('MAIL_USERNAME', ''))
+    has_mail_pwd = bool(get_val('mail_password', '') or current_app.config.get('MAIL_PASSWORD'))
+    dev_email = get_val('developer_email', current_app.config.get('DEVELOPER_EMAIL', ''))
+    tel_freq = get_val('telemetry_frequency', current_app.config.get('TELEMETRY_FREQUENCY', 'daily'))
     
     system_admins = g.db.execute("SELECT * FROM users WHERE role = 'admin'").fetchall()
     return render_template('admin/settings.html', 

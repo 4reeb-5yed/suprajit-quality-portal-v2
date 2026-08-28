@@ -1,4 +1,4 @@
-﻿import hashlib
+import hashlib
 import os
 
 def hash_file(filepath: str, block_size: int = 65536) -> str:
@@ -35,7 +35,11 @@ def get_cipher():
     secret = current_app.config['SECRET_KEY']
     # Secret key is generated as token_hex(32) which is 64 hex chars (32 bytes).
     # Fernet requires a 32-byte url-safe base64 encoded key.
-    key = base64.urlsafe_b64encode(bytes.fromhex(secret))
+    if len(secret) == 64:
+        key = base64.urlsafe_b64encode(bytes.fromhex(secret))
+    else:
+        import hashlib
+        key = base64.urlsafe_b64encode(hashlib.sha256(secret.encode('utf-8')).digest())
     return Fernet(key)
 
 def encrypt_password(plaintext: str) -> str:
@@ -48,9 +52,67 @@ def decrypt_password(ciphertext: str) -> str:
     if not ciphertext:
         return ""
     try:
+        if ciphertext.startswith("ENC:"):
+            ciphertext = ciphertext[4:]
         cipher = get_cipher()
         return cipher.decrypt(ciphertext.encode('utf-8')).decode('utf-8')
     except Exception:
         # If decryption fails (e.g., legacy plaintext in dev), fail securely
         return ""
+
+def sync_env_file(updates: dict):
+    """
+    Two-Way Synchronization:
+    Writes configuration settings safely to the .env file.
+    Sensitive credentials (e.g. SMTP passwords) are stored as encrypted ciphertext
+    (ENC:...) with the decryption master key isolated in data/.master_key.
+    """
+    env_path = current_app.config.get('ENV_PATH') or os.path.join(current_app.config['BASE_DIR'], '.env')
+    
+    existing_lines = []
+    if os.path.exists(env_path):
+        try:
+            with open(env_path, 'r', encoding='utf-8') as f:
+                existing_lines = f.readlines()
+        except Exception:
+            existing_lines = []
+            
+    # Process updates: encrypt passwords if present
+    processed = {}
+    for k, v in updates.items():
+        if v is None:
+            continue
+        v_str = str(v).strip()
+        if k in ('MAIL_PASSWORD', 'SECRET_KEY_BACKUP') and v_str and not v_str.startswith('ENC:'):
+            # Encrypt password before storing in .env
+            enc_val = encrypt_password(v_str)
+            processed[k] = f"ENC:{enc_val}"
+        else:
+            processed[k] = v_str
+            
+    # Update existing keys or append new ones
+    updated_keys = set()
+    new_lines = []
+    for line in existing_lines:
+        stripped = line.strip()
+        if stripped and not stripped.startswith('#') and '=' in stripped:
+            key = stripped.split('=', 1)[0].strip()
+            if key in processed:
+                new_lines.append(f"{key}={processed[key]}\n")
+                updated_keys.add(key)
+                continue
+        new_lines.append(line)
+        
+    for k, v in processed.items():
+        if k not in updated_keys:
+            if new_lines and not new_lines[-1].endswith('\n'):
+                new_lines.append('\n')
+            new_lines.append(f"{k}={v}\n")
+            
+    try:
+        with open(env_path, 'w', encoding='utf-8') as f:
+            f.writelines(new_lines)
+    except Exception as e:
+        current_app.logger.error(f"Failed to sync .env file: {e}")
+
 
