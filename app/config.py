@@ -1,4 +1,4 @@
-import os
+﻿import os
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -6,6 +6,12 @@ load_dotenv()
 class Config:
     # Flask Settings
     SECRET_KEY = os.getenv("SECRET_KEY", "fallback-dev-secret-key-do-not-use-in-prod")
+    
+    # OWASP/ASVS 5.0 Session Hardening
+    SESSION_COOKIE_SECURE = True
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = 'Lax'
+    PERMANENT_SESSION_LIFETIME = 1800 # 30 minutes
     
 
     # Path configuration
@@ -35,3 +41,4 @@ class Config:
 
 def get_config():
     return Config()
+
