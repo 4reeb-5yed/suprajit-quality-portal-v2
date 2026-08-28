@@ -10,8 +10,8 @@ def test_customer_cannot_access_other_customer_reports(client, app):
         p_hash = generate_password_hash('admin123')
         conn.execute("INSERT OR IGNORE INTO customers (id, company_name) VALUES ('CUST_A', 'Company A')")
         conn.execute("INSERT OR IGNORE INTO customers (id, company_name) VALUES ('CUST_B', 'Company B')")
-        conn.execute("INSERT OR IGNORE INTO users (username, password_hash, role, customer_id) VALUES ('cust_a', ?, 'user', 'CUST_A')", (p_hash,))
-        conn.execute("INSERT OR IGNORE INTO users (username, password_hash, role, customer_id) VALUES ('cust_b', ?, 'user', 'CUST_B')", (p_hash,))
+        conn.execute("INSERT OR IGNORE INTO users (username, password_hash, display_name, role, customer_id) VALUES ('cust_a', ?, 'Cust A', 'user', 'CUST_A')", (p_hash,))
+        conn.execute("INSERT OR IGNORE INTO users (username, password_hash, display_name, role, customer_id) VALUES ('cust_b', ?, 'Cust B', 'user', 'CUST_B')", (p_hash,))
         conn.execute("INSERT OR IGNORE INTO customer_recipes (customer_id, recipe_name) VALUES ('CUST_A', 'Recipe_A')")
         conn.execute("INSERT OR IGNORE INTO customer_recipes (customer_id, recipe_name) VALUES ('CUST_B', 'Recipe_B')")
         conn.execute("INSERT OR IGNORE INTO reports (file_path, original_filename, recipe_name, report_date, report_time, serial_raw) VALUES ('dummy/path/a.csv', 'a.csv', 'Recipe_A', '2026-01-01', '120000', '123')")
@@ -31,7 +31,7 @@ def test_customer_cannot_access_admin_routes(client, app):
         from werkzeug.security import generate_password_hash
         p_hash = generate_password_hash('admin123')
         conn.execute("INSERT OR IGNORE INTO customers (id, company_name) VALUES ('CUST_A', 'Company A')")
-        conn.execute("INSERT OR IGNORE INTO users (username, password_hash, role, customer_id) VALUES ('standard_user', ?, 'user', 'CUST_A')", (p_hash,))
+        conn.execute("INSERT OR IGNORE INTO users (username, password_hash, display_name, role, customer_id) VALUES ('standard_user', ?, 'Std', 'user', 'CUST_A')", (p_hash,))
         conn.commit()
         
     client.post('/login', data={'username': 'standard_user', 'password': 'admin123'}, follow_redirects=True)
@@ -45,7 +45,7 @@ def test_path_traversal_blocked(client, app):
         conn = get_connection(app.config['DATABASE_PATH'])
         from werkzeug.security import generate_password_hash
         p_hash = generate_password_hash('admin123')
-        conn.execute("INSERT OR IGNORE INTO users (username, password_hash, role) VALUES ('hacker', ?, 'admin')", (p_hash,))
+        conn.execute("INSERT OR IGNORE INTO users (username, password_hash, display_name, role) VALUES ('hacker', ?, 'Hacker', 'admin')", (p_hash,))
         conn.execute("INSERT OR IGNORE INTO reports (id, file_path, original_filename, recipe_name, report_date, report_time, serial_raw) VALUES (9999, 'C:/Windows/System32/cmd.exe', 'cmd.exe', 'Hacked', '2026-01-01', '120000', '123')")
         conn.commit()
         
