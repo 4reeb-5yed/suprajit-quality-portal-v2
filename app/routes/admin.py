@@ -72,8 +72,6 @@ def dashboard():
                            reports_count=reports_count,
                            recent_batches=recent_batches)
 
-    
-    c_id = request.form.get('id', '').strip().lower() # e.g. 'tvs'
 @admin_bp.route('/settings', methods=['GET', 'POST'])
 def settings():
     from app.database import GET_SETTING, SET_SETTING
@@ -117,7 +115,7 @@ def settings():
     m_prt = get_val('mail_port', '587')
     m_usr = get_val('mail_username', '')
     m_pwd = get_val('mail_password', '')
-    dev_email = get_val('developer_email', 'admin@canspirit.com')
+    dev_email = get_val('developer_email', '')
     tel_freq = get_val('telemetry_frequency', 'daily')
     
     system_admins = g.db.execute("SELECT * FROM users WHERE role = 'admin'").fetchall()
@@ -181,7 +179,6 @@ def add_customer():
     return __import__('flask').redirect(__import__('flask').url_for('admin.customers'))
 
 @admin_bp.route('/customers/add_user', methods=['POST'])
-@admin_bp.route('/customers/add_user', methods=['POST'])
 def add_user():
     from app.database import INSERT_USER
     from flask import request, flash
@@ -234,7 +231,6 @@ def add_user():
     return __import__('flask').redirect(__import__('flask').url_for('admin.customers'))
 
 @admin_bp.route('/customers/toggle_user', methods=['POST'])
-@admin_bp.route('/customers/toggle_user', methods=['POST'])
 def toggle_user():
     from app.database import TOGGLE_USER_ACCESS
     from flask import request, flash
@@ -248,8 +244,6 @@ def toggle_user():
         action = 'Granted' if new_status == 1 else 'Revoked'
         flash(f'Access {action} successfully.', 'success')
 
-    return __import__('flask').redirect(__import__('flask').url_for('admin.customers'))
-        
     return __import__('flask').redirect(__import__('flask').url_for('admin.customers'))
 
 @admin_bp.route('/customers/add_recipe', methods=['POST'])
@@ -331,14 +325,6 @@ def delete_customer():
         except Exception as e:
             flash(f"Database Error: {e}", "error")
         
-    return __import__('flask').redirect(__import__('flask').url_for('admin.customers'))
-        
-    return __import__('flask').redirect(__import__('flask').url_for('admin.customers'))
-
-        
-    g.db.execute("DELETE FROM users WHERE id = ?", (user_id,))
-    g.db.commit()
-    __import__('flask').flash("User account permanently deleted.", "success")
     return __import__('flask').redirect(__import__('flask').url_for('admin.customers'))
 
 @admin_bp.route('/diagnostics')
@@ -466,18 +452,6 @@ def trigger_sync():
     flash("Manual ingestion batch has been started in the background! Refresh the page in a few moments to see the results.", "success")
     return __import__('flask').redirect(__import__('flask').url_for('admin.dashboard'))
 
-        
-    if user['role'] == 'admin':
-        admin_count = g.db.execute("SELECT COUNT(*) as c FROM users WHERE role = 'admin'").fetchone()['c']
-        if admin_count <= 1:
-            flash("Cannot delete the last remaining administrator account. Create a new one first.", "error")
-            return __import__('flask').redirect(__import__('flask').url_for('admin.customers'))
-            
-    g.db.execute("DELETE FROM users WHERE id = ?", (user_id,))
-    g.db.commit()
-    flash("User deleted successfully.", "success")
-    return __import__('flask').redirect(__import__('flask').url_for('admin.customers'))
-
 @admin_bp.route('/users/delete', methods=['POST'])
 def delete_user():
     from flask import request, flash, g, redirect, url_for
@@ -519,4 +493,5 @@ def download_logs():
         return redirect(url_for('admin.dashboard'))
         
     return send_file(log_path, as_attachment=True, download_name="suprajit_system.log", mimetype="text/plain")
+
 

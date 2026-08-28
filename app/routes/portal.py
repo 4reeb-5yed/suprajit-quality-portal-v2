@@ -1,9 +1,10 @@
-from flask import Blueprint, render_template, request, g, send_file, abort
+﻿from flask import Blueprint, render_template, request, g, send_file, abort, current_app
 from flask_login import login_required, current_user
 import os
 
 from app.helpers import customer_scope, is_safe_path
 from app.config import get_config
+from app.database import get_connection
 
 portal_bp = Blueprint('portal', __name__)
 
@@ -17,7 +18,6 @@ def index():
 @login_required
 def search():
     where_clause, params = customer_scope(current_user)
-    # Fetch distinct recipes for the dropdown based on customer auth scope
     if current_user.is_admin:
         query = "SELECT DISTINCT recipe_name FROM reports ORDER BY recipe_name"
         recipes = g.db.execute(query).fetchall()
@@ -47,7 +47,6 @@ def search_results():
         where_clause += " AND (serial_raw LIKE ? OR serial_normalized LIKE ?)"
         params.extend([f"%{serial}%", f"%{serial}%"])
 
-    # If all fields are empty, do not show any data by default
     if not recipe and not date_val and not serial:
         from flask import render_template_string
         return render_template_string('<tr><td colspan="5" class="text-center text-gray-500 py-12"><i class="fa-solid fa-magnifying-glass text-2xl mb-3 block text-gray-300"></i>Please select a recipe, date, or enter a serial number to search for reports.</td></tr>')
@@ -65,10 +64,6 @@ def search_results():
 @portal_bp.route('/download/<int:report_id>')
 @login_required
 def download_report(report_id):
-    from flask import send_file, abort, request, current_app
-    from app.database import get_connection
-    import os
-    
     where, params = customer_scope(current_user)
     row = g.db.execute(f"SELECT * FROM reports WHERE id = ? AND {where}", [report_id] + params).fetchone()
     
@@ -76,6 +71,11 @@ def download_report(report_id):
         abort(404)
         
     target_path = row['file_path']
+    
+    # SECURITY PATCH: Actually enforce is_safe_path
+    if not is_safe_path(target_path, current_app.config['STORAGE_FOLDER']):
+        current_app.logger.error(f"Path Traversal Attempt Blocked: {target_path}")
+        abort(403)
     
     if not os.path.exists(target_path):
         abort(404)
@@ -85,16 +85,4 @@ def download_report(report_id):
                  (current_user.id, report_id, 'download', request.remote_addr))
     g.db.commit()
     
-    # Enterprise Audit Trail
-    try:
-        log_conn = get_connection(current_app.config['DATABASE_PATH'])
-        log_conn.execute(
-            "INSERT INTO audit_logs (username, action, target_info, ip_address) VALUES (?, ?, ?, ?)",
-            (current_user.username, "DOWNLOAD", row['original_filename'], request.remote_addr)
-        )
-        log_conn.commit()
-        log_conn.close()
-    except Exception as e:
-        current_app.logger.error(f"Audit log failed: {e}")
-        
     return send_file(target_path, as_attachment=True, download_name=row['original_filename'])

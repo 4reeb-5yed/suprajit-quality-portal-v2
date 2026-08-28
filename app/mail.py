@@ -1,4 +1,4 @@
-import smtplib
+﻿import smtplib
 from email.message import EmailMessage
 from flask import current_app, request
 from app.database import get_connection
@@ -73,7 +73,7 @@ def send_welcome_email(user_email: str, username: str, raw_password: str, login_
 def send_heartbeat_email(files_processed: int, files_failed: int, status: str, error_msg: str):
     """Sends a daily telemetry/health report to Canspirit developers."""
     try:
-        dev_email = get_email_setting('developer_email', 'admin@canspirit.com')
+        dev_email = get_email_setting('developer_email', '')
         if not dev_email:
             return False
             
@@ -93,3 +93,4 @@ def send_heartbeat_email(files_processed: int, files_failed: int, status: str, e
     except Exception as e:
         current_app.logger.error(f"Failed to send telemetry email: {e}")
         return False
+

@@ -10,10 +10,8 @@ from app.sync_engine import SyncEngine
 logger = logging.getLogger(__name__)
 
 def cleanup_zombies(db_path):
-    """Detects if any previous batch crashed silently and marks it as ZOMBIE."""
     try:
         conn = get_connection(db_path)
-        # Any batch running for more than 45 minutes is mathematically a zombie crash
         zombie_threshold = (datetime.now() - timedelta(minutes=45)).strftime('%Y-%m-%d %H:%M:%S')
         
         cursor = conn.cursor()
@@ -33,7 +31,6 @@ def cleanup_zombies(db_path):
         logger.error(f"Failed to run zombie watchdog: {e}")
 
 def run_scheduler(db_path, storage_base):
-    """Background thread loop that checks the time every minute and triggers ingestion."""
     logger.info("Internal batch scheduler started. Watchdog armed.")
     
     while True:
@@ -48,11 +45,22 @@ def run_scheduler(db_path, storage_base):
             last_sync_date = row['value'] if row else None
             
             now = datetime.now()
-            current_time_str = now.strftime('%H:%M')
             today_str = now.strftime('%Y-%m-%d')
             
-            if current_time_str == sync_time and last_sync_date != today_str:
-                logger.info(f"Triggering scheduled batch sync at {sync_time}...")
+            # Security Fix: Instead of exact minute match, use a 5-minute window to avoid missing the trigger
+            # if the CPU pauses or the system clock jumps.
+            try:
+                sync_hour, sync_minute = map(int, sync_time.split(':'))
+                sync_dt = now.replace(hour=sync_hour, minute=sync_minute, second=0, microsecond=0)
+                
+                # Check if now is within a 5-minute window AFTER the sync_time
+                time_diff = now - sync_dt
+                is_time_to_sync = timedelta(0) <= time_diff <= timedelta(minutes=5)
+            except ValueError:
+                is_time_to_sync = False
+            
+            if is_time_to_sync and last_sync_date != today_str:
+                logger.info(f"Triggering scheduled batch sync for {sync_time} window...")
                 
                 conn.execute(SET_SETTING, ('last_sync_date', today_str))
                 conn.commit()
@@ -65,7 +73,6 @@ def run_scheduler(db_path, storage_base):
             
             conn.close()
         except Exception as e:
-            # THIS is the observability fix. We use exc_info=True to dump the full stack trace to the rotating file!
             logger.critical(f"FATAL SYSTEM ERROR IN BACKGROUND SCHEDULER: {e}", exc_info=True)
             
         time.sleep(60)
