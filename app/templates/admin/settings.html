@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 
 {% block content %}
 <div class="space-y-8">
@@ -107,7 +107,7 @@
                 
                 <div class="form-control w-full">
                     <label class="label"><span class="label-text font-bold text-gray-700">Email Password (App Password)</span></label>
-                    <input type="password" name="mail_password" value="{{ mail_password }}" placeholder="*********" class="input input-bordered w-full" />
+                    <input type="password" name="mail_password" placeholder="{% if has_mail_password %}******** (Saved){% else %}Enter SMTP Password{% endif %}" type="password" placeholder="*********" class="input input-bordered w-full" />
                     <label class="label"><span class="label-text-alt text-gray-500">If using Gmail, you must generate an "App Password" in your Google Account settings.</span></label>
                 </div>
                 
@@ -159,7 +159,7 @@
 <!-- Add Master Admin Modal -->
 <dialog id="addAdminModal" class="modal">
     <div class="modal-box bg-white">
-        <form method="dialog"><button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button></form>
+        <form method="dialog"><button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">âœ•</button></form>
         <h3 class="font-bold text-lg text-gray-800 border-b pb-2 mb-4"><i class="fa-solid fa-user-shield text-blue-600 mr-2"></i>Create Master Administrator</h3>
         <form method="POST" action="{{ url_for('admin.add_user') }}" class="space-y-3">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
@@ -188,3 +188,4 @@
     </div>
     <form method="dialog" class="modal-backdrop"><button>close</button></form>
 </dialog>
+

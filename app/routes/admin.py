@@ -96,7 +96,7 @@ def settings():
         if m_srv is not None: g.db.execute(SET_SETTING, ('mail_server', m_srv))
         if m_prt is not None: g.db.execute(SET_SETTING, ('mail_port', m_prt))
         if m_usr is not None: g.db.execute(SET_SETTING, ('mail_username', m_usr))
-        if m_pwd is not None: g.db.execute(SET_SETTING, ('mail_password', m_pwd))
+        if m_pwd: g.db.execute(SET_SETTING, ('mail_password', m_pwd))
         if dev_email is not None: g.db.execute(SET_SETTING, ('developer_email', dev_email))
         if tel_freq is not None: g.db.execute(SET_SETTING, ('telemetry_frequency', tel_freq))
             
@@ -114,7 +114,7 @@ def settings():
     m_srv = get_val('mail_server', 'smtp.gmail.com')
     m_prt = get_val('mail_port', '587')
     m_usr = get_val('mail_username', '')
-    m_pwd = get_val('mail_password', '')
+    has_mail_pwd = bool(get_val('mail_password', ''))
     dev_email = get_val('developer_email', '')
     tel_freq = get_val('telemetry_frequency', 'daily')
     
@@ -127,7 +127,7 @@ def settings():
                            mail_server=m_srv,
                            mail_port=m_prt,
                            mail_username=m_usr,
-                           mail_password=m_pwd,
+                           has_mail_password=has_mail_pwd,
                            system_admins=system_admins)
 @admin_bp.route('/customers', methods=['GET'])
 def customers():
@@ -494,6 +494,7 @@ def download_logs():
         return redirect(url_for('admin.dashboard'))
         
     return send_file(log_path, as_attachment=True, download_name="suprajit_system.log", mimetype="text/plain")
+
 
 
 

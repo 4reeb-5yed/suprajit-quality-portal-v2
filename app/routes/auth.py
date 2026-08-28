@@ -1,3 +1,4 @@
+﻿from app import limiter
 from flask import Blueprint, render_template, request, redirect, url_for, flash, g
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -9,6 +10,7 @@ from app.mail import send_password_reset_email, get_serializer
 auth_bp = Blueprint('auth', __name__)
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
+@limiter.limit("5 per minute")
 def login():
     if current_user.is_authenticated:
         return redirect(url_for('portal.search'))
@@ -118,3 +120,4 @@ def reset_password(token):
         return redirect(url_for('auth.login'))
         
     return render_template('auth/reset_password.html')
+
