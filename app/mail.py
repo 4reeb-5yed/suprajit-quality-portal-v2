@@ -16,7 +16,11 @@ def _send_smtp(subject, recipients, body):
     smtp_server = get_email_setting('mail_server', 'smtp.gmail.com')
     smtp_port = int(get_email_setting('mail_port', '587'))
     smtp_user = get_email_setting('mail_username', '')
-    smtp_pass = get_email_setting('mail_password', '')
+    smtp_pass_cipher = get_email_setting('mail_password', '')
+    smtp_pass = ''
+    if smtp_pass_cipher:
+        from app.helpers import decrypt_password
+        smtp_pass = decrypt_password(smtp_pass_cipher)
     
     if not smtp_user or not smtp_pass:
         current_app.logger.error("Email credentials not configured in settings.")
@@ -93,4 +97,5 @@ def send_heartbeat_email(files_processed: int, files_failed: int, status: str, e
     except Exception as e:
         current_app.logger.error(f"Failed to send telemetry email: {e}")
         return False
+
 

@@ -39,7 +39,9 @@ def setup():
             if m_srv: g.db.execute(SET_SETTING, ('mail_server', m_srv))
             if m_prt: g.db.execute(SET_SETTING, ('mail_port', m_prt))
             if m_usr: g.db.execute(SET_SETTING, ('mail_username', m_usr))
-            if m_pwd: g.db.execute(SET_SETTING, ('mail_password', m_pwd))
+            if m_pwd: 
+                from app.helpers import encrypt_password
+                g.db.execute(SET_SETTING, ('mail_password', encrypt_password(m_pwd)))
             
             if dev_email:
                 g.db.execute(SET_SETTING, ('developer_email', dev_email))
@@ -96,7 +98,9 @@ def settings():
         if m_srv is not None: g.db.execute(SET_SETTING, ('mail_server', m_srv))
         if m_prt is not None: g.db.execute(SET_SETTING, ('mail_port', m_prt))
         if m_usr is not None: g.db.execute(SET_SETTING, ('mail_username', m_usr))
-        if m_pwd: g.db.execute(SET_SETTING, ('mail_password', m_pwd))
+        if m_pwd: 
+                from app.helpers import encrypt_password
+                g.db.execute(SET_SETTING, ('mail_password', encrypt_password(m_pwd)))
         if dev_email is not None: g.db.execute(SET_SETTING, ('developer_email', dev_email))
         if tel_freq is not None: g.db.execute(SET_SETTING, ('telemetry_frequency', tel_freq))
             
@@ -494,6 +498,7 @@ def download_logs():
         return redirect(url_for('admin.dashboard'))
         
     return send_file(log_path, as_attachment=True, download_name="suprajit_system.log", mimetype="text/plain")
+
 
 
 

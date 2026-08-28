@@ -26,3 +26,30 @@ def customer_scope(user):
     where = "recipe_name IN (SELECT recipe_name FROM customer_recipes WHERE customer_id = ?)"
     params = [user.customer_id]
     return where, params
+
+import base64
+from flask import current_app
+
+def get_cipher():
+    from cryptography.fernet import Fernet
+    secret = current_app.config['SECRET_KEY']
+    # Secret key is generated as token_hex(32) which is 64 hex chars (32 bytes).
+    # Fernet requires a 32-byte url-safe base64 encoded key.
+    key = base64.urlsafe_b64encode(bytes.fromhex(secret))
+    return Fernet(key)
+
+def encrypt_password(plaintext: str) -> str:
+    if not plaintext:
+        return ""
+    cipher = get_cipher()
+    return cipher.encrypt(plaintext.encode('utf-8')).decode('utf-8')
+
+def decrypt_password(ciphertext: str) -> str:
+    if not ciphertext:
+        return ""
+    try:
+        cipher = get_cipher()
+        return cipher.decrypt(ciphertext.encode('utf-8')).decode('utf-8')
+    except Exception:
+        # If decryption fails (e.g., legacy plaintext in dev), fail securely
+        return ""
