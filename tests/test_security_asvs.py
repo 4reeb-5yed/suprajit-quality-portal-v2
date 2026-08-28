@@ -19,7 +19,7 @@ def test_customer_cannot_access_other_customer_reports(client, app):
         conn.commit()
 
     client.post('/login', data={'username': 'cust_a', 'password': 'admin123'}, follow_redirects=True)
-    rv = client.get('/search/results?date=2026-01-01')
+    rv = client.get('/search/results?recipe=Recipe_A')
     assert b'a.csv' in rv.data
     assert b'b.csv' not in rv.data
 
