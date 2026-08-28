@@ -51,3 +51,4 @@ def test_security_headers_present(client):
     assert rv.headers.get('X-Content-Type-Options') == 'nosniff'
     assert 'default-src' in rv.headers.get('Content-Security-Policy', '')
 
+
