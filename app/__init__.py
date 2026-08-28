@@ -49,7 +49,7 @@ limiter = Limiter(
     storage_uri="memory://"
 )
 
-def create_app():
+def create_app(test_config=None):
     import sys
     if getattr(sys, 'frozen', False):
         template_folder = os.path.join(sys._MEIPASS, 'app', 'templates')
@@ -60,6 +60,8 @@ def create_app():
     cfg = get_config()
     
     app.config.from_object(cfg)
+    if test_config:
+        app.config.update(test_config)
     setup_logging(app)
     
     csrf.init_app(app)

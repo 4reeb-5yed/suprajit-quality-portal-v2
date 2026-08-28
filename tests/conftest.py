@@ -11,7 +11,16 @@ def app():
     db_fd, db_path = tempfile.mkstemp()
     storage_dir = tempfile.mkdtemp()
     
-    app = create_app()
+    test_config = {
+        "TESTING": True,
+        "WTF_CSRF_ENABLED": False,
+        "RATELIMIT_ENABLED": False,
+        "DATABASE_PATH": db_path,
+        "STORAGE_FOLDER": storage_dir
+    }
+    app = create_app(test_config)
+    from app import limiter
+    limiter.enabled = False
     app.config.update({
         "TESTING": True,
         "WTF_CSRF_ENABLED": False,
