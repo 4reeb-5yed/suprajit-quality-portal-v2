@@ -33,7 +33,7 @@ python -m venv .venv
 
 **5. Install all required dependencies:**
 ```bash
-pip install -r requirements.txt
+pip install -e .
 ```
 
 **6. Run the local development server:**
@@ -71,3 +71,4 @@ This will generate the production package in the `dist/SuprajitQualityPortal` fo
 2. Double-click `SuprajitQualityPortal.exe`.
 3. The server will run in the background on Port 5000 (accessible across the LAN via the server's IP address).
 4. Configure the "Watched Folder" path in the Admin -> Settings UI to point to your factory's Excel output directory.
+
