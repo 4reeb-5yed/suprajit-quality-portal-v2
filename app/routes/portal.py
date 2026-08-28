@@ -82,7 +82,15 @@ def download_report(report_id):
     target_path = row['file_path']
     
     # SECURITY PATCH: Actually enforce is_safe_path
-    if not is_safe_path(current_app.config['STORAGE_FOLDER'], target_path):
+    # Reports can be safely served from the local STORAGE_FOLDER or the designated root_search_path network share
+    setting_row = g.db.execute("SELECT value FROM system_settings WHERE key = 'root_search_path'").fetchone()
+    root_search_path = setting_row['value'] if setting_row else ''
+    
+    is_safe = is_safe_path(current_app.config['STORAGE_FOLDER'], target_path)
+    if root_search_path and not is_safe:
+        is_safe = is_safe_path(root_search_path, target_path)
+        
+    if not is_safe:
         current_app.logger.error(f"Path Traversal Attempt Blocked: {target_path}")
         abort(403)
     
