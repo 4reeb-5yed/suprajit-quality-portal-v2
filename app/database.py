@@ -87,6 +87,11 @@ def ensure_schema(conn):
                 latency_ms REAL NOT NULL,
                 timestamp TEXT NOT NULL DEFAULT (datetime('now'))
             );
+
+            CREATE TRIGGER IF NOT EXISTS search_metrics_prune AFTER INSERT ON search_metrics BEGIN
+                DELETE FROM search_metrics WHERE id <= (new.id - 10000);
+            END;
+
 CREATE TABLE IF NOT EXISTS audit_log (
                 id          INTEGER PRIMARY KEY AUTOINCREMENT,
                 user_id     INTEGER NOT NULL,
