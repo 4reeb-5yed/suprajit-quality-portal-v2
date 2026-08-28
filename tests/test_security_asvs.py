@@ -14,8 +14,8 @@ def test_customer_cannot_access_other_customer_reports(client, app):
         conn.execute("INSERT OR IGNORE INTO users (username, password_hash, display_name, role, customer_id) VALUES ('cust_b', ?, 'Cust B', 'user', 'CUST_B')", (p_hash,))
         conn.execute("INSERT OR IGNORE INTO customer_recipes (customer_id, recipe_name) VALUES ('CUST_A', 'Recipe_A')")
         conn.execute("INSERT OR IGNORE INTO customer_recipes (customer_id, recipe_name) VALUES ('CUST_B', 'Recipe_B')")
-        conn.execute("INSERT OR IGNORE INTO reports (file_path, original_filename, recipe_name, report_date, report_time, serial_raw) VALUES ('dummy/path/a.csv', 'a.csv', 'Recipe_A', '2026-01-01', '120000', '123')")
-        conn.execute("INSERT OR IGNORE INTO reports (file_path, original_filename, recipe_name, report_date, report_time, serial_raw) VALUES ('dummy/path/b.csv', 'b.csv', 'Recipe_B', '2026-01-01', '120000', '456')")
+        conn.execute("INSERT INTO reports (file_path, original_filename, recipe_name, report_date, report_time, serial_raw, serial_normalized) VALUES ('dummy/path/a.csv', 'a.csv', 'Recipe_A', '2026-01-01', '120000', '123', '123')")
+        conn.execute("INSERT INTO reports (file_path, original_filename, recipe_name, report_date, report_time, serial_raw, serial_normalized) VALUES ('dummy/path/b.csv', 'b.csv', 'Recipe_B', '2026-01-01', '120000', '456', '456')")
         conn.commit()
 
     client.post('/login', data={'username': 'cust_a', 'password': 'admin123'}, follow_redirects=True)
@@ -46,7 +46,7 @@ def test_path_traversal_blocked(client, app):
         from werkzeug.security import generate_password_hash
         p_hash = generate_password_hash('admin123')
         conn.execute("INSERT OR IGNORE INTO users (username, password_hash, display_name, role) VALUES ('hacker', ?, 'Hacker', 'admin')", (p_hash,))
-        conn.execute("INSERT OR IGNORE INTO reports (id, file_path, original_filename, recipe_name, report_date, report_time, serial_raw) VALUES (9999, 'C:/Windows/System32/cmd.exe', 'cmd.exe', 'Hacked', '2026-01-01', '120000', '123')")
+        conn.execute("INSERT INTO reports (id, file_path, original_filename, recipe_name, report_date, report_time, serial_raw, serial_normalized) VALUES (9999, 'C:/Windows/System32/cmd.exe', 'cmd.exe', 'Hacked', '2026-01-01', '120000', '123', '123')")
         conn.commit()
         
     client.post('/login', data={'username': 'hacker', 'password': 'admin123'}, follow_redirects=True)
