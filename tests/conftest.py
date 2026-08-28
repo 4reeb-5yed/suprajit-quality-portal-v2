@@ -1,4 +1,4 @@
-import pytest
+﻿import pytest
 import os
 import sqlite3
 import tempfile
@@ -39,9 +39,13 @@ def app():
     yield app
     
     os.close(db_fd)
-    os.unlink(db_path)
-    shutil.rmtree(storage_dir)
+    try:
+        os.unlink(db_path)
+    except Exception:
+        pass
+    shutil.rmtree(storage_dir, ignore_errors=True)
 
 @pytest.fixture
 def client(app):
     return app.test_client()
+
