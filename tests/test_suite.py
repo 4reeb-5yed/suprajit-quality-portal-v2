@@ -33,7 +33,7 @@ def app():
         conn.execute("INSERT INTO customer_recipes (customer_id, recipe_name) VALUES ('suprajit', 'TEST_RECIPE')")
         
         pass_hash = generate_password_hash('admin123')
-        conn.execute("INSERT INTO users (username, password_hash, display_name, role) VALUES ('testadmin', ?, 'Administrator', 'admin')", (pass_hash,))
+        conn.execute("INSERT INTO users (username, password_hash, display_name, role) VALUES ('bootstrap_admin', ?, 'Administrator', 'admin')", (pass_hash,))
         conn.commit()
         conn.close()
 
@@ -78,7 +78,7 @@ def test_sync_engine_ingestion(app):
 def test_login_redirect_and_auth(client, app):
     # Try logging in
     with client:
-        rv = client.post('/login', data={'username': 'testadmin', 'password': 'admin123'}, follow_redirects=True)
+        rv = client.post('/login', data={'username': 'bootstrap_admin', 'password': 'admin123'}, follow_redirects=True)
         assert rv.status_code == 200
         
         # Test trap logic explicitly
@@ -88,4 +88,5 @@ def test_login_redirect_and_auth(client, app):
 def test_404_error_handler(client, app):
     rv = client.get('/favicon.ico')
     assert rv.status_code == 404
+
 

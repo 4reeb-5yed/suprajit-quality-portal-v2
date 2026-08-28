@@ -64,3 +64,4 @@ def test_dimension_5_database_crash_recovery(app):
         with patch('app.sync_engine.hash_file', side_effect=Exception("SIMULATED FILE SYSTEM CRASH")):
             inserted = engine.run_batch(full_sync=True)
             assert inserted == 0
+
