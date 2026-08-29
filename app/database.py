@@ -1,10 +1,10 @@
-import sqlite3
-import os
 import logging
+import sqlite3
 
 logger = logging.getLogger(__name__)
 
 # ─── DATABASE INITIALIZATION ───
+
 
 def get_connection(db_path):
     """Returns a configured sqlite3 connection using WAL mode for concurrency."""
@@ -13,8 +13,9 @@ def get_connection(db_path):
     conn.execute("PRAGMA journal_mode = WAL")
     conn.execute("PRAGMA synchronous = NORMAL")
     conn.execute("PRAGMA foreign_keys = ON")
-    conn.execute("PRAGMA busy_timeout = 5000") # 5 second timeout for concurrent writes
+    conn.execute("PRAGMA busy_timeout = 5000")  # 5 second timeout for concurrent writes
     return conn
+
 
 def ensure_schema(conn):
     """Idempotent schema initialization."""
@@ -147,17 +148,18 @@ CREATE TABLE IF NOT EXISTS audit_log (
         """)
 
         # Auto-migration for schema changes
-        user_cols = [r['name'] for r in conn.execute("PRAGMA table_info(users)").fetchall()]
-        if 'access_mode' not in user_cols:
+        user_cols = [r["name"] for r in conn.execute("PRAGMA table_info(users)").fetchall()]
+        if "access_mode" not in user_cols:
             conn.execute("ALTER TABLE users ADD COLUMN access_mode TEXT NOT NULL DEFAULT 'ALL'")
-        if 'customer_id' not in user_cols:
+        if "customer_id" not in user_cols:
             conn.execute("ALTER TABLE users ADD COLUMN customer_id TEXT")
 
-        cust_cols = [r['name'] for r in conn.execute("PRAGMA table_info(customers)").fetchall()]
-        if 'portal_suspended' not in cust_cols:
+        cust_cols = [r["name"] for r in conn.execute("PRAGMA table_info(customers)").fetchall()]
+        if "portal_suspended" not in cust_cols:
             conn.execute("ALTER TABLE customers ADD COLUMN portal_suspended INTEGER NOT NULL DEFAULT 0")
-        if 'allowed_domains' not in cust_cols:
+        if "allowed_domains" not in cust_cols:
             conn.execute("ALTER TABLE customers ADD COLUMN allowed_domains TEXT")
+
 
 # ─── QUERY CATALOG ───
 

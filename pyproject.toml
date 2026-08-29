@@ -38,3 +38,13 @@ testpaths = ["tests"]
 python_files = ["test_*.py"]
 norecursedirs = [".*", "build", "dist", ".venv", "app/static", "node_modules", "scratch"]
 addopts = "-ra -q --import-mode=importlib"
+
+[tool.ruff]
+line-length = 120
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP"]
+ignore = ["E501", "E402", "W291", "W293"]
+
+

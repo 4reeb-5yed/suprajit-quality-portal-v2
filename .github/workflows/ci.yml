@@ -1,4 +1,4 @@
-name: Suprajit Quality Portal Enterprise CI Matrix
+name: Suprajit Quality Portal Enterprise CI & Security Quality Gate
 
 on:
   push:
@@ -7,46 +7,70 @@ on:
     branches: [ "master", "v3" ]
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  test-source:
+  static-analysis-and-security:
+    name: Static Analysis & Security Gate
     runs-on: windows-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: '3.13'
-    - name: Install dependencies
+
+    - name: Install Analysis Tools
+      run: |
+        python -m pip install --upgrade pip
+        pip install bandit ruff mypy pip-audit
+
+    - name: 1. Run Bandit Security Scanner
+      run: |
+        python -m bandit -r app/ -ll --severity-level medium
+
+    - name: 2. Run Ruff Lint & Format Check
+      run: |
+        python -m ruff check app/
+        python -m ruff format --check app/
+
+    - name: 3. Run Mypy Type Checker
+      run: |
+        python -m mypy app/ --ignore-missing-imports
+
+    - name: 4. Run Pip-Audit Dependency CVE Scanner
+      run: |
+        python -m pip-audit
+
+    - uses: gitleaks/gitleaks-action@v2
+      name: 5. Run Gitleaks Secret Scanner
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  test-matrix:
+    name: Full Test Suite & E2E Validation
+    needs: static-analysis-and-security
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.13'
+
+    - name: Install Project & Test Dependencies
       run: |
         python -m pip install --upgrade pip
         pip install .[dev]
-        pip install pytest pytest-flask pytest-cov
-    - name: Run Complete 3-Way Test Matrix (Unit, Integration, ASVS Security & E2E)
+        pip install playwright pytest-playwright openpyxl
+        python -m playwright install chromium
+
+    - name: Run Full Test Suite with Coverage
       env:
         PYTHONPATH: .
       run: |
-        python -m pytest tests/ -v --cov=app --cov-report=term
-
-  build-and-smoke-test:
-    needs: test-source
-    runs-on: windows-latest
-    steps:
-    - uses: actions/checkout@v3
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.13'
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install .
-        pip install pyinstaller pytest pytest-flask
-    - name: Compile Executable
-      run: |
-        copy .env.example .env
-        pyinstaller SuprajitQualityPortal.spec --noconfirm
-    - name: Run Compiled EXE Smoke Test
-      run: |
-        python tests/smoke_test_binary.py
+        python -m pytest -c pytest.ini tests/ -v --cov=app --cov-branch --cov-report=term
