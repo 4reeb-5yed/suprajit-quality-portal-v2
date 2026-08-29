@@ -494,3 +494,44 @@ def test_admin_additional_lines_and_tunnels(client, app):
         "redirect_url": "/admin/customers"
     }, follow_redirects=True)
     assert b"RESTORED" in res_togg.data
+
+
+def test_admin_before_request_non_admin_and_bootstrap_trap(client, app):
+    """Kills mutant removing @admin_bp.before_request by verifying 403 on non-admin and trap on bootstrap_admin."""
+    # 1. Unauthenticated or non-admin user gets 403
+    res_unauth = client.get("/admin/")
+    assert res_unauth.status_code == 403
+
+    # 2. Authenticate as regular non-admin user
+    with app.app_context():
+        conn = get_connection(app.config["DATABASE_PATH"])
+        conn.execute(
+            "INSERT OR REPLACE INTO users (id, username, display_name, password_hash, role, is_active, access_mode) VALUES (55, 'normal_user', 'Normal', ?, 'user', 1, 'ALL')",
+            (generate_password_hash("Password123!"),)
+        )
+        conn.commit()
+        conn.close()
+
+    client.post("/login", data={"username": "normal_user", "password": "Password123!"}, follow_redirects=True)
+    res_user = client.get("/admin/")
+    assert res_user.status_code == 403
+    res_dash = client.get("/admin/setup")
+    assert res_dash.status_code == 403
+
+    # 3. Authenticate as bootstrap_admin when setup_completed is 0 -> redirected to /admin/setup
+    client.get("/logout", follow_redirects=True)
+    with app.app_context():
+        conn = get_connection(app.config["DATABASE_PATH"])
+        conn.execute("DELETE FROM system_settings WHERE key = 'setup_completed'")
+        conn.execute(
+            "INSERT OR REPLACE INTO users (id, username, display_name, password_hash, role, is_active, access_mode, customer_id) VALUES (56, 'bootstrap_admin', 'Bootstrap Admin', ?, 'admin', 1, 'ALL', 'suprajit')",
+            (generate_password_hash("Password123!"),)
+        )
+        conn.commit()
+        conn.close()
+
+    res_login = client.post("/login", data={"username": "bootstrap_admin", "password": "Password123!"}, follow_redirects=False)
+    assert res_login.status_code == 302
+    res_trap = client.get("/admin/", follow_redirects=False)
+    assert res_trap.status_code == 302
+    assert "/admin/setup" in res_trap.headers.get("Location", "")

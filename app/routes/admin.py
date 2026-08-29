@@ -17,14 +17,13 @@ admin_bp = Blueprint("admin", __name__)
 
 
 @admin_bp.before_request
-@login_required
 def require_admin():
-    if not current_user.is_admin:
+    if not current_user.is_authenticated or not getattr(current_user, "is_admin", False):
         abort(403)
     # Enforce Setup Wizard Trap: Force bootstrap_admin to complete initial setup if not completed
     setup_done = g.db.execute("SELECT value FROM system_settings WHERE key = 'setup_completed'").fetchone()
     if (
-        not setup_done
+        (not setup_done or setup_done["value"] != "1")
         and current_user.username == "bootstrap_admin"
         and request.endpoint not in ("admin.setup", "auth.logout", "static")
     ):

@@ -83,3 +83,11 @@ jobs:
         SECRET_KEY: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
       run: |
         python -m pytest -c pytest.ini tests/ -v --cov=app --cov-branch --cov-report=term
+
+    - name: Mutation Testing Quality Gate (admin.py & auth.py)
+      env:
+        PYTHONPATH: .
+        SECRET_KEY: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+      run: |
+        pip install "mutmut<3"
+        python -m mutmut run --paths-to-mutate app/routes/admin.py,app/routes/auth.py --runner "python -m pytest -c pytest.ini tests/test_admin_deep_coverage.py tests/test_auth_deep_coverage.py -q" --simple-output --no-progress --CI
