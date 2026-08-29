@@ -146,6 +146,17 @@ CREATE TABLE IF NOT EXISTS audit_log (
             END;
         """)
 
+        # Auto-migration for schema changes
+        user_cols = [r['name'] for r in conn.execute("PRAGMA table_info(users)").fetchall()]
+        if 'access_mode' not in user_cols:
+            conn.execute("ALTER TABLE users ADD COLUMN access_mode TEXT NOT NULL DEFAULT 'ALL'")
+        if 'customer_id' not in user_cols:
+            conn.execute("ALTER TABLE users ADD COLUMN customer_id TEXT")
+
+        cust_cols = [r['name'] for r in conn.execute("PRAGMA table_info(customers)").fetchall()]
+        if 'portal_suspended' not in cust_cols:
+            conn.execute("ALTER TABLE customers ADD COLUMN portal_suspended INTEGER NOT NULL DEFAULT 0")
+
 # ─── QUERY CATALOG ───
 
 # Customers
