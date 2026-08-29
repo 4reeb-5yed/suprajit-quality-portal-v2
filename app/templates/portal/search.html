@@ -118,50 +118,85 @@
             <!-- Dynamically populated sheets -->
         </div>
 
-        <!-- Main Viewport: Pure Native Canvas Excel Spreadsheet View -->
-        <div class="flex-1 overflow-auto bg-gray-300 relative p-2 flex items-center justify-center min-h-[500px]" id="spreadsheetViewport">
+        <!-- Main Viewport: Client-Side TPS Template Layout -->
+        <div class="flex-1 overflow-auto bg-slate-100 relative p-6 space-y-6" id="spreadsheetViewport">
             <!-- Loading Indicator -->
             <div id="excelLoading" class="absolute inset-0 flex flex-col items-center justify-center bg-white/95 z-20">
                 <span class="loading loading-spinner loading-lg text-emerald-700"></span>
-                <p class="text-sm font-bold text-gray-700 mt-3">Rendering Native Excel Spreadsheet...</p>
-                <p class="text-xs text-gray-400">Loading Rust + WebAssembly Canvas Engine</p>
+                <p class="text-sm font-bold text-gray-700 mt-3">Extracting Inspection Report in Browser...</p>
+                <p class="text-xs text-gray-400">Parsing LabVIEW TPS OpenXML & Scatter Curves (Zero Server Load)</p>
             </div>
 
-            <!-- Canvas for @silurus/ooxml Native Canvas 2D Engine -->
-            <div id="canvasWrapper" class="w-full h-full flex items-center justify-center overflow-auto">
-                <canvas id="excelCanvas" class="shadow-lg bg-white rounded"></canvas>
+            <!-- 1. Header Metadata Card -->
+            <div class="bg-white rounded-lg border border-slate-300 shadow-sm p-5">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs font-mono">
+                    <div class="p-3 bg-slate-50 rounded border border-slate-200">
+                        <span class="text-gray-400 block text-[10px] uppercase tracking-wider font-sans font-bold">Recipe Name</span>
+                        <span class="font-bold text-gray-800 text-sm" id="viewRecipeName">-</span>
+                    </div>
+                    <div class="p-3 bg-slate-50 rounded border border-slate-200">
+                        <span class="text-gray-400 block text-[10px] uppercase tracking-wider font-sans font-bold">Status</span>
+                        <span class="font-bold text-sm px-2 py-0.5 rounded" id="viewStatusBadge">-</span>
+                    </div>
+                    <div class="p-3 bg-slate-50 rounded border border-slate-200">
+                        <span class="text-gray-400 block text-[10px] uppercase tracking-wider font-sans font-bold">Date & Time</span>
+                        <span class="font-bold text-gray-800" id="viewDateTime">-</span>
+                    </div>
+                    <div class="p-3 bg-slate-50 rounded border border-slate-200">
+                        <span class="text-gray-400 block text-[10px] uppercase tracking-wider font-sans font-bold">Operator ID</span>
+                        <span class="font-bold text-gray-800" id="viewOperator">-</span>
+                    </div>
+                </div>
             </div>
 
-            <!-- Fallback Table Container if Canvas needs fallback -->
-            <div id="excelContent" class="hidden bg-white rounded border border-gray-400 shadow-md overflow-auto min-w-full">
+            <!-- 2. Scatter Curves (Plotly.js) -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Chart 1: DIE 1 & DIE 2 Voltage vs Angle -->
+                <div class="bg-white rounded-lg border border-slate-300 shadow-sm p-4">
+                    <h4 class="font-bold text-sm text-slate-800 mb-2 flex items-center gap-2">
+                        <i class="fa-solid fa-chart-line text-blue-600"></i>
+                        <span id="chart1Title">DIE 1 & DIE 2 Voltage vs Angle</span>
+                    </h4>
+                    <div id="chart1Plotly" class="w-full h-80"></div>
+                </div>
+
+                <!-- Chart 2: Torque vs Angle -->
+                <div class="bg-white rounded-lg border border-slate-300 shadow-sm p-4">
+                    <h4 class="font-bold text-sm text-slate-800 mb-2 flex items-center gap-2">
+                        <i class="fa-solid fa-gauge-high text-emerald-600"></i>
+                        <span id="chart2Title">Torque CW & CCW vs Angle</span>
+                    </h4>
+                    <div id="chart2Plotly" class="w-full h-80"></div>
+                </div>
+            </div>
+
+            <!-- 3. Inspection Measurements Summary Table -->
+            <div class="bg-white rounded-lg border border-slate-300 shadow-sm overflow-hidden">
+                <div class="p-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+                    <h4 class="font-bold text-sm text-slate-800 flex items-center gap-2">
+                        <i class="fa-solid fa-table-list text-slate-600"></i>
+                        Inspection Data Points & Measurement Table
+                    </h4>
+                    <span class="badge badge-sm badge-ghost font-mono" id="tableRowCountBadge">0 Rows</span>
+                </div>
+                <div class="overflow-x-auto max-h-80" id="inspectionTableWrapper">
+                    <table class="table table-xs table-zebra w-full font-mono text-xs" id="inspectionTable">
+                        <thead class="bg-slate-200 text-slate-700 sticky top-0" id="inspectionTableHead"></thead>
+                        <tbody id="inspectionTableBody"></tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
-        <!-- Excel Footer Statistics -->
-        <div class="px-4 py-2 bg-gray-100 border-t border-gray-300 flex items-center justify-between text-xs text-gray-600 font-mono">
-            <div class="flex items-center gap-4">
-                <span id="footerTotalRows">Status: Ready</span>
-            </div>
-            <div class="flex items-center gap-4">
-                <span class="text-emerald-700 font-bold"><i class="fa-solid fa-circle-check text-xs"></i> Rust/WASM High-Fidelity Canvas Rendering</span>
-                <span class="text-gray-400">|</span>
-                <span>Zoom: 100%</span>
-            </div>
+        <!-- Footer -->
+        <div class="px-5 py-2.5 bg-white border-t border-slate-300 flex items-center justify-between text-xs text-gray-500 font-mono">
+            <span id="footerInfo">100% Client-Side In-Browser LabVIEW Engine</span>
+            <span class="text-emerald-700 font-bold"><i class="fa-solid fa-bolt mr-1"></i> Zero Server Overhead</span>
         </div>
     </div>
 </dialog>
 
-<script type="module">
-let activeViewer = null;
-
-// Dynamic import of @silurus/ooxml ES module
-let silurusModule = null;
-try {
-    silurusModule = await import('https://cdn.jsdelivr.net/npm/@silurus/ooxml@0.82.1/dist/xlsx.mjs');
-} catch (e) {
-    console.warn("Could not preload @silurus/ooxml:", e);
-}
-
+<script>
 window.openExcelViewer = async function(reportId, filename, recipeName, serial, downloadUrl) {
     const modal = document.getElementById('excelViewerModal');
     document.getElementById('modalFilename').textContent = filename;
@@ -170,14 +205,7 @@ window.openExcelViewer = async function(reportId, filename, recipeName, serial, 
     document.getElementById('modalDownloadBtn').href = downloadUrl;
     
     const loading = document.getElementById('excelLoading');
-    const canvasWrapper = document.getElementById('canvasWrapper');
-    const canvas = document.getElementById('excelCanvas');
-    const tableFallback = document.getElementById('excelContent');
-    const tabs = document.getElementById('sheetTabs');
-    
     loading.classList.remove('hidden');
-    tabs.innerHTML = '';
-    
     modal.showModal();
 
     try {
@@ -185,143 +213,163 @@ window.openExcelViewer = async function(reportId, filename, recipeName, serial, 
         if (!response.ok) throw new Error("Could not load report file.");
         
         const arrayBuffer = await response.arrayBuffer();
+        const zip = await JSZip.loadAsync(arrayBuffer);
 
-        // 1. Primary: Use @silurus/ooxml Rust+WASM Canvas Engine
-        if (silurusModule && silurusModule.XlsxViewer) {
-            try {
-                canvasWrapper.classList.remove('hidden');
-                tableFallback.classList.add('hidden');
-                
-                // Destroy previous instance if present
-                if (activeViewer && typeof activeViewer.destroy === 'function') {
-                    activeViewer.destroy();
-                }
+        // 1. Parse Defined Names & Metadata
+        const wbXmlStr = await zip.files['xl/workbook.xml'].async('text');
+        const parser = new DOMParser();
+        const wbDoc = parser.parseFromString(wbXmlStr, 'text/xml');
+        
+        // 2. Parse Sheet 1 for Table Data & Header Cell Values
+        const sheetData = XLSX.read(new Uint8Array(arrayBuffer), { type: 'array' });
+        const reportSheet = sheetData.Sheets['REPORT'] || sheetData.Sheets[sheetData.SheetNames[0]];
+        
+        // Extract Header Values directly from known cells
+        const operator = reportSheet['M3'] ? reportSheet['M3'].v : (reportSheet['M4'] ? reportSheet['M4'].v : 'Operator');
+        const recipe = reportSheet['M4'] ? reportSheet['M4'].v : recipeName;
+        const dateVal = reportSheet['S3'] ? reportSheet['S3'].w || reportSheet['S3'].v : '';
+        const timeVal = reportSheet['S4'] ? reportSheet['S4'].w || reportSheet['S4'].v : '';
+        const statusVal = reportSheet['S5'] ? String(reportSheet['S5'].v).toUpperCase().trim() : 'PASS';
 
-                activeViewer = new silurusModule.XlsxViewer(canvas, {
-                    wasmUrl: 'https://cdn.jsdelivr.net/npm/@silurus/ooxml@0.82.1/dist/xlsx_parser_bg.wasm'
-                });
-
-                await activeViewer.load(arrayBuffer);
-                
-                // Populate sheet tabs if provided by viewer
-                if (activeViewer.workbook && activeViewer.workbook.sheets) {
-                    tabs.innerHTML = '';
-                    activeViewer.workbook.sheets.forEach((sheet, idx) => {
-                        const btn = document.createElement('button');
-                        btn.className = `btn btn-xs ${idx === 0 ? 'bg-white text-emerald-800 font-bold border-b-2 border-emerald-700 shadow-sm' : 'btn-ghost text-gray-600'} rounded-t rounded-b-none px-3 py-1 font-medium`;
-                        btn.innerHTML = `<i class="fa-solid fa-table mr-1 text-xs"></i> ${sheet.name || ('Sheet ' + (idx + 1))}`;
-                        btn.onclick = () => {
-                            for (let b of tabs.children) b.className = 'btn btn-xs btn-ghost text-gray-600 rounded-t rounded-b-none px-3 py-1 font-medium';
-                            btn.className = 'btn btn-xs bg-white text-emerald-800 font-bold border-b-2 border-emerald-700 shadow-sm rounded-t rounded-b-none px-3 py-1 font-medium';
-                            if (typeof activeViewer.selectSheet === 'function') {
-                                activeViewer.selectSheet(idx);
-                            }
-                        };
-                        tabs.appendChild(btn);
-                    });
-                }
-                return;
-            } catch (wasmErr) {
-                console.warn("WASM Canvas rendering encountered issue, falling back to structured table:", wasmErr);
-            }
+        document.getElementById('viewRecipeName').textContent = recipe;
+        document.getElementById('viewOperator').textContent = operator;
+        document.getElementById('viewDateTime').textContent = `${dateVal} ${timeVal}`.trim() || 'N/A';
+        
+        const statusBadge = document.getElementById('viewStatusBadge');
+        statusBadge.textContent = statusVal;
+        if (statusVal === 'PASS' || statusVal === 'OK') {
+            statusBadge.className = 'font-bold text-sm px-2.5 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300';
+        } else {
+            statusBadge.className = 'font-bold text-sm px-2.5 py-0.5 rounded bg-red-100 text-red-800 border border-red-300';
         }
 
-        // 2. High-Fidelity Table Fallback (SheetJS)
-        canvasWrapper.classList.add('hidden');
-        tableFallback.classList.remove('hidden');
-        renderStructuredTable(arrayBuffer);
+        // 3. Render Chart 1 (DIE 1 & 2 Voltage vs Angle) from xl/charts/chart1.xml
+        if (zip.files['xl/charts/chart1.xml']) {
+            const c1Xml = await zip.files['xl/charts/chart1.xml'].async('text');
+            const c1Doc = parser.parseFromString(c1Xml, 'text/xml');
+            renderPlotlyScatter('chart1Plotly', c1Doc, 'Angle (°)', 'Voltage (V)');
+        }
+
+        // 4. Render Chart 2 (Torque vs Angle) from xl/charts/chart2.xml
+        if (zip.files['xl/charts/chart2.xml']) {
+            const c2Xml = await zip.files['xl/charts/chart2.xml'].async('text');
+            const c2Doc = parser.parseFromString(c2Xml, 'text/xml');
+            renderPlotlyScatter('chart2Plotly', c2Doc, 'Angle (°)', 'Torque (N·m)');
+        }
+
+        // 5. Render Measurement Table
+        renderTableRows(reportSheet);
 
     } catch (err) {
-        tableFallback.classList.remove('hidden');
-        tableFallback.innerHTML = `<div class="p-12 text-center text-red-600"><i class="fa-solid fa-triangle-exclamation text-4xl mb-3"></i><p class="font-bold text-lg">Error rendering Excel worksheet</p><p class="text-sm text-gray-500 mt-1">${err.message}</p></div>`;
+        console.error("Error in custom preview engine:", err);
+        alert("Could not render report: " + err.message);
     } finally {
         loading.classList.add('hidden');
     }
 };
 
-function renderStructuredTable(arrayBuffer) {
-    const data = new Uint8Array(arrayBuffer);
-    const currentWorkbook = XLSX.read(data, { type: 'array', cellDates: true, cellStyles: true, cellNF: true });
-    const tabs = document.getElementById('sheetTabs');
-    tabs.innerHTML = '';
-    
-    currentWorkbook.SheetNames.forEach((sheetName, index) => {
-        const btn = document.createElement('button');
-        btn.className = `btn btn-xs ${index === 0 ? 'bg-white text-emerald-800 font-bold border-b-2 border-emerald-700 shadow-sm' : 'btn-ghost text-gray-600'} rounded-t rounded-b-none px-3 py-1 font-medium`;
-        btn.innerHTML = `<i class="fa-solid fa-table mr-1 text-xs"></i> ${sheetName}`;
-        btn.onclick = () => renderSheetData(currentWorkbook, sheetName, btn);
-        tabs.appendChild(btn);
-    });
+function renderPlotlyScatter(divId, doc, defaultXTitle, defaultYTitle) {
+    const seriesNodes = doc.getElementsByTagName('c:ser');
+    const traces = [];
 
-    if (currentWorkbook.SheetNames.length > 0) {
-        renderSheetData(currentWorkbook, currentWorkbook.SheetNames[0], tabs.children[0]);
+    for (let i = 0; i < seriesNodes.length; i++) {
+        const s = seriesNodes[i];
+        
+        // Series Title
+        const txNode = s.querySelector('c\\:tx c\\:v, tx v');
+        const name = txNode ? txNode.textContent.trim() : `Series ${i + 1}`;
+
+        // Color & Dash
+        const colorNode = s.querySelector('a\\:solidFill a\\:srgbClr, solidFill srgbClr');
+        const colorHex = colorNode ? '#' + colorNode.getAttribute('val') : null;
+        
+        const dashNode = s.querySelector('a\\:ln a\\:prstDash, ln prstDash');
+        const dashVal = dashNode ? dashNode.getAttribute('val') : 'solid';
+        const plotlyDash = (dashVal === 'dash' || dashVal === 'sysDash') ? 'dash' : 'solid';
+
+        // Extract X and Y data points
+        const xPts = s.querySelectorAll('c\\:xVal c\\:pt, xVal pt');
+        const yPts = s.querySelectorAll('c\\:yVal c\\:pt, yVal pt');
+        
+        const xVals = [];
+        const yVals = [];
+
+        for (let pt of xPts) {
+            const v = pt.querySelector('c\\:v, v');
+            if (v) xVals.push(parseFloat(v.textContent));
+        }
+
+        for (let pt of yPts) {
+            const v = pt.querySelector('c\\:v, v');
+            if (v) yVals.push(parseFloat(v.textContent));
+        }
+
+        if (xVals.length > 0 && yVals.length > 0) {
+            traces.push({
+                x: xVals,
+                y: yVals,
+                mode: 'lines',
+                name: name,
+                line: {
+                    color: colorHex || (name.includes('Min') || name.includes('Max') ? '#ef4444' : (name.includes('Desired') ? '#10b981' : '#3b82f6')),
+                    dash: plotlyDash,
+                    width: 2
+                }
+            });
+        }
     }
+
+    const layout = {
+        margin: { t: 25, r: 25, b: 40, l: 50 },
+        font: { family: 'JetBrains Mono, monospace', size: 11 },
+        xaxis: { title: defaultXTitle, gridcolor: '#e2e8f0', zerolinecolor: '#cbd5e1' },
+        yaxis: { title: defaultYTitle, gridcolor: '#e2e8f0', zerolinecolor: '#cbd5e1' },
+        showlegend: true,
+        legend: { orientation: 'h', y: -0.25, font: { size: 10 } },
+        paper_bgcolor: 'rgba(0,0,0,0)',
+        plot_bgcolor: '#f8fafc'
+    };
+
+    Plotly.newPlot(divId, traces, layout, { responsive: true, displayModeBar: false });
 }
 
-function renderSheetData(currentWorkbook, sheetName, activeBtn) {
-    const tabs = document.getElementById('sheetTabs').children;
-    for (let b of tabs) b.className = 'btn btn-xs btn-ghost text-gray-600 rounded-t rounded-b-none px-3 py-1 font-medium';
-    if (activeBtn) activeBtn.className = 'btn btn-xs bg-white text-emerald-800 font-bold border-b-2 border-emerald-700 shadow-sm rounded-t rounded-b-none px-3 py-1 font-medium';
+function renderTableRows(sheet) {
+    const rawJson = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+    const head = document.getElementById('inspectionTableHead');
+    const body = document.getElementById('inspectionTableBody');
+    head.innerHTML = '';
+    body.innerHTML = '';
 
-    const worksheet = currentWorkbook.Sheets[sheetName];
-    if (!worksheet || !worksheet['!ref']) {
-        document.getElementById('excelContent').innerHTML = '<div class="p-8 text-center text-gray-400">Empty Sheet</div>';
+    if (!rawJson || rawJson.length < 11) {
+        document.getElementById('tableRowCountBadge').textContent = '0 Rows';
         return;
     }
 
-    const range = XLSX.utils.decode_range(worksheet['!ref']);
-    const merges = worksheet['!merges'] || [];
-    const mergeMap = {};
-    const skipMap = {};
+    // Row 10 (index 9 or 10) is typically table header in TPS template
+    const headers = rawJson[9] || rawJson[10];
+    const dataRows = rawJson.slice(11, 40); // First 30 data rows
 
-    merges.forEach(m => {
-        const topKey = `${m.s.r}_${m.s.c}`;
-        mergeMap[topKey] = { rowSpan: m.e.r - m.s.r + 1, colSpan: m.e.c - m.s.c + 1 };
-        for (let r = m.s.r; r <= m.e.r; r++) {
-            for (let c = m.s.c; c <= m.e.c; c++) {
-                if (r !== m.s.r || c !== m.s.c) skipMap[`${r}_${c}`] = true;
-            }
-        }
+    let headerHtml = '<tr>';
+    headers.forEach((h, idx) => {
+        if (h) headerHtml += `<th class="border border-slate-300 px-3 py-1.5">${h}</th>`;
     });
+    headerHtml += '</tr>';
+    head.innerHTML = headerHtml;
 
-    let tableHtml = '<table class="table table-xs w-full border-collapse border border-gray-400 font-sans text-xs select-text bg-white">';
-    tableHtml += '<thead class="bg-gray-200 text-gray-700 font-bold sticky top-0 z-10 select-none shadow-sm"><tr><th class="w-12 bg-gray-300 border border-gray-400 text-center text-gray-600 font-mono text-xs"></th>';
-    for (let c = range.s.c; c <= range.e.c; c++) {
-        tableHtml += `<th class="border border-gray-300 px-3 py-1 text-center font-mono text-xs bg-gray-200">${XLSX.utils.encode_col(c)}</th>`;
-    }
-    tableHtml += '</tr></thead><tbody>';
-
-    for (let r = range.s.r; r <= range.e.r; r++) {
-        tableHtml += `<tr class="hover:bg-blue-50/40"><td class="bg-gray-200 border border-gray-300 text-center font-bold text-gray-500 font-mono text-xs select-none w-12">${r + 1}</td>`;
-        for (let c = range.s.c; c <= range.e.c; c++) {
-            const cellKey = `${r}_${c}`;
-            if (skipMap[cellKey]) continue;
-
-            const cellAddress = XLSX.utils.encode_cell({ r: r, c: c });
-            const cell = worksheet[cellAddress];
-            let val = cell ? (cell.w || cell.v || '') : '';
-            
-            let inlineStyle = 'border: 1px solid #cbd5e1; padding: 4px 8px;';
-            const strVal = String(val).toUpperCase().trim();
-            if (strVal === 'PASS' || strVal === 'OK' || strVal === 'ACCEPTED') {
-                inlineStyle += ' background-color: #dcfce7; color: #166534; font-weight: bold; text-align: center;';
-            } else if (strVal === 'FAIL' || strVal === 'REJECT' || strVal === 'NOT OK' || strVal === 'NG') {
-                inlineStyle += ' background-color: #fee2e2; color: #991b1b; font-weight: bold; text-align: center;';
-            } else if (r === 0) {
-                inlineStyle += ' font-weight: bold; background-color: #f8fafc;';
+    let bodyHtml = '';
+    dataRows.forEach(r => {
+        if (!r.some(cell => cell !== '')) return;
+        bodyHtml += '<tr class="hover:bg-slate-100">';
+        headers.forEach((h, idx) => {
+            if (h) {
+                const val = r[idx] !== undefined ? r[idx] : '';
+                bodyHtml += `<td class="border border-slate-200 px-3 py-1">${val}</td>`;
             }
-
-            const merge = mergeMap[cellKey];
-            const spanAttrs = merge ? ` rowspan="${merge.rowSpan}" colspan="${merge.colSpan}"` : '';
-            if (merge) inlineStyle += ' text-align: center; vertical-align: middle; font-weight: bold;';
-
-            tableHtml += `<td class="cursor-cell whitespace-nowrap text-gray-800" style="${inlineStyle}"${spanAttrs}>${val}</td>`;
-        }
-        tableHtml += '</tr>';
-    }
-    tableHtml += '</tbody></table>';
-
-    document.getElementById('excelContent').innerHTML = tableHtml;
+        });
+        bodyHtml += '</tr>';
+    });
+    body.innerHTML = bodyHtml;
+    document.getElementById('tableRowCountBadge').textContent = `${rawJson.length - 11} Measurements`;
 }
 </script>
 {% endblock %}
