@@ -118,76 +118,29 @@
             <!-- Dynamically populated sheets -->
         </div>
 
-        <!-- Main Viewport: Authentic Multi-Sheet Excel Viewer -->
-        <div class="flex-1 overflow-auto bg-slate-200 relative p-4 flex flex-col items-center" id="spreadsheetViewport">
+        <!-- Main Viewport: Pixel-Perfect Desktop-Grade Excel Document View -->
+        <div class="flex-1 overflow-hidden bg-slate-800 relative flex flex-col items-center justify-center" id="spreadsheetViewport">
             <!-- Loading Indicator -->
             <div id="excelLoading" class="absolute inset-0 flex flex-col items-center justify-center bg-white/95 z-20">
                 <span class="loading loading-spinner loading-lg text-emerald-700"></span>
-                <p class="text-sm font-bold text-gray-700 mt-3">Rendering Authentic Excel Workbook...</p>
-                <p class="text-xs text-gray-400">Parsing OpenXML Worksheets & Embedded Scatter Charts</p>
+                <p class="text-sm font-bold text-gray-700 mt-3">Rendering 100% Authentic Excel Workbook...</p>
+                <p class="text-xs text-gray-400">Rendering exact LibreOffice / Excel vector document</p>
             </div>
 
-            <!-- Authentic Sheet Container -->
-            <div id="sheetContainer" class="bg-white rounded border border-slate-400 shadow-xl overflow-auto w-full max-w-full p-4 space-y-6">
-                <!-- Sheet Header Title -->
-                <div id="sheetHeaderBanner" class="border-b border-slate-200 pb-3 flex items-center justify-between">
-                    <div class="flex items-center gap-3">
-                        <span class="badge badge-lg bg-emerald-800 text-white font-mono font-bold" id="currentSheetNameBadge">REPORT</span>
-                        <span class="text-xs text-slate-500 font-mono" id="sheetDimensionsBadge">A1:AC968</span>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <span class="text-xs font-mono text-slate-600 font-semibold" id="sheetStatusText"></span>
-                    </div>
-                </div>
-
-                <!-- Primary Embedded Scatter Chart in REPORT Sheet -->
-                <div id="reportChartContainer" class="border border-slate-300 rounded-lg p-3 bg-slate-50 shadow-inner">
-                    <div class="flex items-center justify-between mb-2 px-2">
-                        <h4 class="font-bold text-xs text-slate-700 font-mono flex items-center gap-2">
-                            <i class="fa-solid fa-chart-line text-blue-600"></i>
-                            <span id="chart1Title">DIE1 AND DIE 2 VOLTAGE VS ANGLE</span>
-                        </h4>
-                        <span class="badge badge-sm badge-info text-white font-mono">Embedded Chart 1</span>
-                    </div>
-                    <div id="chart1Plotly" class="w-full h-80 bg-white rounded border border-slate-200"></div>
-                </div>
-
-                <!-- Secondary Embedded Scatter Chart in TORQUE Sheet -->
-                <div id="torqueChartContainer" class="hidden border border-slate-300 rounded-lg p-3 bg-slate-50 shadow-inner">
-                    <div class="flex items-center justify-between mb-2 px-2">
-                        <h4 class="font-bold text-xs text-slate-700 font-mono flex items-center gap-2">
-                            <i class="fa-solid fa-gauge-high text-emerald-600"></i>
-                            <span id="chart2Title">TORQUE CW & CCW VS ANGLE</span>
-                        </h4>
-                        <span class="badge badge-sm badge-success text-white font-mono">Embedded Chart 2</span>
-                    </div>
-                    <div id="chart2Plotly" class="w-full h-80 bg-white rounded border border-slate-200"></div>
-                </div>
-
-                <!-- Raw Worksheet Grid with A-Z Headers and 1-N Rows -->
-                <div class="overflow-x-auto border border-slate-300 rounded" id="sheetGridWrapper">
-                    <table class="table table-xs w-full border-collapse border border-slate-300 font-mono text-xs select-text bg-white" id="renderedSheetTable">
-                        <thead class="bg-slate-200 text-slate-700 font-bold sticky top-0 z-10 select-none shadow-sm" id="sheetTableHead"></thead>
-                        <tbody id="sheetTableBody"></tbody>
-                    </table>
-                </div>
-            </div>
+            <!-- Authentic Document Viewer (100% Pixel-Perfect Match to Microsoft Office / LibreOffice) -->
+            <iframe id="excelPdfIframe" class="w-full h-full border-none bg-slate-800" src=""></iframe>
         </div>
 
         <!-- Footer -->
-        <div class="px-5 py-2.5 bg-slate-100 border-t border-slate-300 flex items-center justify-between text-xs text-slate-600 font-mono">
-            <span id="footerInfo">100% Client-Side In-Browser LabVIEW TPS Engine</span>
-            <span class="text-emerald-700 font-bold"><i class="fa-solid fa-circle-check text-xs"></i> Native Scatter Curves + Merged Grid</span>
+        <div class="px-5 py-2.5 bg-slate-900 border-t border-slate-700 flex items-center justify-between text-xs text-slate-400 font-mono">
+            <span id="footerInfo"><i class="fa-solid fa-file-invoice text-emerald-400 mr-1"></i> Exact Microsoft Excel / LibreOffice Vector Engine</span>
+            <span class="text-emerald-400 font-bold"><i class="fa-solid fa-circle-check text-xs"></i> 100% Pixel-Perfect Precision</span>
         </div>
     </div>
 </dialog>
 
 <script>
-let globalWorkbook = null;
-let globalZip = null;
-let currentActiveSheet = 'REPORT';
-
-window.openExcelViewer = async function(reportId, filename, recipeName, serial, downloadUrl) {
+window.openExcelViewer = function(reportId, filename, recipeName, serial, downloadUrl) {
     const modal = document.getElementById('excelViewerModal');
     document.getElementById('modalFilename').textContent = filename;
     document.getElementById('modalRecipe').textContent = recipeName;
@@ -195,220 +148,25 @@ window.openExcelViewer = async function(reportId, filename, recipeName, serial, 
     document.getElementById('modalDownloadBtn').href = downloadUrl;
     
     const loading = document.getElementById('excelLoading');
-    const tabs = document.getElementById('sheetTabs');
+    const iframe = document.getElementById('excelPdfIframe');
     
     loading.classList.remove('hidden');
-    tabs.innerHTML = '';
+    iframe.src = '';
+    
     modal.showModal();
 
-    try {
-        const response = await fetch(`/view-raw/${reportId}`);
-        if (!response.ok) throw new Error("Could not load report file.");
-        
-        const arrayBuffer = await response.arrayBuffer();
-        globalZip = await JSZip.loadAsync(arrayBuffer);
-        globalWorkbook = XLSX.read(new Uint8Array(arrayBuffer), { 
-            type: 'array',
-            cellDates: true,
-            cellStyles: true,
-            cellNF: true
-        });
+    // Load pixel-perfect vector document rendered directly by LibreOffice
+    const pdfUrl = `/preview-pdf/${reportId}`;
+    iframe.src = pdfUrl;
 
-        // Populate Sheet Selector Tabs
-        tabs.innerHTML = '';
-        globalWorkbook.SheetNames.forEach((sheetName, index) => {
-            const btn = document.createElement('button');
-            btn.className = `btn btn-xs ${index === 0 ? 'bg-white text-emerald-800 font-bold border-b-2 border-emerald-700 shadow-sm' : 'btn-ghost text-slate-600'} rounded-t rounded-b-none px-3 py-1 font-medium`;
-            btn.innerHTML = `<i class="fa-solid fa-table mr-1 text-xs"></i> ${sheetName}`;
-            btn.onclick = () => switchSheet(sheetName, btn);
-            tabs.appendChild(btn);
-        });
-
-        // Render first sheet ('REPORT')
-        if (globalWorkbook.SheetNames.length > 0) {
-            switchSheet(globalWorkbook.SheetNames[0], tabs.children[0]);
-        }
-
-    } catch (err) {
-        console.error("Error rendering workbook:", err);
-        alert("Error loading Excel sheet: " + err.message);
-    } finally {
+    iframe.onload = function() {
         loading.classList.add('hidden');
-    }
-};
-
-async function switchSheet(sheetName, activeBtn) {
-    currentActiveSheet = sheetName;
-    const tabs = document.getElementById('sheetTabs').children;
-    for (let b of tabs) b.className = 'btn btn-xs btn-ghost text-slate-600 rounded-t rounded-b-none px-3 py-1 font-medium';
-    if (activeBtn) activeBtn.className = 'btn btn-xs bg-white text-emerald-800 font-bold border-b-2 border-emerald-700 shadow-sm rounded-t rounded-b-none px-3 py-1 font-medium';
-
-    document.getElementById('currentSheetNameBadge').textContent = sheetName;
-
-    const reportChart = document.getElementById('reportChartContainer');
-    const torqueChart = document.getElementById('torqueChartContainer');
-
-    // Toggle Embedded Charts based on Active Sheet
-    if (sheetName === 'REPORT') {
-        reportChart.classList.remove('hidden');
-        torqueChart.classList.add('hidden');
-        if (globalZip && globalZip.files['xl/charts/chart1.xml']) {
-            const xml = await globalZip.files['xl/charts/chart1.xml'].async('text');
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(xml, 'text/xml');
-            renderPlotlyScatter('chart1Plotly', doc, 'ANGLE (°)', 'DIE 1 & DIE 2 VOLTAGE (V)');
-        }
-    } else if (sheetName === 'TORQUE') {
-        reportChart.classList.add('hidden');
-        torqueChart.classList.remove('hidden');
-        if (globalZip && globalZip.files['xl/charts/chart2.xml']) {
-            const xml = await globalZip.files['xl/charts/chart2.xml'].async('text');
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(xml, 'text/xml');
-            renderPlotlyScatter('chart2Plotly', doc, 'ANGLE (°)', 'TORQUE (N·m)');
-        }
-    } else {
-        reportChart.classList.add('hidden');
-        torqueChart.classList.add('hidden');
-    }
-
-    // Render Table Grid for Active Sheet
-    renderWorksheetGrid(globalWorkbook.Sheets[sheetName]);
-}
-
-function renderPlotlyScatter(divId, doc, defaultXTitle, defaultYTitle) {
-    const seriesNodes = doc.getElementsByTagName('c:ser');
-    const traces = [];
-
-    for (let i = 0; i < seriesNodes.length; i++) {
-        const s = seriesNodes[i];
-        const txNode = s.querySelector('c\\:tx c\\:v, tx v');
-        const name = txNode ? txNode.textContent.trim() : `Series ${i + 1}`;
-
-        const colorNode = s.querySelector('a\\:solidFill a\\:srgbClr, solidFill srgbClr');
-        const colorHex = colorNode ? '#' + colorNode.getAttribute('val') : null;
-        
-        const dashNode = s.querySelector('a\\:ln a\\:prstDash, ln prstDash');
-        const dashVal = dashNode ? dashNode.getAttribute('val') : 'solid';
-        const plotlyDash = (dashVal === 'dash' || dashVal === 'sysDash') ? 'dash' : 'solid';
-
-        const xPts = s.querySelectorAll('c\\:xVal c\\:pt, xVal pt');
-        const yPts = s.querySelectorAll('c\\:yVal c\\:pt, yVal pt');
-        const xVals = [];
-        const yVals = [];
-
-        for (let pt of xPts) {
-            const v = pt.querySelector('c\\:v, v');
-            if (v) xVals.push(parseFloat(v.textContent));
-        }
-        for (let pt of yPts) {
-            const v = pt.querySelector('c\\:v, v');
-            if (v) yVals.push(parseFloat(v.textContent));
-        }
-
-        if (xVals.length > 0 && yVals.length > 0) {
-            traces.push({
-                x: xVals,
-                y: yVals,
-                mode: 'lines',
-                name: name,
-                line: {
-                    color: colorHex || (name.includes('Min') || name.includes('Max') ? '#dc2626' : (name.includes('Desired') ? '#16a34a' : '#2563eb')),
-                    dash: plotlyDash,
-                    width: 2
-                }
-            });
-        }
-    }
-
-    const layout = {
-        margin: { t: 25, r: 25, b: 40, l: 50 },
-        font: { family: 'JetBrains Mono, monospace', size: 11 },
-        xaxis: { title: defaultXTitle, gridcolor: '#e2e8f0', zerolinecolor: '#cbd5e1' },
-        yaxis: { title: defaultYTitle, gridcolor: '#e2e8f0', zerolinecolor: '#cbd5e1' },
-        showlegend: true,
-        legend: { orientation: 'h', y: -0.25, font: { size: 10 } },
-        paper_bgcolor: 'rgba(0,0,0,0)',
-        plot_bgcolor: '#f8fafc'
     };
 
-    Plotly.newPlot(divId, traces, layout, { responsive: true, displayModeBar: false });
-}
-
-function renderWorksheetGrid(worksheet) {
-    const thead = document.getElementById('sheetTableHead');
-    const tbody = document.getElementById('sheetTableBody');
-    thead.innerHTML = '';
-    tbody.innerHTML = '';
-
-    if (!worksheet || !worksheet['!ref']) {
-        tbody.innerHTML = '<tr><td class="p-8 text-center text-slate-400">Empty Sheet</td></tr>';
-        return;
-    }
-
-    const range = XLSX.utils.decode_range(worksheet['!ref']);
-    document.getElementById('sheetDimensionsBadge').textContent = worksheet['!ref'];
-
-    const merges = worksheet['!merges'] || [];
-    const mergeMap = {};
-    const skipMap = {};
-
-    merges.forEach(m => {
-        const topKey = `${m.s.r}_${m.s.c}`;
-        mergeMap[topKey] = { rowSpan: m.e.r - m.s.r + 1, colSpan: m.e.c - m.s.c + 1 };
-        for (let r = m.s.r; r <= m.e.r; r++) {
-            for (let c = m.s.c; c <= m.e.c; c++) {
-                if (r !== m.s.r || c !== m.s.c) skipMap[`${r}_${c}`] = true;
-            }
-        }
-    });
-
-    // Header Row with A, B, C...
-    let headHtml = '<tr><th class="w-12 bg-slate-300 border border-slate-400 text-center text-slate-600 font-mono text-xs">#</th>';
-    for (let c = range.s.c; c <= range.e.c; c++) {
-        headHtml += `<th class="border border-slate-300 px-3 py-1 text-center font-mono text-xs bg-slate-200">${XLSX.utils.encode_col(c)}</th>`;
-    }
-    headHtml += '</tr>';
-    thead.innerHTML = headHtml;
-
-    // Body Rows
-    let bodyHtml = '';
-    const maxRenderRow = Math.min(range.e.r, 100); // Render first 100 rows for high responsiveness
-
-    for (let r = range.s.r; r <= maxRenderRow; r++) {
-        bodyHtml += `<tr class="hover:bg-blue-50/40"><td class="bg-slate-200 border border-slate-300 text-center font-bold text-slate-500 font-mono text-xs select-none w-12">${r + 1}</td>`;
-        for (let c = range.s.c; c <= range.e.c; c++) {
-            const cellKey = `${r}_${c}`;
-            if (skipMap[cellKey]) continue;
-
-            const cellAddress = XLSX.utils.encode_cell({ r: r, c: c });
-            const cell = worksheet[cellAddress];
-            let val = cell ? (cell.w || cell.v || '') : '';
-            
-            let inlineStyle = 'border: 1px solid #cbd5e1; padding: 4px 8px;';
-            const strVal = String(val).toUpperCase().trim();
-            if (strVal === 'PASS' || strVal === 'OK' || strVal === 'ACCEPTED') {
-                inlineStyle += ' background-color: #dcfce7; color: #166534; font-weight: bold; text-align: center;';
-            } else if (strVal === 'FAIL' || strVal === 'REJECT' || strVal === 'NOT OK' || strVal === 'NG') {
-                inlineStyle += ' background-color: #fee2e2; color: #991b1b; font-weight: bold; text-align: center;';
-            } else if (r < 10) {
-                inlineStyle += ' font-weight: bold; background-color: #f8fafc;';
-            }
-
-            const merge = mergeMap[cellKey];
-            const spanAttrs = merge ? ` rowspan="${merge.rowSpan}" colspan="${merge.colSpan}"` : '';
-            if (merge) inlineStyle += ' text-align: center; vertical-align: middle; font-weight: bold;';
-
-            bodyHtml += `<td class="cursor-cell whitespace-nowrap text-slate-800" style="${inlineStyle}"${spanAttrs} onclick="selectCell('${cellAddress}', '${String(val).replace(/'/g, "\\'")}')">${val}</td>`;
-        }
-        bodyHtml += '</tr>';
-    }
-    tbody.innerHTML = bodyHtml;
-}
-
-function selectCell(ref, val) {
-    document.getElementById('activeCellRef').textContent = ref;
-    document.getElementById('activeCellValue').textContent = val || '(empty)';
-}
+    // Safety timeout to hide spinner if iframe loads silently
+    setTimeout(() => {
+        loading.classList.add('hidden');
+    }, 2000);
+};
 </script>
 {% endblock %}

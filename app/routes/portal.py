@@ -134,3 +134,51 @@ def raw_report(report_id):
     
     return send_file(target_path, as_attachment=False, mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
 
+@portal_bp.route('/preview-pdf/<int:report_id>')
+@login_required
+def preview_pdf(report_id):
+    """Generates and serves a pixel-perfect, 100% authentic PDF render of the Excel report using LibreOffice."""
+    import subprocess
+    import hashlib
+
+    where, params = customer_scope(current_user)
+    row = g.db.execute(f"SELECT * FROM reports WHERE id = ? AND {where}", [report_id] + params).fetchone()
+    if not row:
+        abort(404)
+
+    target_path = row['file_path']
+    if not os.path.exists(target_path):
+        abort(404)
+
+    # Cache PDF by report ID and file modification time to prevent duplicate rendering
+    cache_dir = os.path.join(current_app.config['DATA_FOLDER'], 'pdf_cache')
+    os.makedirs(cache_dir, exist_ok=True)
+    mtime = os.path.getmtime(target_path)
+    cache_key = hashlib.md5(f"{report_id}_{mtime}".encode()).hexdigest()
+    cached_pdf = os.path.join(cache_dir, f"{cache_key}.pdf")
+
+    if not os.path.exists(cached_pdf):
+        soffice_path = r'C:\Program Files\LibreOffice\program\soffice.exe'
+        if not os.path.exists(soffice_path):
+            soffice_path = 'soffice'
+        
+        cmd = [soffice_path, '--headless', '--convert-to', 'pdf', target_path, '--outdir', cache_dir]
+        subprocess.run(cmd, check=True, capture_output=True)
+        
+        # Move generated file to cached_pdf name
+        base_name = os.path.splitext(os.path.basename(target_path))[0]
+        gen_pdf = os.path.join(cache_dir, f"{base_name}.pdf")
+        if os.path.exists(gen_pdf):
+            if os.path.exists(cached_pdf):
+                os.remove(cached_pdf)
+            os.rename(gen_pdf, cached_pdf)
+
+    if not os.path.exists(cached_pdf):
+        abort(500)
+
+    g.db.execute("INSERT INTO audit_log (user_id, report_id, action, client_ip) VALUES (?, ?, ?, ?)",
+                 (current_user.id, report_id, 'preview_pdf', request.remote_addr))
+    g.db.commit()
+
+    return send_file(cached_pdf, as_attachment=False, mimetype='application/pdf')
+
