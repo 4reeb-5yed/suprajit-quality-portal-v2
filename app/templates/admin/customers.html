@@ -54,7 +54,7 @@
                         <td class="text-end pe-6">
                             <div class="flex items-center justify-end gap-2">
                                 <!-- Direct Toggle Suspend / Enable -->
-                                <form action="{{ url_for('admin.suspend_customer') }}" method="POST" class="inline">
+                                <form action="{{ url_for('admin.suspend_customer') }}" method="POST" class="inline" onsubmit="return confirm('WARNING: Are you sure you want to {% if c.portal_suspended %}ACTIVATE{% else %}SUSPEND{% endif %} access for {{ c.company_name }}?');">
                                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                                     <input type="hidden" name="customer_id" value="{{ c.id }}"/>
                                     {% if c.portal_suspended %}
