@@ -6,8 +6,11 @@
             <h1 class="text-2xl font-bold text-gray-800"><i class="fa-solid fa-wrench text-primary mr-2"></i> Troubleshoot & Repair</h1>
             <p class="text-sm text-gray-500">Developer tools to trace ingestion logic, force resyncs, and fix data anomalies.</p>
         </div>
-        <div>
-            <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline"><i class="fa-solid fa-arrow-left"></i> Back to Dashboard</a>
+        <div class="flex items-center gap-3">
+            <a href="{{ url_for('admin.diagnostics') }}" class="btn btn-primary suprajit-blue-bg border-none text-white shadow">
+                <i class="fa-solid fa-stethoscope mr-1"></i> System Health
+            </a>
+            <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline"><i class="fa-solid fa-arrow-left"></i> Dashboard</a>
         </div>
     </div>
 
@@ -75,6 +78,84 @@
                     </div>
                 </form>
             </div>
+        </div>
+    </div>
+
+    <!-- System Health & Live Engine Status Section -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Database & Engine Health -->
+        <div class="bg-white border border-gray-200 rounded shadow-sm p-6">
+            <h3 class="font-bold text-lg border-b pb-2 mb-4"><i class="fa-solid fa-database text-purple-600 mr-2"></i> Database & Engine Health</h3>
+            
+            <div class="flex items-center justify-between py-2 border-b">
+                <span class="font-semibold text-gray-600">Database Size (SQLite WAL)</span>
+                <span class="text-sm font-bold text-blue-900">{{ db_size_mb }} MB</span>
+            </div>
+            
+            <div class="flex items-center justify-between py-2 border-b">
+                <span class="font-semibold text-gray-600">Total Indexed Reports</span>
+                <span class="text-sm font-bold text-gray-800">{{ total_reports }}</span>
+            </div>
+            
+            <div class="flex items-center justify-between py-2 border-b">
+                <span class="font-semibold text-gray-600">Ingestion Target</span>
+                <span class="badge badge-primary text-white">N-1 (Yesterday)</span>
+            </div>
+            
+            <div class="flex items-center justify-between py-2 border-b">
+                <span class="font-semibold text-gray-600">Next Scheduled Run Time</span>
+                <span class="badge badge-neutral">{{ sync_time_str }} (24h)</span>
+            </div>
+        </div>
+
+        <!-- Last Sync Info -->
+        <div class="bg-white border border-gray-200 rounded shadow-sm p-6">
+            <h3 class="font-bold text-lg border-b pb-2 mb-4"><i class="fa-solid fa-rotate text-blue-500 mr-2"></i> Last Sync Cycle</h3>
+            {% if last_run %}
+                <div class="flex items-center justify-between py-2 border-b">
+                    <span class="font-semibold text-gray-600">Status</span>
+                    {% if last_run.status == 'success' or last_run.status == 'completed' %}
+                        <span class="badge badge-success text-white">SUCCESS</span>
+                    {% elif last_run.status == 'failed' %}
+                        <span class="badge badge-error text-white">FAILED</span>
+                    {% else %}
+                        <span class="badge badge-warning">RUNNING</span>
+                    {% endif %}
+                </div>
+                <div class="flex items-center justify-between py-2 border-b">
+                    <span class="font-semibold text-gray-600">Files Processed</span>
+                    <span class="text-sm font-bold text-gray-800">{{ last_run.files_processed }}</span>
+                </div>
+                <div class="flex items-center justify-between py-2 border-b">
+                    <span class="font-semibold text-gray-600">Files Failed</span>
+                    <span class="text-sm font-bold {% if last_run.files_failed > 0 %}text-red-500{% else %}text-gray-800{% endif %}">{{ last_run.files_failed }}</span>
+                </div>
+                {% if last_run.error_message %}
+                <div class="mt-4 p-3 bg-red-50 rounded border border-red-200 text-sm text-red-800 font-mono">
+                    {{ last_run.error_message }}
+                </div>
+                {% endif %}
+            {% else %}
+                <p class="text-gray-500 italic">No sync jobs have run yet.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Live Logs Console -->
+    <div class="bg-gray-900 border border-gray-700 rounded shadow-lg overflow-hidden">
+        <div class="bg-gray-800 px-4 py-2 flex justify-between items-center border-b border-gray-700">
+            <span class="text-gray-300 font-mono text-sm"><i class="fa-solid fa-terminal mr-2"></i>Live System Log Stream</span>
+        </div>
+        <div class="p-4 overflow-y-auto" style="max-height: 220px; font-family: monospace;">
+            {% for line in log_lines %}
+                {% if 'ERROR' in line or 'Exception' in line %}
+                    <div class="text-red-400 whitespace-pre-wrap">{{ line }}</div>
+                {% elif 'WARNING' in line %}
+                    <div class="text-yellow-400 whitespace-pre-wrap">{{ line }}</div>
+                {% else %}
+                    <div class="text-green-400 whitespace-pre-wrap">{{ line }}</div>
+                {% endif %}
+            {% endfor %}
         </div>
     </div>
 

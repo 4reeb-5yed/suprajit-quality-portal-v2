@@ -38,16 +38,34 @@
         </div>
         <div class="bg-white border border-gray-200 rounded p-5 flex justify-between items-center">
             <div>
-                <div class="text-xs font-semibold text-gray-500 uppercase">Portal Status</div>
-                <div class="mt-1">
+                <div class="text-xs font-semibold text-gray-500 uppercase mb-1.5">Portal Status</div>
+                <div class="flex items-center gap-3">
                     {% if customer.portal_suspended %}
-                        <span class="badge badge-error text-white">Suspended</span>
+                        <span class="badge badge-error text-white font-bold text-xs uppercase tracking-wider px-2.5 py-1">Suspended</span>
+                        <form method="POST" action="{{ url_for('admin.suspend_customer') }}" class="inline">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                            <input type="hidden" name="customer_id" value="{{ customer.id }}"/>
+                            <input type="hidden" name="portal_suspended" value="0"/>
+                            <input type="hidden" name="redirect_url" value="{{ url_for('admin.customer_detail', customer_id=customer.id) }}"/>
+                            <button type="submit" class="btn btn-xs btn-success text-white font-semibold shadow-sm">
+                                <i class="fa-solid fa-play mr-1"></i> Activate
+                            </button>
+                        </form>
                     {% else %}
-                        <span class="badge badge-success text-white">Active</span>
+                        <span class="badge badge-success text-white font-bold text-xs uppercase tracking-wider px-2.5 py-1">Active</span>
+                        <form method="POST" action="{{ url_for('admin.suspend_customer') }}" class="inline">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                            <input type="hidden" name="customer_id" value="{{ customer.id }}"/>
+                            <input type="hidden" name="portal_suspended" value="1"/>
+                            <input type="hidden" name="redirect_url" value="{{ url_for('admin.customer_detail', customer_id=customer.id) }}"/>
+                            <button type="submit" class="btn btn-xs btn-error text-white font-semibold shadow-sm">
+                                <i class="fa-solid fa-pause mr-1"></i> Suspend
+                            </button>
+                        </form>
                     {% endif %}
                 </div>
             </div>
-            <i class="fa-solid fa-shield-halved text-4xl text-green-100"></i>
+            <i class="fa-solid fa-shield-halved text-4xl {% if customer.portal_suspended %}text-red-100{% else %}text-green-100{% endif %}"></i>
         </div>
     </div>
 

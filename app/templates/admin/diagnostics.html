@@ -3,11 +3,12 @@
 <div class="space-y-6">
     <div class="flex justify-between items-center bg-white border border-gray-200 rounded shadow-sm p-6">
         <div>
-            <h1 class="text-2xl font-bold text-gray-800"><i class="fa-solid fa-stethoscope text-primary mr-2"></i> System Diagnostics</h1>
-            <p class="text-sm text-gray-500">Live heartbeat, telemetry, and error logs.</p>
+            <h1 class="text-2xl font-bold text-gray-800"><i class="fa-solid fa-stethoscope text-primary mr-2"></i> System Diagnostics & Health</h1>
+            <p class="text-sm text-gray-500">Live heartbeat, telemetry, security audit log, and error streams.</p>
         </div>
-        <div>
-            <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline"><i class="fa-solid fa-arrow-left"></i> Back to Dashboard</a>
+        <div class="flex items-center gap-3">
+            <a href="{{ url_for('admin.repair') }}" class="btn btn-outline btn-primary"><i class="fa-solid fa-wrench mr-1"></i> Back to Repair</a>
+            <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline"><i class="fa-solid fa-chart-line mr-1"></i> Dashboard</a>
         </div>
     </div>
 
