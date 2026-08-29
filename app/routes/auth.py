@@ -1,11 +1,13 @@
-from app import limiter
-from flask import Blueprint, render_template, request, redirect, url_for, flash, g
+﻿from app import limiter
+from flask import Blueprint, render_template, request, redirect, url_for, flash, g, current_app
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime, timedelta
 
-from app.database import UPDATE_USER_LOCKOUT, GET_USER_BY_USERNAME, GET_USER_BY_EMAIL, UPDATE_USER_PASSWORD
+from app.database import UPDATE_USER_LOCKOUT, GET_USER_BY_USERNAME, GET_USER_BY_EMAIL, UPDATE_USER_PASSWORD, INSERT_USER
 from app.mail import send_password_reset_email, get_serializer
+from app.auth_models import User
+from app.oauth import get_oauth_settings, get_registered_client
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -22,26 +24,30 @@ def login():
         row = g.db.execute(GET_USER_BY_USERNAME, (username,)).fetchone()
         if not row:
             flash("Invalid credentials", "error")
-            return render_template('auth/login.html')
+            oauth_settings = get_oauth_settings(g.db)
+            return render_template('auth/login.html', oauth_settings=oauth_settings)
             
         # Check Lockout
         if row['locked_until']:
             locked_until = datetime.strptime(row['locked_until'], '%Y-%m-%d %H:%M:%S')
             if datetime.utcnow() < locked_until:
                 flash("Account locked due to too many failed attempts. Try again later.", "error")
-                return render_template('auth/login.html')
+                oauth_settings = get_oauth_settings(g.db)
+                return render_template('auth/login.html', oauth_settings=oauth_settings)
             
         # Check if user is disabled
         if row['is_active'] == 0:
             flash("Your account has been revoked. Contact the administrator.", "error")
-            return render_template('auth/login.html')
+            oauth_settings = get_oauth_settings(g.db)
+            return render_template('auth/login.html', oauth_settings=oauth_settings)
             
         # Check if customer portal is globally suspended
         if row['role'] != 'admin':
             cust = g.db.execute("SELECT portal_suspended FROM customers WHERE id = ?", (row['customer_id'],)).fetchone()
             if cust and cust['portal_suspended'] == 1:
                 flash("Portal access for this customer is currently suspended.", "error")
-                return render_template('auth/login.html')
+                oauth_settings = get_oauth_settings(g.db)
+                return render_template('auth/login.html', oauth_settings=oauth_settings)
                 
         # Check Password
         if check_password_hash(row['password_hash'], password):
@@ -49,8 +55,6 @@ def login():
             g.db.execute(UPDATE_USER_LOCKOUT, (0, None, row['id']))
             g.db.commit()
             
-            # Use the UserMixin object defined in __init__ (loaded implicitly via login_user)
-            from app.auth_models import User
             user_obj = User(row)
             login_user(user_obj)
             
@@ -73,13 +77,146 @@ def login():
             g.db.execute(UPDATE_USER_LOCKOUT, (failures, locked_until, row['id']))
             g.db.commit()
             
-    return render_template('auth/login.html')
+    oauth_settings = get_oauth_settings(g.db)
+    return render_template('auth/login.html', oauth_settings=oauth_settings)
 
 @auth_bp.route('/logout')
 @login_required
 def logout():
     logout_user()
     return redirect(url_for('auth.login'))
+
+@auth_bp.route('/oauth/login/<provider>')
+def oauth_login(provider):
+    """Redirects user to Microsoft / Google / GitHub OAuth."""
+    client = get_registered_client(provider, g.db)
+    if not client:
+        flash(f"{provider.capitalize()} Single Sign-On is not configured or disabled.", "error")
+        return redirect(url_for('auth.login'))
+        
+    redirect_uri = url_for('auth.oauth_callback', provider=provider, _external=True)
+    return client.authorize_redirect(redirect_uri)
+
+@auth_bp.route('/oauth/callback/<provider>')
+def oauth_callback(provider):
+    """Handles OAuth response, verifies verified email, auto-provisions or logs in user."""
+    client = get_registered_client(provider, g.db)
+    if not client:
+        flash("Invalid OAuth provider response.", "error")
+        return redirect(url_for('auth.login'))
+
+    try:
+        token = client.authorize_access_token()
+    except Exception as e:
+        flash(f"OAuth Authentication Failed: {e}", "error")
+        return redirect(url_for('auth.login'))
+
+    email = None
+    display_name = None
+
+    if provider == 'google':
+        user_info = token.get('userinfo')
+        if not user_info:
+            user_info = client.userinfo()
+        email = user_info.get('email')
+        display_name = user_info.get('name') or user_info.get('given_name')
+
+    elif provider == 'microsoft':
+        user_info = token.get('userinfo')
+        if not user_info:
+            resp = client.get('https://graph.microsoft.com/v1.0/me', token=token)
+            user_info = resp.json()
+        email = user_info.get('mail') or user_info.get('userPrincipalName')
+        display_name = user_info.get('displayName')
+
+    elif provider == 'github':
+        resp = client.get('user', token=token)
+        profile = resp.json()
+        display_name = profile.get('name') or profile.get('login')
+        
+        # GitHub primary verified email fetch
+        emails_resp = client.get('user/emails', token=token)
+        emails_data = emails_resp.json()
+        if isinstance(emails_data, list):
+            for em in emails_data:
+                if em.get('primary') and em.get('verified'):
+                    email = em.get('email')
+                    break
+            if not email and emails_data:
+                email = emails_data[0].get('email')
+        else:
+            email = profile.get('email')
+
+    if not email:
+        flash("Could not retrieve a verified email address from your identity provider.", "error")
+        return redirect(url_for('auth.login'))
+
+    email = email.lower().strip()
+    
+    # 1. Check if user already exists
+    user_row = g.db.execute("SELECT * FROM users WHERE email = ? OR username = ?", (email, email.split('@')[0])).fetchone()
+    
+    if user_row:
+        if user_row['is_active'] == 0:
+            flash("Your account has been revoked. Contact the administrator.", "error")
+            return redirect(url_for('auth.login'))
+
+        if user_row['role'] != 'admin' and user_row['customer_id']:
+            cust = g.db.execute("SELECT portal_suspended FROM customers WHERE id = ?", (user_row['customer_id'],)).fetchone()
+            if cust and cust['portal_suspended'] == 1:
+                flash("Portal access for this customer is currently suspended.", "error")
+                return redirect(url_for('auth.login'))
+
+        user_obj = User(user_row)
+        login_user(user_obj)
+        g.db.execute("INSERT INTO audit_log (user_id, action, client_ip) VALUES (?, ?, ?)", 
+                     (user_row['id'], f'oauth_login_{provider}', request.remote_addr))
+        g.db.commit()
+        flash(f"Welcome back, {user_row['display_name']}!", "success")
+        return redirect(url_for('portal.search'))
+
+    # 2. Auto-Provisioning via Domain Whitelist
+    domain = email.split('@')[1].strip() if '@' in email else ''
+    customers = g.db.execute("SELECT id, company_name, allowed_domains, portal_suspended FROM customers WHERE allowed_domains IS NOT NULL AND allowed_domains != ''").fetchall()
+    matched_customer = None
+
+    for cust in customers:
+        allowed = [d.strip().lower() for d in cust['allowed_domains'].split(',') if d.strip()]
+        if domain in allowed:
+            matched_customer = cust
+            break
+
+    if not matched_customer:
+        flash(f"Your email domain '@{domain}' is not authorized for auto-registration. Please contact your organization administrator.", "error")
+        return redirect(url_for('auth.login'))
+
+    if matched_customer['portal_suspended']:
+        flash("Portal access for your organization is currently suspended.", "error")
+        return redirect(url_for('auth.login'))
+
+    # Auto-create new user account
+    import secrets
+    username = email.split('@')[0].lower()
+    existing_un = g.db.execute("SELECT id FROM users WHERE username = ?", (username,)).fetchone()
+    if existing_un:
+        username = f"{username}_{secrets.token_hex(2)}"
+
+    random_pwd_hash = generate_password_hash(secrets.token_urlsafe(24))
+    full_name = display_name or username.replace('.', ' ').title()
+
+    g.db.execute(INSERT_USER, (username, email, random_pwd_hash, full_name, 'customer_viewer', matched_customer['id'], 'ALL'))
+    g.db.commit()
+
+    new_user_row = g.db.execute("SELECT * FROM users WHERE username = ?", (username,)).fetchone()
+    user_obj = User(new_user_row)
+    login_user(user_obj)
+
+    g.db.execute("INSERT INTO audit_log (user_id, action, client_ip) VALUES (?, ?, ?)", 
+                 (new_user_row['id'], f'oauth_register_{provider}', request.remote_addr))
+    g.db.commit()
+
+    flash(f"Account auto-provisioned! Welcome to {matched_customer['company_name']}.", "success")
+    return redirect(url_for('portal.search'))
 
 @auth_bp.route('/forgot-password', methods=['GET', 'POST'])
 def forgot_password():
@@ -88,7 +225,6 @@ def forgot_password():
         row = g.db.execute(GET_USER_BY_EMAIL, (email,)).fetchone()
         if row:
             send_password_reset_email(email, row['id'])
-        # Always say success to prevent email enumeration
         flash("If an account with that email exists, a reset link has been sent.", "success")
         return redirect(url_for('auth.login'))
         
@@ -98,15 +234,18 @@ def forgot_password():
 def reset_password(token):
     s = get_serializer()
     try:
-        user_id = s.loads(token, salt='password-reset-salt', max_age=3600) # 1 hour
+        user_id = s.loads(token, salt='password-reset-salt', max_age=3600)
     except Exception:
         flash("The reset link is invalid or has expired.", "error")
         return redirect(url_for('auth.forgot_password'))
         
     if request.method == 'POST':
-
         new_password = request.form.get('password')
-        
+        import re
+        if len(new_password) < 8 or not re.search(r"\d", new_password) or not re.search(r"[A-Z]", new_password) or not re.search(r"[@$!%*?&#]", new_password):
+            flash("Password must be at least 8 characters long and contain a number, an uppercase letter, and a special character.", "error")
+            return render_template('auth/reset_password.html')
+
         p_hash = generate_password_hash(new_password)
         g.db.execute(UPDATE_USER_PASSWORD, (p_hash, user_id))
         g.db.commit()
@@ -167,7 +306,6 @@ def register():
             flash("Password must be at least 8 characters long and contain a number, an uppercase letter, and a special character.", "error")
             return render_template('auth/register.html')
 
-        from app.database import INSERT_USER
         pwd_hash = generate_password_hash(password)
 
         try:

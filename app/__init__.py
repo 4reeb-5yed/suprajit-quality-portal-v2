@@ -68,6 +68,9 @@ def create_app(test_config=None):
     login_manager.init_app(app)
     if not app.config.get('TESTING'):
         limiter.init_app(app)
+        
+    from app.oauth import init_oauth
+    init_oauth(app)
     
     @login_manager.user_loader
     def load_user(user_id):

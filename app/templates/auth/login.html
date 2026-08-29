@@ -1,18 +1,19 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 
 {% block content %}
-<div class="max-w-md mx-auto mt-16">
+<div class="max-w-md mx-auto mt-12 mb-12">
     <div class="bg-white border border-gray-200 rounded shadow-md p-8">
         <div class="text-center mb-6">
             <h1 class="text-2xl font-bold suprajit-blue-text">Authorized Access Only</h1>
             <p class="text-sm text-gray-500 mt-1">Please log in to view quality reports.</p>
         </div>
         
+        <!-- Standard Username/Password Form -->
         <form method="POST" action="{{ url_for('auth.login') }}" class="space-y-4">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
             
             <div class="form-control">
-                <label class="label"><span class="label-text font-semibold">Username</span></label>
+                <label class="label"><span class="label-text font-semibold">Username or Corporate Email</span></label>
                 <input type="text" name="username" required class="input input-bordered w-full" />
             </div>
             
@@ -28,6 +29,37 @@
                 <button type="submit" class="btn btn-primary w-full suprajit-blue-bg border-none text-white font-bold">Secure Login</button>
             </div>
         </form>
+
+        {% if oauth_settings and (oauth_settings.get('sso_google_enabled') == '1' or oauth_settings.get('sso_microsoft_enabled') == '1' or oauth_settings.get('sso_github_enabled') == '1') %}
+        <!-- SSO Providers Divider -->
+        <div class="relative my-6 text-center">
+            <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-gray-200"></div></div>
+            <span class="relative bg-white px-3 text-xs font-semibold text-gray-500 uppercase">Or Continue With SSO</span>
+        </div>
+
+        <div class="space-y-2">
+            {% if oauth_settings.get('sso_microsoft_enabled') == '1' and oauth_settings.get('sso_microsoft_client_id') %}
+            <a href="{{ url_for('auth.oauth_login', provider='microsoft') }}" class="btn btn-outline w-full border-gray-300 hover:bg-gray-50 hover:border-gray-400 text-gray-700 font-semibold flex items-center justify-center gap-2">
+                <i class="fa-brands fa-microsoft text-blue-500 text-base"></i>
+                <span>Sign in with Microsoft 365 / Outlook</span>
+            </a>
+            {% endif %}
+
+            {% if oauth_settings.get('sso_google_enabled') == '1' and oauth_settings.get('sso_google_client_id') %}
+            <a href="{{ url_for('auth.oauth_login', provider='google') }}" class="btn btn-outline w-full border-gray-300 hover:bg-gray-50 hover:border-gray-400 text-gray-700 font-semibold flex items-center justify-center gap-2">
+                <i class="fa-brands fa-google text-red-500 text-base"></i>
+                <span>Sign in with Google Workspace</span>
+            </a>
+            {% endif %}
+
+            {% if oauth_settings.get('sso_github_enabled') == '1' and oauth_settings.get('sso_github_client_id') %}
+            <a href="{{ url_for('auth.oauth_login', provider='github') }}" class="btn btn-outline w-full border-gray-300 hover:bg-gray-50 hover:border-gray-400 text-gray-700 font-semibold flex items-center justify-center gap-2">
+                <i class="fa-brands fa-github text-gray-900 text-base"></i>
+                <span>Sign in with GitHub</span>
+            </a>
+            {% endif %}
+        </div>
+        {% endif %}
 
         <div class="mt-6 pt-4 border-t border-gray-100 text-center">
             <p class="text-xs text-gray-500">

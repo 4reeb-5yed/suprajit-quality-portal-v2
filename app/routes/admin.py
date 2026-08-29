@@ -119,6 +119,19 @@ def settings():
                 flash(f"Invalid Regular Expression Syntax: {e}", "error")
                 return redirect(url_for('admin.settings'))
 
+        # SSO Settings (Google, Microsoft, GitHub)
+        sso_keys = [
+            'sso_google_enabled', 'sso_google_client_id', 'sso_google_client_secret',
+            'sso_microsoft_enabled', 'sso_microsoft_client_id', 'sso_microsoft_client_secret', 'sso_microsoft_tenant_id',
+            'sso_github_enabled', 'sso_github_client_id', 'sso_github_client_secret'
+        ]
+        for sk in sso_keys:
+            val = request.form.get(sk)
+            if sk.endswith('_enabled'):
+                g.db.execute(SET_SETTING, (sk, '1' if val == '1' else '0'))
+            elif val is not None:
+                g.db.execute(SET_SETTING, (sk, val.strip()))
+
         if new_time: g.db.execute(SET_SETTING, ('sync_time', new_time))
         if new_storage: g.db.execute(SET_SETTING, ('root_search_path', new_storage))
         if m_srv is not None: g.db.execute(SET_SETTING, ('mail_server', m_srv))
@@ -139,6 +152,7 @@ def settings():
         return row['value'] if row else default
         
     from app.parser import DEFAULT_FILENAME_PATTERN
+    from app.oauth import get_oauth_settings
     sync_time = get_val('sync_time', '01:00')
     root_search_path = get_val('root_search_path', '')
     filename_regex_pattern = get_val('filename_regex_pattern', DEFAULT_FILENAME_PATTERN)
@@ -149,6 +163,8 @@ def settings():
     has_mail_pwd = bool(get_val('mail_password', ''))
     dev_email = get_val('developer_email', '')
     tel_freq = get_val('telemetry_frequency', 'daily')
+    
+    oauth_settings = get_oauth_settings(g.db)
     
     system_admins = g.db.execute("SELECT * FROM users WHERE role = 'admin'").fetchall()
     return render_template('admin/settings.html', 
@@ -162,6 +178,7 @@ def settings():
                            mail_port=m_prt,
                            mail_username=m_usr,
                            has_mail_password=has_mail_pwd,
+                           oauth_settings=oauth_settings,
                            system_admins=system_admins)
 @admin_bp.route('/customers', methods=['GET'])
 def customers():
