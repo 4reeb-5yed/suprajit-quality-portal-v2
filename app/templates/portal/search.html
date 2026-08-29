@@ -315,36 +315,69 @@ function renderSheet(sheetName, activeBtn) {
     // Convert to 2D JSON array for fast analytical parsing
     activeSheetData = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
 
+    // Parse Merged Cell Ranges (!merges)
+    const merges = worksheet['!merges'] || [];
+    const mergeMap = {};
+    const skipMap = {};
+
+    merges.forEach(m => {
+        const topKey = `${m.s.r}_${m.s.c}`;
+        const rowSpan = m.e.r - m.s.r + 1;
+        const colSpan = m.e.c - m.s.c + 1;
+        mergeMap[topKey] = { rowSpan, colSpan };
+
+        // Mark covered cells to skip them
+        for (let r = m.s.r; r <= m.e.r; r++) {
+            for (let c = m.s.c; c <= m.e.c; c++) {
+                if (r !== m.s.r || c !== m.s.c) {
+                    skipMap[`${r}_${c}`] = true;
+                }
+            }
+        }
+    });
+
     // Generate Excel HTML Table with Column Headers (A, B, C...) & Row Numbers (1, 2, 3...)
-    let tableHtml = '<table class="table table-xs w-full border-collapse border border-gray-300 font-mono text-xs select-text">';
+    let tableHtml = '<table class="table table-xs w-full border-collapse border border-gray-400 font-sans text-xs select-text bg-white">';
     
     // Header Row with A, B, C Column Labels
-    tableHtml += '<thead class="bg-gray-200 text-gray-600 font-bold sticky top-0 z-10 select-none shadow-sm">';
-    tableHtml += '<tr><th class="w-12 bg-gray-300 border border-gray-300 text-center text-gray-500">#</th>';
+    tableHtml += '<thead class="bg-gray-200 text-gray-700 font-bold sticky top-0 z-10 select-none shadow-sm">';
+    tableHtml += '<tr><th class="w-12 bg-gray-300 border border-gray-400 text-center text-gray-600 font-mono text-xs"></th>';
     for (let c = range.s.c; c <= range.e.c; c++) {
-        tableHtml += `<th class="border border-gray-300 px-3 py-1.5 text-center min-w-[100px]">${XLSX.utils.encode_col(c)}</th>`;
+        tableHtml += `<th class="border border-gray-300 px-3 py-1 text-center font-mono text-xs bg-gray-200">${XLSX.utils.encode_col(c)}</th>`;
     }
     tableHtml += '</tr></thead><tbody>';
 
-    // Table Data Rows with Line Numbers
+    // Table Data Rows with Line Numbers and Merged Range Layout
     for (let r = range.s.r; r <= range.e.r; r++) {
-        tableHtml += `<tr class="hover:bg-blue-50/50 transition"><td class="bg-gray-100 border border-gray-300 text-center font-bold text-gray-500 select-none">${r + 1}</td>`;
+        tableHtml += `<tr class="hover:bg-blue-50/40"><td class="bg-gray-200 border border-gray-300 text-center font-bold text-gray-500 font-mono text-xs select-none w-12">${r + 1}</td>`;
         for (let c = range.s.c; c <= range.e.c; c++) {
+            const cellKey = `${r}_${c}`;
+            if (skipMap[cellKey]) continue;
+
             const cellAddress = XLSX.utils.encode_cell({ r: r, c: c });
             const cell = worksheet[cellAddress];
             let val = cell ? (cell.w || cell.v || '') : '';
             
-            // Format styling based on status tags
-            let badgeClass = '';
+            // Format styling based on content
+            let inlineStyle = 'border: 1px solid #cbd5e1; padding: 4px 8px;';
+            let cellClass = 'cursor-cell whitespace-nowrap text-gray-800 ';
+            
             const strVal = String(val).toUpperCase().trim();
             if (strVal === 'PASS' || strVal === 'OK' || strVal === 'ACCEPTED') {
-                badgeClass = 'bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded';
+                inlineStyle += ' background-color: #dcfce7; color: #166534; font-weight: bold; text-align: center;';
             } else if (strVal === 'FAIL' || strVal === 'REJECT' || strVal === 'NOT OK' || strVal === 'NG') {
-                badgeClass = 'bg-red-100 text-red-800 font-bold px-1.5 py-0.5 rounded';
+                inlineStyle += ' background-color: #fee2e2; color: #991b1b; font-weight: bold; text-align: center;';
+            } else if (r === 0 || (cell && cell.s && cell.s.font && cell.s.font.bold)) {
+                inlineStyle += ' font-weight: bold; background-color: #f8fafc;';
             }
 
-            const displayVal = badgeClass ? `<span class="${badgeClass}">${val}</span>` : val;
-            tableHtml += `<td class="border border-gray-200 px-3 py-1.5 whitespace-nowrap cursor-cell text-gray-800" onclick="selectCell('${cellAddress}', '${String(val).replace(/'/g, "\\'")}')">${displayVal}</td>`;
+            const merge = mergeMap[cellKey];
+            const spanAttrs = merge ? ` rowspan="${merge.rowSpan}" colspan="${merge.colSpan}"` : '';
+            if (merge) {
+                inlineStyle += ' text-align: center; vertical-align: middle; font-weight: bold;';
+            }
+
+            tableHtml += `<td class="${cellClass}" style="${inlineStyle}"${spanAttrs} onclick="selectCell('${cellAddress}', '${String(val).replace(/'/g, "\\'")}')">${val}</td>`;
         }
         tableHtml += '</tr>';
     }
