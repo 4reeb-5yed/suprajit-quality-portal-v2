@@ -57,7 +57,7 @@
                         <span class="badge badge-success text-white font-bold text-xs uppercase tracking-wider px-3 py-1.5 shadow-sm">
                             <i class="fa-solid fa-circle-check mr-1"></i> Active
                         </span>
-                        <form method="POST" action="{{ url_for('admin.suspend_customer') }}" class="inline" onsubmit="return confirm('WARNING: Are you sure you want to SUSPEND portal access for {{ customer.company_name }}? All user accounts under this client will be locked out immediately.');">
+                        <form method="POST" action="{{ url_for('admin.suspend_customer') }}" class="inline" onsubmit="return confirm('WARNING: Are you sure you want to SUSPEND portal access for {{ customer.company_name }}? All user accounts under this client will be logged out immediately.');">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                             <input type="hidden" name="customer_id" value="{{ customer.id }}"/>
                             <input type="hidden" name="portal_suspended" value="1"/>
