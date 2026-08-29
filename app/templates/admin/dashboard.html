@@ -73,7 +73,7 @@
                         <td class="py-3.5 px-4">
                             {% if b.status == 'completed' or b.status == 'success' %}
                                 <span class="badge badge-success text-white font-bold text-xs uppercase px-3 py-2">
-                                    <i class="fa-solid fa-circle-check mr-1"></i> Success
+                                    <i class="fa-solid fa-circle-check mr-1"></i> Completed
                                 </span>
                             {% elif b.status == 'failed' %}
                                 <span class="badge badge-error text-white font-bold text-xs uppercase px-3 py-2">
@@ -81,23 +81,23 @@
                                 </span>
                             {% else %}
                                 <span class="badge badge-warning text-gray-900 font-bold text-xs uppercase px-3 py-2">
-                                    {{ b.status }}
+                                    <i class="fa-solid fa-spinner fa-spin mr-1"></i> Running
                                 </span>
                             {% endif %}
                         </td>
                         <td class="py-3.5 px-4 font-bold text-gray-900">{{ b.target_date or 'Full Scan' }}</td>
                         <td class="py-3.5 px-4 text-center">
-                            <span class="inline-block font-mono text-sm font-bold px-3 py-1 bg-blue-100 text-blue-900 rounded border border-blue-200">
-                                {{ b.files_processed }} files
+                            <span class="font-mono text-base font-bold text-blue-900">
+                                {{ b.files_processed }}
                             </span>
                         </td>
                         <td class="py-3.5 px-4 text-center">
                             {% if b.files_failed > 0 %}
-                                <span class="inline-block font-mono text-sm font-bold px-3 py-1 bg-red-100 text-red-800 rounded border border-red-300">
-                                    {{ b.files_failed }} failed
+                                <span class="font-mono text-base font-bold text-red-600">
+                                    {{ b.files_failed }}
                                 </span>
                             {% else %}
-                                <span class="font-mono text-sm font-semibold text-gray-500">0</span>
+                                <span class="font-mono text-base font-medium text-gray-400">0</span>
                             {% endif %}
                         </td>
                         <td class="py-3.5 px-4 text-right font-mono text-sm font-semibold text-gray-700">{{ b.duration_sec }}s</td>
