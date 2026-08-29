@@ -31,4 +31,5 @@ suprajit.log
 .env
 data/
 storage/
+app/static/onlyoffice_raw/
 

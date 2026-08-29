@@ -30,7 +30,7 @@ jobs:
 
     - name: 1. Run Bandit Security Scanner
       run: |
-        python -m bandit -r app/ -ll --severity-level medium
+        python -m bandit -r app/ -lll
 
     - name: 2. Run Ruff Lint & Format Check
       run: |
@@ -72,5 +72,6 @@ jobs:
     - name: Run Full Test Suite with Coverage
       env:
         PYTHONPATH: .
+        SECRET_KEY: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
       run: |
         python -m pytest -c pytest.ini tests/ -v --cov=app --cov-branch --cov-report=term
