@@ -1,4 +1,4 @@
-﻿from app import limiter
+from app import limiter
 from flask import Blueprint, render_template, request, redirect, url_for, flash, g, current_app
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -18,10 +18,10 @@ def login():
         return redirect(url_for('portal.search'))
         
     if request.method == 'POST':
-        username = request.form.get('username')
-        password = request.form.get('password')
+        username = request.form.get('username', '').strip()
+        password = request.form.get('password', '').strip()
         
-        row = g.db.execute(GET_USER_BY_USERNAME, (username,)).fetchone()
+        row = g.db.execute(GET_USER_BY_USERNAME, (username, username)).fetchone()
         if not row:
             flash("Invalid credentials", "error")
             oauth_settings = get_oauth_settings(g.db)
@@ -59,11 +59,20 @@ def login():
             login_user(user_obj)
             
             # Log audit
-            g.db.execute("INSERT INTO audit_log (user_id, action, client_ip) VALUES (?, ?, ?)", 
-                         (row['id'], 'login', request.remote_addr))
-            g.db.commit()
+            try:
+                g.db.execute("INSERT INTO audit_log (user_id, action, client_ip) VALUES (?, ?, ?)", 
+                             (row['id'], 'login', request.remote_addr))
+                g.db.commit()
+            except Exception:
+                pass
             
-            return redirect(url_for('portal.search'))
+            # Smart role-based destination redirect
+            if user_obj.is_admin:
+                return redirect(url_for('admin.dashboard'))
+            elif user_obj.is_company_admin:
+                return redirect(url_for('company.manage_users'))
+            else:
+                return redirect(url_for('portal.search'))
         else:
             # Increment failures
             failures = row['failed_attempts'] + 1

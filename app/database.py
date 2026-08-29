@@ -180,8 +180,8 @@ INSERT_USER_RECIPE = "INSERT OR IGNORE INTO user_recipes (user_id, recipe_name) 
 DELETE_USER_RECIPES = "DELETE FROM user_recipes WHERE user_id = ?"
 
 # Users
-GET_USER_BY_USERNAME = "SELECT * FROM users WHERE username = ?"
-GET_USER_BY_EMAIL = "SELECT * FROM users WHERE email = ?"
+GET_USER_BY_USERNAME = "SELECT * FROM users WHERE LOWER(username) = LOWER(?) OR LOWER(email) = LOWER(?)"
+GET_USER_BY_EMAIL = "SELECT * FROM users WHERE LOWER(email) = LOWER(?)"
 GET_USER_BY_ID = "SELECT * FROM users WHERE id = ?"
 GET_USERS_BY_CUSTOMER = "SELECT * FROM users WHERE customer_id = ?"
 INSERT_USER = "INSERT INTO users (username, email, password_hash, display_name, role, customer_id, access_mode) VALUES (?, ?, ?, ?, ?, ?, ?)"
