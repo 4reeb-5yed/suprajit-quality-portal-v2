@@ -173,9 +173,13 @@ def test_e2e_sync_engine_batch_processing(ingest_idx):
     with open(file_path, 'wb') as f:
         f.write(b"PK\x03\x04ExcelContent" + str(ingest_idx).encode())
 
+    # Set file modification timestamp to target date
+    target_dt = date(2026, 6, 13)
+    target_ts = datetime(2026, 6, 13, 12, 0, 0).timestamp()
+    os.utime(file_path, (target_ts, target_ts))
+
     # Execute SyncEngine
     engine = SyncEngine(db_path, temp_dir)
-    target_dt = date(2026, 6, 13)
     inserted = engine.process_folder(temp_dir, target_dt)
 
     assert inserted == 1
