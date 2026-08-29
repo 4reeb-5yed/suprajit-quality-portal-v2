@@ -1,4 +1,4 @@
-﻿import os
+import os
 import subprocess
 import threading
 import logging
@@ -91,6 +91,9 @@ def start_named_cloudflared_tunnel(token: str) -> Dict[str, Any]:
     """Starts an enterprise Cloudflare Tunnel via token."""
     global _tunnel_process, _tunnel_status
     stop_tunnel()
+
+    if not token or not token.strip():
+        return {"success": False, "error": "Cloudflare tunnel token cannot be empty."}
 
     if not shutil.which("cloudflared"):
         return {"success": False, "error": "cloudflared executable not found in PATH."}
