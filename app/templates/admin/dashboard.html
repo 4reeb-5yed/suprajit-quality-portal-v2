@@ -36,67 +36,78 @@
     </div>
 
     <!-- Ingestion Activity & Recent Batches -->
-    <div class="bg-white border border-gray-200 rounded shadow-sm overflow-hidden">
-        <div class="p-6 border-b border-gray-200 bg-gray-50 flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div class="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200 bg-gray-50/50 flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-                <h3 class="font-bold text-lg text-gray-800"><i class="fa-solid fa-clock-rotate-left text-blue-700 mr-2"></i>Recent Ingestion Batches & Activity Log</h3>
-                <p class="text-xs text-gray-500 mt-1">Automatic overnight syncs and file processing history.</p>
+                <h3 class="font-bold text-base text-gray-900 flex items-center gap-2">
+                    <i class="fa-solid fa-clock-rotate-left text-blue-700"></i>
+                    Recent Ingestion Batches
+                </h3>
+                <p class="text-xs text-gray-500 mt-0.5">Automated batch runs and file processing history.</p>
             </div>
             <form action="{{ url_for('admin.trigger_sync') }}" method="POST">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-                <button type="submit" class="btn btn-sm btn-primary suprajit-blue-bg border-none text-white shadow">
-                    <i class="fa-solid fa-play mr-1"></i> Trigger Ingestion Now
+                <button type="submit" class="btn btn-sm btn-primary suprajit-blue-bg border-none text-white text-xs font-semibold px-4 shadow-sm hover:opacity-95">
+                    <i class="fa-solid fa-play mr-1.5 text-xs"></i> Trigger Ingestion Now
                 </button>
             </form>
         </div>
 
         <div class="overflow-x-auto">
-            <table class="table table-zebra w-full text-sm">
+            <table class="table w-full text-left">
                 <thead>
-                    <tr class="bg-gray-100 text-gray-600">
-                        <th>Run Timestamp</th>
-                        <th>Status</th>
-                        <th>Target Date</th>
-                        <th>Processed</th>
-                        <th>Failed</th>
-                        <th>Duration</th>
-                        <th>Details / Error</th>
+                    <tr class="border-b border-gray-200 bg-gray-50 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
+                        <th class="py-3 px-6">Run Timestamp</th>
+                        <th class="py-3 px-4">Status</th>
+                        <th class="py-3 px-4">Target Date</th>
+                        <th class="py-3 px-4 text-center">Processed</th>
+                        <th class="py-3 px-4 text-center">Failed</th>
+                        <th class="py-3 px-4 text-right">Duration</th>
+                        <th class="py-3 px-6">Details</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody class="divide-y divide-gray-100 text-sm text-gray-700">
                     {% for b in recent_batches %}
-                    <tr>
-                        <td class="font-mono text-xs text-gray-700">{{ b.run_started }}</td>
-                        <td>
+                    <tr class="hover:bg-slate-50/80 transition-colors">
+                        <td class="py-3 px-6 font-mono text-xs font-medium text-slate-700">{{ b.run_started }}</td>
+                        <td class="py-3 px-4">
                             {% if b.status == 'completed' or b.status == 'success' %}
-                                <span class="badge badge-success text-white badge-sm font-semibold">SUCCESS</span>
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Success
+                                </span>
                             {% elif b.status == 'failed' %}
-                                <span class="badge badge-error text-white badge-sm font-semibold">FAILED</span>
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span> Failed
+                                </span>
                             {% else %}
-                                <span class="badge badge-warning badge-sm font-semibold">{{ b.status }}</span>
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span> {{ b.status }}
+                                </span>
                             {% endif %}
                         </td>
-                        <td class="font-semibold text-gray-800">{{ b.target_date or 'Full Scan' }}</td>
-                        <td><span class="badge badge-ghost badge-sm font-bold text-blue-900">{{ b.files_processed }}</span></td>
-                        <td>
+                        <td class="py-3 px-4 font-medium text-gray-800">{{ b.target_date or 'Full Scan' }}</td>
+                        <td class="py-3 px-4 text-center">
+                            <span class="font-mono text-xs font-semibold px-2 py-0.5 bg-slate-100 text-slate-800 rounded">{{ b.files_processed }}</span>
+                        </td>
+                        <td class="py-3 px-4 text-center">
                             {% if b.files_failed > 0 %}
-                                <span class="badge badge-error badge-sm text-white font-bold">{{ b.files_failed }}</span>
+                                <span class="font-mono text-xs font-semibold px-2 py-0.5 bg-red-100 text-red-700 rounded">{{ b.files_failed }}</span>
                             {% else %}
-                                <span class="badge badge-ghost badge-sm text-gray-500">0</span>
+                                <span class="font-mono text-xs text-gray-400">0</span>
                             {% endif %}
                         </td>
-                        <td class="text-gray-600 font-mono text-xs">{{ b.duration_sec }}s</td>
-                        <td class="text-xs text-gray-500 font-mono">
+                        <td class="py-3 px-4 text-right font-mono text-xs text-slate-500">{{ b.duration_sec }}s</td>
+                        <td class="py-3 px-6 text-xs font-mono">
                             {% if b.error_message %}
-                                <span class="text-error font-semibold">{{ b.error_message }}</span>
+                                <span class="text-rose-600 font-medium">{{ b.error_message }}</span>
                             {% else %}
-                                <span class="text-gray-400">Ingested cleanly</span>
+                                <span class="text-slate-400 font-sans">Clean</span>
                             {% endif %}
                         </td>
                     </tr>
                     {% else %}
                     <tr>
-                        <td colspan="7" class="text-center text-gray-500 py-8 italic">No ingestion batch logs found yet. Click "Trigger Ingestion Now" to run your first batch.</td>
+                        <td colspan="7" class="text-center text-gray-400 py-10 italic">No ingestion batch logs found yet. Click "Trigger Ingestion Now" to run your first batch.</td>
                     </tr>
                     {% endfor %}
                 </tbody>
