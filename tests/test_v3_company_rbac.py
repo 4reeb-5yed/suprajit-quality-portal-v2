@@ -479,7 +479,7 @@ def test_bulk_import_admin(v3_client, v3_app):
         'bulk_text': 'eng100@tvs.com,Eng 100,eng100\neng101@tvs.com,Eng 101,eng101',
         'role': 'customer_viewer'
     }, follow_redirects=True)
-    assert b'Bulk import completed' in res.data
+    assert b'Bulk Provisioning Completed' in res.data
     with v3_app.app_context():
         conn = get_connection(v3_app.config['DATABASE_PATH'])
         assert conn.execute("SELECT id FROM users WHERE username = 'eng100'").fetchone() is not None
@@ -490,7 +490,7 @@ def test_bulk_import_company_admin(v3_client, v3_app):
         'bulk_text': 'worker50@tvs.com\nworker51@tvs.com',
         'role': 'customer_viewer'
     }, follow_redirects=True)
-    assert b'Bulk import completed' in res.data
+    assert b'Bulk Provisioning Completed' in res.data
     with v3_app.app_context():
         conn = get_connection(v3_app.config['DATABASE_PATH'])
         assert conn.execute("SELECT id FROM users WHERE email = 'worker50@tvs.com'").fetchone() is not None
