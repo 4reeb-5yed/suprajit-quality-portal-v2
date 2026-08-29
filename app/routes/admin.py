@@ -9,7 +9,7 @@ from flask import (
     request,
     url_for,
 )
-from flask_login import current_user, login_required
+from flask_login import current_user
 
 from app.database import GET_SETTING, SET_SETTING
 
