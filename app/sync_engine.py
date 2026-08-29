@@ -42,16 +42,44 @@ class SyncEngine:
     def __init__(self, db_path: str, default_storage_base: str):
         self.db_path = db_path
 
-    def _get_search_roots(self) -> list[str]:
+    def _get_folder_customer_mapping(self) -> dict[str, str | None]:
+        """
+        Retrieves the map of folder_path -> customer_id from folder_mappings.
+        Also handles backward compatibility if root_search_path exists in system_settings.
+        """
+        mapping: dict[str, str | None] = {}
         try:
             conn = get_connection(self.db_path)
-            row = conn.execute("SELECT value FROM system_settings WHERE key = 'root_search_path'").fetchone()
+            rows = conn.execute("SELECT folder_path, customer_id FROM folder_mappings").fetchall()
+            for r in rows:
+                if r["folder_path"]:
+                    mapping[os.path.normpath(r["folder_path"])] = r["customer_id"]
+
+            # Also check legacy root_search_path if folder_mappings is empty
+            if not mapping:
+                setting_row = conn.execute("SELECT value FROM system_settings WHERE key = 'root_search_path'").fetchone()
+                if setting_row and setting_row["value"]:
+                    for p in setting_row["value"].split(";"):
+                        p_str = p.strip()
+                        if p_str:
+                            mapping[os.path.normpath(p_str)] = None
             conn.close()
-            if row and row["value"]:
-                return [p.strip() for p in row["value"].split(";") if p.strip()]
         except Exception as e:
-            logger.error(f"Error reading root_search_path from DB: {e}")
-        return []
+            logger.error(f"Error reading folder_mappings from DB: {e}")
+        return mapping
+
+    def _get_search_roots(self) -> list[str]:
+        mapping = self._get_folder_customer_mapping()
+        return list(mapping.keys())
+
+    def _resolve_customer_for_path(self, filepath: str, folder_mapping: dict[str, str | None]) -> str | None:
+        """Finds the customer_id associated with the root folder containing filepath."""
+        norm_file = os.path.normpath(filepath).lower()
+        for root_folder, cust_id in folder_mapping.items():
+            norm_root = os.path.normpath(root_folder).lower()
+            if norm_file.startswith(norm_root):
+                return cust_id
+        return None
 
     def _get_custom_pattern(self) -> str:
         try:
@@ -92,14 +120,14 @@ class SyncEngine:
         elif full_sync:
             target_date = None
 
-        roots = self._get_search_roots()
-        if not roots or roots == [""] or roots == ["C:\\"]:
-            logger.warning("No valid root search path configured. Skipping ingestion.")
+        folder_mapping = self._get_folder_customer_mapping()
+        if not folder_mapping:
+            logger.warning("No valid root search path or folder mappings configured. Skipping ingestion.")
             return 0
 
         total_inserted = 0
 
-        for root_path in roots:
+        for root_path in folder_mapping.keys():
             inserted = self.process_folder(root_path, target_date)
             total_inserted += inserted
 
@@ -129,6 +157,7 @@ class SyncEngine:
 
         insert_values = []
         existing_hashes = {row[0] for row in conn.execute("SELECT file_hash FROM reports").fetchall()}
+        folder_mapping = self._get_folder_customer_mapping()
 
         custom_pattern = self._get_custom_pattern()
         for filepath in files_to_process:
@@ -148,8 +177,11 @@ class SyncEngine:
                     logger.warning(f"Failed to parse filename metadata for: {filename_only}")
                     continue
 
+                # Bind customer_id at ingestion time from the containing folder mapping
+                customer_id = self._resolve_customer_for_path(filepath, folder_mapping)
+
                 logger.info(
-                    f"Parsed metadata -> Recipe: {parsed['recipe_name']}, Date: {parsed['report_date']}, Time: {parsed['report_time']}, Serial: {parsed['serial_raw']}"
+                    f"Parsed metadata -> Customer: {customer_id}, Recipe: {parsed['recipe_name']}, Date: {parsed['report_date']}, Time: {parsed['report_time']}, Serial: {parsed['serial_raw']}"
                 )
 
                 file_hash = hash_file(filepath)
@@ -162,6 +194,7 @@ class SyncEngine:
                 insert_values.append(
                     (
                         batch_id,
+                        customer_id,
                         parsed["recipe_name"],
                         parsed["report_date"],
                         parsed["report_time"],
@@ -174,7 +207,7 @@ class SyncEngine:
                     )
                 )
                 inserted += 1
-                logger.info(f"Successfully mapped {filename_only} to Recipe '{parsed['recipe_name']}'")
+                logger.info(f"Successfully mapped {filename_only} to Recipe '{parsed['recipe_name']}' (Customer: {customer_id})")
 
             except Exception as e:
                 failed += 1
@@ -187,9 +220,9 @@ class SyncEngine:
                     conn.executemany(
                         """
                         INSERT OR IGNORE INTO reports 
-                        (batch_run_id, recipe_name, report_date, report_time, serial_raw, 
+                        (batch_run_id, customer_id, recipe_name, report_date, report_time, serial_raw, 
                          serial_normalized, original_filename, file_path, file_hash, file_size_bytes)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                         insert_values,
                     )

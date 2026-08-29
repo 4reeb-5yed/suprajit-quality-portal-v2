@@ -119,18 +119,18 @@ def e2e_env():
 
         # Insert Reports
         conn.execute("""
-            INSERT INTO reports (id, file_path, original_filename, recipe_name, report_date, report_time, serial_raw, serial_normalized, file_hash)
-            VALUES (1, ?, 'EV_THROTTLE_15-08-2026_10.00.00_0001.xlsx', 'EV_THROTTLE', '2026-08-15', '10:00:00', '1', '0001', ?)
+            INSERT INTO reports (id, customer_id, file_path, original_filename, recipe_name, report_date, report_time, serial_raw, serial_normalized, file_hash)
+            VALUES (1, 'tvs', ?, 'EV_THROTTLE_15-08-2026_10.00.00_0001.xlsx', 'EV_THROTTLE', '2026-08-15', '10:00:00', '1', '0001', ?)
         """, (file_1, file_1_hash))
 
         conn.execute("""
-            INSERT INTO reports (id, file_path, original_filename, recipe_name, report_date, report_time, serial_raw, serial_normalized, file_hash)
-            VALUES (2, ?, 'EV_THROTTLE_20-08-2026_14.30.00_0002.xlsx', 'EV_THROTTLE', '2026-08-20', '14:30:00', '2', '0002', ?)
+            INSERT INTO reports (id, customer_id, file_path, original_filename, recipe_name, report_date, report_time, serial_raw, serial_normalized, file_hash)
+            VALUES (2, 'tvs', ?, 'EV_THROTTLE_20-08-2026_14.30.00_0002.xlsx', 'EV_THROTTLE', '2026-08-20', '14:30:00', '2', '0002', ?)
         """, (file_2, file_2_hash))
 
         conn.execute("""
-            INSERT INTO reports (id, file_path, original_filename, recipe_name, report_date, report_time, serial_raw, serial_normalized, file_hash)
-            VALUES (3, ?, 'BRAKE_ACTUATOR_25-08-2026_09.15.00_0003.xlsx', 'BRAKE_ACTUATOR', '2026-08-25', '09:15:00', '3', '0003', ?)
+            INSERT INTO reports (id, customer_id, file_path, original_filename, recipe_name, report_date, report_time, serial_raw, serial_normalized, file_hash)
+            VALUES (3, 'tvs', ?, 'BRAKE_ACTUATOR_25-08-2026_09.15.00_0003.xlsx', 'BRAKE_ACTUATOR', '2026-08-25', '09:15:00', '3', '0003', ?)
         """, (file_3, file_3_hash))
 
         conn.commit()

@@ -94,11 +94,11 @@ def v3_app(tmp_path):
         
         rep_file1 = os.path.join(storage_dir, "EV_THROTTLE_15-08-2026_10.00.00_001.xlsx")
         with open(rep_file1, 'w') as f: f.write("SAMPLE EXCEL DATA 1")
-        conn.execute("INSERT INTO reports (file_path, original_filename, recipe_name, report_date, report_time, serial_raw, serial_normalized, file_hash) VALUES (?, 'EV_THROTTLE_15-08-2026_10.00.00_001.xlsx', 'EV_THROTTLE', '2026-08-15', '10:00:00', '1', '0001', 'hash_001')", (rep_file1,))
+        conn.execute("INSERT INTO reports (customer_id, file_path, original_filename, recipe_name, report_date, report_time, serial_raw, serial_normalized, file_hash) VALUES ('tvs', ?, 'EV_THROTTLE_15-08-2026_10.00.00_001.xlsx', 'EV_THROTTLE', '2026-08-15', '10:00:00', '1', '0001', 'hash_001')", (rep_file1,))
         
         rep_file2 = os.path.join(storage_dir, "SCORPIO_WIRING_16-08-2026_11.00.00_002.xlsx")
         with open(rep_file2, 'w') as f: f.write("SAMPLE EXCEL DATA 2")
-        conn.execute("INSERT INTO reports (file_path, original_filename, recipe_name, report_date, report_time, serial_raw, serial_normalized, file_hash) VALUES (?, 'SCORPIO_WIRING_16-08-2026_11.00.00_002.xlsx', 'SCORPIO_WIRING', '2026-08-16', '11:00:00', '2', '0002', 'hash_002')", (rep_file2,))
+        conn.execute("INSERT INTO reports (customer_id, file_path, original_filename, recipe_name, report_date, report_time, serial_raw, serial_normalized, file_hash) VALUES ('mahindra', ?, 'SCORPIO_WIRING_16-08-2026_11.00.00_002.xlsx', 'SCORPIO_WIRING', '2026-08-16', '11:00:00', '2', '0002', 'hash_002')", (rep_file2,))
         
         conn.commit()
         conn.close()

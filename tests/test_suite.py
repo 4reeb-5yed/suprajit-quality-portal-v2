@@ -33,7 +33,7 @@ def test_sync_engine_ingestion(app):
             f.write(b"dummy data")
             
         engine = SyncEngine(db_path, storage)
-        engine._get_search_roots = lambda: [storage]
+        engine._get_folder_customer_mapping = lambda: {storage: None}
         
         assert engine.run_batch(full_sync=True) == 1
         assert engine.run_batch(full_sync=True) == 0

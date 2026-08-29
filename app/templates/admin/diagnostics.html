@@ -26,6 +26,11 @@
                 <span class="font-semibold text-gray-600">Total Indexed Reports</span>
                 <span class="text-sm font-bold text-gray-800">{{ total_reports }}</span>
             </div>
+
+            <div class="flex items-center justify-between py-2 border-b">
+                <span class="font-semibold text-gray-600">Unassigned Reports (No Customer Mapping)</span>
+                <span class="text-sm font-bold {% if unassigned_reports > 0 %}text-amber-600{% else %}text-emerald-700{% endif %}">{{ unassigned_reports }}</span>
+            </div>
             
             <div class="flex items-center justify-between py-2 border-b">
                 <span class="font-semibold text-gray-600">Ingestion Engine Target</span>

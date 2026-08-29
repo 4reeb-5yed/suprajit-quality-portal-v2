@@ -72,9 +72,18 @@ def ensure_schema(conn):
                 status          TEXT NOT NULL DEFAULT 'running'
             );
 
+            CREATE TABLE IF NOT EXISTS folder_mappings (
+                id              INTEGER PRIMARY KEY AUTOINCREMENT,
+                folder_path     TEXT NOT NULL UNIQUE,
+                customer_id     TEXT,
+                created_at      TEXT NOT NULL DEFAULT (datetime('now')),
+                FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE SET NULL
+            );
+
             CREATE TABLE IF NOT EXISTS reports (
                 id                  INTEGER PRIMARY KEY AUTOINCREMENT,
                 batch_run_id        INTEGER,
+                customer_id         TEXT,
                 recipe_name         TEXT NOT NULL,
                 report_date         TEXT NOT NULL,
                 report_time         TEXT,
@@ -85,10 +94,12 @@ def ensure_schema(conn):
                 file_hash           TEXT NOT NULL,
                 file_size_bytes     INTEGER,
                 ingested_at         TEXT NOT NULL DEFAULT (datetime('now')),
-                FOREIGN KEY (batch_run_id) REFERENCES batch_runs(id) ON DELETE SET NULL
+                FOREIGN KEY (batch_run_id) REFERENCES batch_runs(id) ON DELETE SET NULL,
+                FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE SET NULL
             );
 
             CREATE INDEX IF NOT EXISTS idx_reports_recipe ON reports(recipe_name, report_date, serial_normalized);
+            CREATE INDEX IF NOT EXISTS idx_reports_customer ON reports(customer_id);
 
             
             CREATE TABLE IF NOT EXISTS search_metrics (

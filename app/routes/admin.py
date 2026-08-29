@@ -240,12 +240,22 @@ def settings():
     tunnel_binaries = get_installed_tunnel_binaries()
 
     system_admins = g.db.execute("SELECT * FROM users WHERE role = 'admin'").fetchall()
+    customers_list = g.db.execute("SELECT id, company_name FROM customers ORDER BY company_name").fetchall()
+    folder_mappings = g.db.execute("""
+        SELECT fm.id, fm.folder_path, fm.customer_id, c.company_name, fm.created_at
+        FROM folder_mappings fm
+        LEFT JOIN customers c ON fm.customer_id = c.id
+        ORDER BY fm.id ASC
+    """).fetchall()
+
     return render_template(
         "admin/settings.html",
         developer_email=dev_email,
         telemetry_frequency=tel_freq,
         sync_time=sync_time,
         root_search_path=root_search_path,
+        folder_mappings=folder_mappings,
+        customers_list=customers_list,
         filename_regex_pattern=filename_regex_pattern,
         default_regex_pattern=DEFAULT_FILENAME_PATTERN,
         public_portal_url=public_portal_url,
@@ -261,6 +271,39 @@ def settings():
         tunnel_binaries=tunnel_binaries,
         system_admins=system_admins,
     )
+
+
+@admin_bp.route("/folder_mappings/add", methods=["POST"])
+def add_folder_mapping():
+    """Maps a filesystem directory to a specific tenant / customer."""
+    folder_path = request.form.get("folder_path", "").strip()
+    customer_id = request.form.get("customer_id", "").strip() or None
+
+    if not folder_path:
+        flash("Folder path is required.", "error")
+    else:
+        try:
+            g.db.execute(
+                "INSERT INTO folder_mappings (folder_path, customer_id) VALUES (?, ?)",
+                (folder_path, customer_id),
+            )
+            g.db.commit()
+            flash("Root folder mapped successfully.", "success")
+        except Exception as e:
+            flash(f"Error mapping folder: {e}", "error")
+
+    return redirect(url_for("admin.settings"))
+
+
+@admin_bp.route("/folder_mappings/delete", methods=["POST"])
+def delete_folder_mapping():
+    """Removes a folder mapping."""
+    mapping_id = request.form.get("mapping_id")
+    if mapping_id:
+        g.db.execute("DELETE FROM folder_mappings WHERE id = ?", (mapping_id,))
+        g.db.commit()
+        flash("Folder mapping removed.", "success")
+    return redirect(url_for("admin.settings"))
 
 
 @admin_bp.route("/tunnel/action", methods=["POST"])
@@ -839,6 +882,7 @@ def diagnostics():
     db_size_mb = round(os.path.getsize(db_path) / (1024 * 1024), 2) if os.path.exists(db_path) else 0.0
 
     total_reports = g.db.execute("SELECT COUNT(*) FROM reports").fetchone()[0]
+    unassigned_reports = g.db.execute("SELECT COUNT(*) FROM reports WHERE customer_id IS NULL").fetchone()[0]
     total_customers = g.db.execute("SELECT COUNT(*) FROM customers").fetchone()[0]
 
     sync_time_row = g.db.execute(GET_SETTING, ("sync_time",)).fetchone()
@@ -862,6 +906,7 @@ def diagnostics():
         last_run=last_run,
         db_size_mb=db_size_mb,
         total_reports=total_reports,
+        unassigned_reports=unassigned_reports,
         total_customers=total_customers,
         sync_time_str=sync_time_str,
         audit_logs=audit_logs,
