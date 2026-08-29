@@ -53,6 +53,17 @@ class SyncEngine:
             logger.error(f"Error reading root_search_path from DB: {e}")
         return []
 
+    def _get_custom_pattern(self) -> str:
+        try:
+            conn = get_connection(self.db_path)
+            row = conn.execute("SELECT value FROM system_settings WHERE key = 'filename_regex_pattern'").fetchone()
+            conn.close()
+            if row and row['value']:
+                return row['value'].strip()
+        except Exception as e:
+            logger.error(f"Error reading filename_regex_pattern from DB: {e}")
+        return ""
+
     def scan_folder(self, folder_path: str, target_date: date) -> List[str]:
         matched_files = []
         if not os.path.exists(folder_path):
@@ -119,6 +130,7 @@ class SyncEngine:
         insert_values = []
         existing_hashes = {row[0] for row in conn.execute("SELECT file_hash FROM reports").fetchall()}
         
+        custom_pattern = self._get_custom_pattern()
         for filepath in files_to_process:
             try:
                 filename_only = os.path.basename(filepath)
@@ -129,7 +141,7 @@ class SyncEngine:
                     logger.warning(f"File locked or actively copying, skipping for next batch: {filename_only}")
                     continue
 
-                parsed = parse_filename(filepath)
+                parsed = parse_filename(filepath, custom_pattern=custom_pattern)
                 if not parsed:
                     failed += 1
                     error_logs.append(f"Unparseable filename: {filepath}")
@@ -208,6 +220,7 @@ class SyncEngine:
         total_skip = 0
         total_fail = 0
         
+        custom_pattern = self._get_custom_pattern()
         for root_path in roots:
             trace.append(f"-> Scanning: {root_path}")
             files = self.scan_folder(root_path, target_date)
@@ -215,7 +228,7 @@ class SyncEngine:
             
             for fpath in files:
                 fname = os.path.basename(fpath)
-                parsed = parse_filename(fpath)
+                parsed = parse_filename(fpath, custom_pattern=custom_pattern)
                 if not parsed:
                     trace.append(f"   [FAIL] Could not parse metadata: {fname}")
                     total_fail += 1

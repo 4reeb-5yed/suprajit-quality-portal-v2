@@ -107,6 +107,18 @@ def settings():
         dev_email = request.form.get('developer_email')
         tel_freq = request.form.get('telemetry_frequency')
         
+        # Filename Regex Pattern
+        regex_pattern = request.form.get('filename_regex_pattern')
+        if regex_pattern is not None:
+            # Validate regex syntax before saving
+            import re
+            try:
+                re.compile(regex_pattern.strip())
+                g.db.execute(SET_SETTING, ('filename_regex_pattern', regex_pattern.strip()))
+            except re.error as e:
+                flash(f"Invalid Regular Expression Syntax: {e}", "error")
+                return redirect(url_for('admin.settings'))
+
         if new_time: g.db.execute(SET_SETTING, ('sync_time', new_time))
         if new_storage: g.db.execute(SET_SETTING, ('root_search_path', new_storage))
         if m_srv is not None: g.db.execute(SET_SETTING, ('mail_server', m_srv))
@@ -126,8 +138,10 @@ def settings():
         row = g.db.execute(GET_SETTING, (key,)).fetchone()
         return row['value'] if row else default
         
+    from app.parser import DEFAULT_FILENAME_PATTERN
     sync_time = get_val('sync_time', '01:00')
     root_search_path = get_val('root_search_path', '')
+    filename_regex_pattern = get_val('filename_regex_pattern', DEFAULT_FILENAME_PATTERN)
     
     m_srv = get_val('mail_server', 'smtp.gmail.com')
     m_prt = get_val('mail_port', '587')
@@ -142,6 +156,8 @@ def settings():
                            telemetry_frequency=tel_freq,
                            sync_time=sync_time, 
                            root_search_path=root_search_path,
+                           filename_regex_pattern=filename_regex_pattern,
+                           default_regex_pattern=DEFAULT_FILENAME_PATTERN,
                            mail_server=m_srv,
                            mail_port=m_prt,
                            mail_username=m_usr,
