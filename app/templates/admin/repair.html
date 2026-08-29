@@ -7,8 +7,11 @@
             <p class="text-sm text-gray-500">Developer tools to trace ingestion logic, force resyncs, and fix data anomalies.</p>
         </div>
         <div class="flex items-center gap-3">
-            <a href="{{ url_for('admin.diagnostics') }}" class="btn btn-primary suprajit-blue-bg border-none text-white shadow">
-                <i class="fa-solid fa-stethoscope mr-1"></i> System Health
+            <a href="{{ url_for('admin.download_logs') }}" class="btn btn-outline border-gray-300 text-gray-700 hover:bg-gray-100 font-semibold shadow-sm">
+                <i class="fa-solid fa-file-arrow-down mr-1.5 text-blue-700"></i> Download Raw Logs
+            </a>
+            <a href="{{ url_for('admin.diagnostics') }}" class="btn btn-primary suprajit-blue-bg border-none text-white shadow font-semibold">
+                <i class="fa-solid fa-stethoscope mr-1.5"></i> System Health
             </a>
             <a href="{{ url_for('admin.dashboard') }}" class="btn btn-outline"><i class="fa-solid fa-arrow-left"></i> Dashboard</a>
         </div>
