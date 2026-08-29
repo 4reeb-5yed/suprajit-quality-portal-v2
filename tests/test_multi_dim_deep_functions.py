@@ -184,22 +184,35 @@ def test_dim_function_03_crypto_roundtrip_100_ways(app, raw_secret):
 @pytest.mark.parametrize("idx", range(100))
 def test_dim_function_04_customer_scope_100_ways(app, idx):
     with app.app_context():
-        # Create mock user dict
+        # Create mock user dict with all UserMixin keys
+        base_dict = {
+            "id": idx + 1,
+            "username": f"user_{idx}",
+            "email": f"user_{idx}@company.com",
+            "display_name": f"User {idx}",
+            "role": "customer_viewer",
+            "customer_id": f"CUST_{idx}",
+            "access_mode": "ALL",
+            "is_active": 1
+        }
         if idx % 3 == 0:
             # Admin: Full visibility
-            mock_user = User({"id": idx + 1, "username": f"admin_{idx}", "role": "admin", "customer_id": None, "access_mode": "ALL", "is_active": 1})
+            base_dict["role"] = "admin"
+            base_dict["customer_id"] = None
+            mock_user = User(base_dict)
             where, params = customer_scope(mock_user)
             assert where == "1=1"
             assert params == []
         elif idx % 3 == 1:
             # Customer Viewer ALL mode
-            mock_user = User({"id": idx + 1, "username": f"user_{idx}", "role": "customer_viewer", "customer_id": f"CUST_{idx}", "access_mode": "ALL", "is_active": 1})
+            mock_user = User(base_dict)
             where, params = customer_scope(mock_user)
             assert "customer_recipes" in where
             assert f"CUST_{idx}" in params
         else:
             # Custom access mode
-            mock_user = User({"id": idx + 1, "username": f"custom_{idx}", "role": "customer_viewer", "customer_id": f"CUST_{idx}", "access_mode": "CUSTOM", "is_active": 1})
+            base_dict["access_mode"] = "CUSTOM"
+            mock_user = User(base_dict)
             where, params = customer_scope(mock_user)
             assert "user_recipes" in where
             assert (idx + 1) in params
