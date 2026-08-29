@@ -33,6 +33,7 @@ dev = [
     "pytest-cov>=7.1.0",
 ]
 
-
-
-
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+addopts = "-ra -q --import-mode=importlib"
