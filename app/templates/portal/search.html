@@ -137,8 +137,19 @@
                 <p class="text-xs text-gray-400">Rendering high-resolution workbook grid</p>
             </div>
 
-            <!-- View 1: Authentic Excel Grid -->
-            <div id="gridContainer" class="p-4 overflow-auto min-w-full">
+            <!-- View 1: Authentic Excel Grid & Embedded Charts -->
+            <div id="gridContainer" class="p-4 overflow-auto min-w-full space-y-6">
+                <!-- Embedded Excel Charts & Diagram Visuals from file -->
+                <div id="embeddedVisualsSection" class="hidden bg-white p-4 rounded border border-gray-300 shadow-sm">
+                    <h4 class="font-bold text-gray-800 text-sm mb-3 flex items-center gap-2">
+                        <i class="fa-solid fa-image text-emerald-600"></i>
+                        Embedded Graphs, Diagrams & Inspection Visuals (from Original Excel)
+                    </h4>
+                    <div id="embeddedVisualsGrid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Extracted embedded image and chart drawings -->
+                    </div>
+                </div>
+
                 <div id="excelContent" class="bg-white rounded border border-gray-300 shadow overflow-auto">
                     <!-- Excel Table with A-Z Headers & 1-N Rows -->
                 </div>
@@ -209,7 +220,45 @@ async function openExcelViewer(reportId, filename, recipeName, serial, downloadU
         const arrayBuffer = await response.arrayBuffer();
         const data = new Uint8Array(arrayBuffer);
         
-        // Parse with full cell styles, formula headers and formatting
+        // 1. Client-Side Embedded Visual Extraction (Zero Server Overhead)
+        const visualsGrid = document.getElementById('embeddedVisualsGrid');
+        const visualsSection = document.getElementById('embeddedVisualsSection');
+        visualsGrid.innerHTML = '';
+        visualsSection.classList.add('hidden');
+        
+        try {
+            const zip = await JSZip.loadAsync(arrayBuffer);
+            let imageCount = 0;
+            
+            // Search all media files inside xl/media/
+            const mediaFiles = Object.keys(zip.files).filter(path => path.startsWith('xl/media/'));
+            
+            for (let mediaPath of mediaFiles) {
+                const file = zip.files[mediaPath];
+                const blob = await file.async('blob');
+                const imgUrl = URL.createObjectURL(blob);
+                
+                const card = document.createElement('div');
+                card.className = 'border border-gray-200 rounded-lg p-2 bg-gray-50 flex flex-col items-center justify-center hover:shadow-md transition';
+                card.innerHTML = `
+                    <div class="w-full flex items-center justify-between text-xs text-gray-500 mb-2 px-1 font-mono">
+                        <span class="truncate"><i class="fa-solid fa-chart-area text-emerald-600 mr-1"></i> ${mediaPath.replace('xl/media/', '')}</span>
+                        <a href="${imgUrl}" target="_blank" class="text-blue-600 hover:underline flex items-center gap-1"><i class="fa-solid fa-expand"></i> Full Size</a>
+                    </div>
+                    <img src="${imgUrl}" alt="Excel Diagram" class="max-h-64 object-contain rounded border border-gray-300 bg-white" />
+                `;
+                visualsGrid.appendChild(card);
+                imageCount++;
+            }
+            
+            if (imageCount > 0) {
+                visualsSection.classList.remove('hidden');
+            }
+        } catch (zipErr) {
+            console.warn("Could not extract embedded media:", zipErr);
+        }
+
+        // 2. Parse with full cell styles, formula headers and formatting
         currentWorkbook = XLSX.read(data, { 
             type: 'array',
             cellDates: true,
