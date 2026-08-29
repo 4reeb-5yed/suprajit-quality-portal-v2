@@ -90,8 +90,11 @@ def download_report(report_id):
     root_search_path = setting_row['value'] if setting_row else ''
     
     is_safe = is_safe_path(current_app.config['STORAGE_FOLDER'], target_path)
-    if root_search_path and not is_safe:
-        is_safe = is_safe_path(root_search_path, target_path)
+    if not is_safe and root_search_path:
+        for single_root in [r.strip() for r in root_search_path.split(';') if r.strip()]:
+            if is_safe_path(single_root, target_path):
+                is_safe = True
+                break
         
     if not is_safe:
         current_app.logger.error(f"Path Traversal Attempt Blocked: {target_path}")
@@ -122,8 +125,11 @@ def raw_report(report_id):
     root_search_path = setting_row['value'] if setting_row else ''
     
     is_safe = is_safe_path(current_app.config['STORAGE_FOLDER'], target_path)
-    if root_search_path and not is_safe:
-        is_safe = is_safe_path(root_search_path, target_path)
+    if not is_safe and root_search_path:
+        for single_root in [r.strip() for r in root_search_path.split(';') if r.strip()]:
+            if is_safe_path(single_root, target_path):
+                is_safe = True
+                break
         
     if not is_safe or not os.path.exists(target_path):
         abort(404)
