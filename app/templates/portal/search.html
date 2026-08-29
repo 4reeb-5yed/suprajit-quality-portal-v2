@@ -266,6 +266,7 @@
 </dialog>
 
 <script>
+let currentWorkbook = null;
 let currentRawData = null;
 let currentZip = null;
 
@@ -309,6 +310,7 @@ window.openExcelViewer = async function(reportId, filename, recipeName, serial, 
         const arrayBuffer = await response.arrayBuffer();
         currentZip = await JSZip.loadAsync(arrayBuffer);
         const wb = XLSX.read(new Uint8Array(arrayBuffer), { type: 'array' });
+        currentWorkbook = wb;
         
         const wsReport = wb.Sheets['REPORT'] || wb.Sheets[wb.SheetNames[0]];
         const wsTorque = wb.Sheets['TORQUE'];
@@ -393,78 +395,93 @@ window.openExcelViewer = async function(reportId, filename, recipeName, serial, 
 };
 
 async function renderChart1() {
-    if (!currentZip || !currentZip.files['xl/charts/chart1.xml']) return;
-    const xml = await currentZip.files['xl/charts/chart1.xml'].async('text');
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(xml, 'text/xml');
-    buildScatterPlot('chart1Plotly', doc, 'ANGLE (°)', 'DIE 1 & DIE 2 VOLTAGE (V)');
-}
+    if (!currentWorkbook) return;
+    const ws = currentWorkbook.Sheets['REPORT'] || currentWorkbook.Sheets[currentWorkbook.SheetNames[0]];
+    if (!ws) return;
 
-async function renderChart2() {
-    if (!currentZip || !currentZip.files['xl/charts/chart2.xml']) return;
-    const xml = await currentZip.files['xl/charts/chart2.xml'].async('text');
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(xml, 'text/xml');
-    buildScatterPlot('chart2Plotly', doc, 'ANGLE (°)', 'TORQUE (N·m)');
-}
+    // Direct cell-level extraction for Chart 1 series (Angle in Col G, Rows 11-950)
+    const angles = [];
+    const vd1 = [], min1 = [], max1 = [], va1 = [];
+    const vd2 = [], min2 = [], max2 = [], va2 = [];
 
-function buildScatterPlot(divId, doc, defaultXTitle, defaultYTitle) {
-    const seriesNodes = doc.getElementsByTagName('c:ser');
-    const traces = [];
-
-    for (let i = 0; i < seriesNodes.length; i++) {
-        const s = seriesNodes[i];
-        const txNode = s.querySelector('c\\:tx c\\:v, tx v');
-        const name = txNode ? txNode.textContent.trim() : `Series ${i + 1}`;
-
-        const colorNode = s.querySelector('a\\:solidFill a\\:srgbClr, solidFill srgbClr');
-        const colorHex = colorNode ? '#' + colorNode.getAttribute('val') : null;
+    for (let r = 11; r <= 950; r++) {
+        const cellAngle = ws['G' + r];
+        if (!cellAngle || cellAngle.v === undefined || cellAngle.v === '') continue;
         
-        const dashNode = s.querySelector('a\\:ln a\\:prstDash, ln prstDash');
-        const dashVal = dashNode ? dashNode.getAttribute('val') : 'solid';
-        const plotlyDash = (dashVal === 'dash' || dashVal === 'sysDash') ? 'dash' : 'solid';
+        const a = parseFloat(cellAngle.v);
+        angles.push(a);
+        
+        vd1.push(ws['H' + r] ? parseFloat(ws['H' + r].v) : null);
+        min1.push(ws['I' + r] ? parseFloat(ws['I' + r].v) : null);
+        max1.push(ws['J' + r] ? parseFloat(ws['J' + r].v) : null);
+        va1.push(ws['K' + r] ? parseFloat(ws['K' + r].v) : null);
 
-        const xPts = s.querySelectorAll('c\\:xVal c\\:pt, xVal pt');
-        const yPts = s.querySelectorAll('c\\:yVal c\\:pt, yVal pt');
-        const xVals = [];
-        const yVals = [];
-
-        for (let pt of xPts) {
-            const v = pt.querySelector('c\\:v, v');
-            if (v) xVals.push(parseFloat(v.textContent));
-        }
-        for (let pt of yPts) {
-            const v = pt.querySelector('c\\:v, v');
-            if (v) yVals.push(parseFloat(v.textContent));
-        }
-
-        if (xVals.length > 0 && yVals.length > 0) {
-            traces.push({
-                x: xVals,
-                y: yVals,
-                mode: 'lines',
-                name: name,
-                line: {
-                    color: colorHex || (name.includes('Min') || name.includes('Max') ? '#ff0000' : (name.includes('Desired') ? '#00b050' : '#00b0f0')),
-                    dash: plotlyDash,
-                    width: 2
-                }
-            });
-        }
+        vd2.push(ws['O' + r] ? parseFloat(ws['O' + r].v) : null);
+        min2.push(ws['P' + r] ? parseFloat(ws['P' + r].v) : null);
+        max2.push(ws['Q' + r] ? parseFloat(ws['Q' + r].v) : null);
+        va2.push(ws['R' + r] ? parseFloat(ws['R' + r].v) : null);
     }
 
+    const traces = [
+        { x: angles, y: min1, name: 'Min output voltage (DIE 1)', mode: 'lines', line: { color: '#ff0000', dash: 'dash', width: 1.5 } },
+        { x: angles, y: max1, name: 'Max output Voltage (DIE 1)', mode: 'lines', line: { color: '#ff0000', dash: 'dash', width: 1.5 } },
+        { x: angles, y: vd1, name: 'Desired Output (VD1)', mode: 'lines', line: { color: '#00b050', width: 2 } },
+        { x: angles, y: va1, name: 'Actual TPS Output (VA1)', mode: 'lines', line: { color: '#00b0f0', width: 2.5 } },
+        { x: angles, y: min2, name: 'Min output voltage (DIE 2)', mode: 'lines', line: { color: '#c00000', dash: 'dot', width: 1.5 } },
+        { x: angles, y: max2, name: 'Max output Voltage (DIE 2)', mode: 'lines', line: { color: '#c00000', dash: 'dot', width: 1.5 } },
+        { x: angles, y: vd2, name: 'Desired Output (VD2)', mode: 'lines', line: { color: '#70ad47', width: 2 } },
+        { x: angles, y: va2, name: 'Actual TPS Output (VA2)', mode: 'lines', line: { color: '#41719c', width: 2.5 } }
+    ];
+
     const layout = {
-        margin: { t: 15, r: 20, b: 35, l: 45 },
+        margin: { t: 25, r: 25, b: 50, l: 50 },
         font: { family: 'Arial, sans-serif', size: 10 },
-        xaxis: { title: defaultXTitle, gridcolor: '#d9d9d9', zerolinecolor: '#8c8c8c' },
-        yaxis: { title: defaultYTitle, gridcolor: '#d9d9d9', zerolinecolor: '#8c8c8c' },
+        xaxis: { title: { text: 'ANGLE (°)', font: { size: 11, color: '#002060' } }, gridcolor: '#e2e8f0', zerolinecolor: '#94a3b8' },
+        yaxis: { title: { text: 'DIE 1 & DIE 2 VOLTAGE (V)', font: { size: 11, color: '#002060' } }, gridcolor: '#e2e8f0', zerolinecolor: '#94a3b8', range: [0, 5.2] },
         showlegend: true,
         legend: { orientation: 'h', y: -0.25, font: { size: 9 } },
         paper_bgcolor: '#ffffff',
-        plot_bgcolor: '#ffffff'
+        plot_bgcolor: '#fafafa'
     };
 
-    Plotly.newPlot(divId, traces, layout, { responsive: true, displayModeBar: false });
+    Plotly.newPlot('chart1Plotly', traces, layout, { responsive: true, displayModeBar: true });
+}
+
+async function renderChart2() {
+    if (!currentWorkbook) return;
+    const ws = currentWorkbook.Sheets['TORQUE'];
+    if (!ws) return;
+
+    const angles = [];
+    const torqueCW = [];
+    const torqueCCW = [];
+
+    for (let r = 11; r <= 950; r++) {
+        const cellAngle = ws['C' + r];
+        if (!cellAngle || cellAngle.v === undefined || cellAngle.v === '') continue;
+        
+        angles.push(parseFloat(cellAngle.v));
+        torqueCW.push(ws['D' + r] ? parseFloat(ws['D' + r].v) : null);
+        torqueCCW.push(ws['E' + r] ? parseFloat(ws['E' + r].v) : null);
+    }
+
+    const traces = [
+        { x: angles, y: torqueCW, name: 'Torque CW', mode: 'lines', line: { color: '#00b050', width: 2 } },
+        { x: angles, y: torqueCCW, name: 'Torque CCW', mode: 'lines', line: { color: '#00b0f0', width: 2 } }
+    ];
+
+    const layout = {
+        margin: { t: 25, r: 25, b: 50, l: 50 },
+        font: { family: 'Arial, sans-serif', size: 10 },
+        xaxis: { title: { text: 'SETPOINTS ANGLE (°)', font: { size: 11, color: '#002060' } }, gridcolor: '#e2e8f0', zerolinecolor: '#94a3b8' },
+        yaxis: { title: { text: 'TORQUE (N·m)', font: { size: 11, color: '#002060' } }, gridcolor: '#e2e8f0', zerolinecolor: '#94a3b8' },
+        showlegend: true,
+        legend: { orientation: 'h', y: -0.25, font: { size: 9 } },
+        paper_bgcolor: '#ffffff',
+        plot_bgcolor: '#fafafa'
+    };
+
+    Plotly.newPlot('chart2Plotly', traces, layout, { responsive: true, displayModeBar: true });
 }
 </script>
 {% endblock %}
