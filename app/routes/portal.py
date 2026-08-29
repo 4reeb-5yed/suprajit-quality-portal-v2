@@ -107,3 +107,30 @@ def download_report(report_id):
     
     return send_file(target_path, as_attachment=True, download_name=row['original_filename'])
 
+@portal_bp.route('/view-raw/<int:report_id>')
+@login_required
+def raw_report(report_id):
+    """Streams the raw binary file for in-browser client-side Excel rendering."""
+    where, params = customer_scope(current_user)
+    row = g.db.execute(f"SELECT * FROM reports WHERE id = ? AND {where}", [report_id] + params).fetchone()
+    
+    if not row:
+        abort(404)
+        
+    target_path = row['file_path']
+    setting_row = g.db.execute("SELECT value FROM system_settings WHERE key = 'root_search_path'").fetchone()
+    root_search_path = setting_row['value'] if setting_row else ''
+    
+    is_safe = is_safe_path(current_app.config['STORAGE_FOLDER'], target_path)
+    if root_search_path and not is_safe:
+        is_safe = is_safe_path(root_search_path, target_path)
+        
+    if not is_safe or not os.path.exists(target_path):
+        abort(404)
+
+    g.db.execute("INSERT INTO audit_log (user_id, report_id, action, client_ip) VALUES (?, ?, ?, ?)",
+                 (current_user.id, report_id, 'view_online', request.remote_addr))
+    g.db.commit()
+    
+    return send_file(target_path, as_attachment=False, mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+
