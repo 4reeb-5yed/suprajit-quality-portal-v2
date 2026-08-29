@@ -227,6 +227,22 @@ def bulk_add_users():
     flash(msg, "success" if created_count > 0 else "warning")
     return redirect(url_for('company.manage_users'))
 
+@company_bp.route('/domains/update', methods=['POST'])
+@company_admin_required
+def update_allowed_domains():
+    customer_id = current_user.customer_id
+    allowed_domains = request.form.get('allowed_domains', '').strip()
+
+    if customer_id:
+        domains_list = [d.strip().lower().lstrip('@') for d in allowed_domains.replace(';', ',').split(',') if d.strip()]
+        cleaned_domains = ", ".join(domains_list) if domains_list else None
+        
+        g.db.execute("UPDATE customers SET allowed_domains = ? WHERE id = ?", (cleaned_domains, customer_id))
+        g.db.commit()
+        flash("Auto-join email domains updated for your organization.", "success")
+
+    return redirect(url_for('company.manage_users'))
+
 @company_bp.route('/users/toggle', methods=['POST'])
 @company_admin_required
 def toggle_user():
