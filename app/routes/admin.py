@@ -65,11 +65,25 @@ def dashboard():
         LIMIT 10
     """).fetchall()
     
+    # Audit Trail for Dashboard Modal
+    audit_logs = g.db.execute("""
+        SELECT a.id, a.created_at as timestamp, a.action, a.client_ip as ip_address,
+               COALESCE(u.display_name, u.username, 'System') as display_name,
+               COALESCE(u.username, 'System') as username,
+               COALESCE(u.role, 'system') as role,
+               COALESCE(r.original_filename, a.detail, 'Web Session') as target_info
+        FROM audit_log a
+        LEFT JOIN users u ON a.user_id = u.id
+        LEFT JOIN reports r ON a.report_id = r.id
+        ORDER BY a.id DESC LIMIT 100
+    """).fetchall()
+    
     return render_template('admin/dashboard.html', 
                            users_count=users_count,
                            customers_count=customers_count,
                            reports_count=reports_count,
-                           recent_batches=recent_batches)
+                           recent_batches=recent_batches,
+                           audit_logs=audit_logs)
 
 @admin_bp.route('/settings', methods=['GET', 'POST'])
 def settings():
