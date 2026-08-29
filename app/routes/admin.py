@@ -9,6 +9,9 @@ admin_bp = Blueprint('admin', __name__)
 def require_admin():
     if not current_user.is_admin:
         abort(403)
+    # Enforce Setup Wizard Trap: Force bootstrap_admin to complete initial setup before accessing any portal features
+    if current_user.username == 'bootstrap_admin' and request.endpoint not in ('admin.setup', 'auth.logout', 'static'):
+        return redirect(url_for('admin.setup'))
 
 @admin_bp.route('/setup', methods=['GET', 'POST'])
 def setup():
