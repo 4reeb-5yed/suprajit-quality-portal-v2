@@ -246,6 +246,25 @@ def update_user_recipe_permissions():
         return redirect(url_for('admin.customer_detail', customer_id=customer_id))
     return redirect(url_for('admin.customers'))
 
+@admin_bp.route('/customers/update_domains', methods=['POST'])
+def update_allowed_domains():
+    customer_id = request.form.get('customer_id')
+    allowed_domains = request.form.get('allowed_domains', '').strip()
+    redirect_url = request.form.get('redirect_url')
+
+    if customer_id:
+        # Clean and normalize domains (e.g. mahindra.com, tvs.com)
+        domains_list = [d.strip().lower().lstrip('@') for d in allowed_domains.replace(';', ',').split(',') if d.strip()]
+        cleaned_domains = ", ".join(domains_list) if domains_list else None
+        
+        g.db.execute("UPDATE customers SET allowed_domains = ? WHERE id = ?", (cleaned_domains, customer_id))
+        g.db.commit()
+        flash(f"Auto-join email domains updated for client.", "success")
+
+    if redirect_url:
+        return redirect(redirect_url)
+    return redirect(url_for('admin.customers'))
+
 @admin_bp.route('/customers/add_user', methods=['POST'])
 def add_user():
     from app.database import INSERT_USER

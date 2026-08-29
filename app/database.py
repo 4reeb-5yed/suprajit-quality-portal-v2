@@ -156,6 +156,8 @@ CREATE TABLE IF NOT EXISTS audit_log (
         cust_cols = [r['name'] for r in conn.execute("PRAGMA table_info(customers)").fetchall()]
         if 'portal_suspended' not in cust_cols:
             conn.execute("ALTER TABLE customers ADD COLUMN portal_suspended INTEGER NOT NULL DEFAULT 0")
+        if 'allowed_domains' not in cust_cols:
+            conn.execute("ALTER TABLE customers ADD COLUMN allowed_domains TEXT")
 
 # ─── QUERY CATALOG ───
 

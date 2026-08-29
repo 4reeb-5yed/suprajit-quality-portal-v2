@@ -71,6 +71,36 @@
         </div>
     </div>
 
+    <!-- Allowed Email Domains (Auto-Join Whitelist) -->
+    <div class="bg-white border border-gray-200 rounded shadow-sm overflow-hidden">
+        <div class="p-5 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
+            <div>
+                <h2 class="text-base font-bold text-gray-900 flex items-center gap-2">
+                    <i class="fa-solid fa-at text-blue-600"></i>
+                    Auto-Join Email Domains
+                </h2>
+                <p class="text-xs text-gray-500 mt-0.5">Allow employees from verified corporate email domains to automatically sign up and join {{ customer.company_name }}.</p>
+            </div>
+        </div>
+        <div class="p-5">
+            <form method="POST" action="{{ url_for('admin.update_allowed_domains') }}" class="flex flex-col md:flex-row gap-3 items-center">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                <input type="hidden" name="customer_id" value="{{ customer.id }}"/>
+                <input type="hidden" name="redirect_url" value="{{ url_for('admin.customer_detail', customer_id=customer.id) }}"/>
+                
+                <div class="w-full">
+                    <input type="text" name="allowed_domains" value="{{ customer.allowed_domains or '' }}" placeholder="e.g. mahindra.com, mahindraelectric.com" class="input input-sm input-bordered w-full font-mono text-xs" />
+                </div>
+                <button type="submit" class="btn btn-sm btn-primary suprajit-blue-bg border-none text-white font-semibold whitespace-nowrap px-4 shadow-sm">
+                    <i class="fa-solid fa-save mr-1.5"></i> Save Allowed Domains
+                </button>
+            </form>
+            <div class="mt-2 text-xs text-gray-400">
+                <i class="fa-solid fa-circle-info mr-1 text-blue-500"></i> Separate multiple domains with a comma (e.g. <code>tvs.com, tvsmotor.com</code>).
+            </div>
+        </div>
+    </div>
+
     <!-- Company Allowed Recipes Section (FIRST) -->
     <div class="bg-white border border-gray-200 rounded shadow-sm overflow-hidden">
         <div class="p-5 border-b border-gray-200 bg-gray-50 flex justify-between items-center">

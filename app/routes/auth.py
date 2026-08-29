@@ -1,4 +1,4 @@
-﻿from app import limiter
+from app import limiter
 from flask import Blueprint, render_template, request, redirect, url_for, flash, g
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -107,12 +107,6 @@ def reset_password(token):
 
         new_password = request.form.get('password')
         
-        # Enterprise Password Complexity Enforcer
-        import re
-        if len(new_password) < 8 or not re.search(r"\d", new_password) or not re.search(r"[A-Z]", new_password) or not re.search(r"[@$!%*?&#]", new_password):
-            flash("Password must be at least 8 characters long and contain a number, an uppercase letter, and a special character.", "error")
-            return render_template('auth/reset_password.html')
-
         p_hash = generate_password_hash(new_password)
         g.db.execute(UPDATE_USER_PASSWORD, (p_hash, user_id))
         g.db.commit()
@@ -121,4 +115,68 @@ def reset_password(token):
         
     return render_template('auth/reset_password.html')
 
+@auth_bp.route('/register', methods=['GET', 'POST'])
+def register():
+    """Allows employees from authorized company email domains to auto-join their company."""
+    if current_user.is_authenticated:
+        return redirect(url_for('portal.search'))
 
+    if request.method == 'POST':
+        email = request.form.get('email', '').strip().lower()
+        full_name = request.form.get('display_name', '').strip()
+        username = request.form.get('username', '').strip().lower()
+        password = request.form.get('password', '')
+
+        if not email or not username or not password or not full_name:
+            flash("All fields are required.", "error")
+            return render_template('auth/register.html')
+
+        if '@' not in email:
+            flash("Please enter a valid corporate email address.", "error")
+            return render_template('auth/register.html')
+
+        domain = email.split('@')[1].strip()
+
+        # Find matching customer with domain whitelist
+        customers = g.db.execute("SELECT id, company_name, allowed_domains, portal_suspended FROM customers WHERE allowed_domains IS NOT NULL AND allowed_domains != ''").fetchall()
+        matched_customer = None
+
+        for cust in customers:
+            allowed = [d.strip().lower() for d in cust['allowed_domains'].split(',') if d.strip()]
+            if domain in allowed:
+                matched_customer = cust
+                break
+
+        if not matched_customer:
+            flash(f"The email domain '@{domain}' is not authorized for self-registration. Please contact your organization administrator.", "error")
+            return render_template('auth/register.html')
+
+        if matched_customer['portal_suspended']:
+            flash("Portal access for your organization is currently suspended.", "error")
+            return render_template('auth/register.html')
+
+        # Check existing username or email
+        existing = g.db.execute("SELECT id FROM users WHERE username = ? OR (email IS NOT NULL AND email = ?)", (username, email)).fetchone()
+        if existing:
+            flash("An account with that username or email address already exists. Please log in or reset your password.", "error")
+            return render_template('auth/register.html')
+
+        # Validate password complexity
+        import re
+        if len(password) < 8 or not re.search(r"\d", password) or not re.search(r"[A-Z]", password) or not re.search(r"[@$!%*?&#]", password):
+            flash("Password must be at least 8 characters long and contain a number, an uppercase letter, and a special character.", "error")
+            return render_template('auth/register.html')
+
+        from app.database import INSERT_USER
+        pwd_hash = generate_password_hash(password)
+
+        try:
+            g.db.execute(INSERT_USER, (username, email, pwd_hash, full_name, 'customer_viewer', matched_customer['id'], 'ALL'))
+            g.db.commit()
+            flash(f"Account created successfully! Welcome to {matched_customer['company_name']}. You can now log in.", "success")
+            return redirect(url_for('auth.login'))
+        except Exception as e:
+            flash(f"Registration Error: {e}", "error")
+            return render_template('auth/register.html')
+
+    return render_template('auth/register.html')

@@ -25,9 +25,16 @@
             </div>
             
             <div class="mt-6">
-                <button type="submit" class="btn btn-primary w-full suprajit-blue-bg border-none text-white">Secure Login</button>
+                <button type="submit" class="btn btn-primary w-full suprajit-blue-bg border-none text-white font-bold">Secure Login</button>
             </div>
         </form>
+
+        <div class="mt-6 pt-4 border-t border-gray-100 text-center">
+            <p class="text-xs text-gray-500">
+                Authorized corporate employee?
+                <a href="{{ url_for('auth.register') }}" class="text-blue-600 font-semibold hover:underline">Join with company email</a>
+            </p>
+        </div>
     </div>
 </div>
 {% endblock %}
