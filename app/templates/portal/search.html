@@ -119,30 +119,34 @@
             <span class="flex-1 bg-white px-3 py-1 rounded border border-gray-300 text-gray-800 shadow-inner truncate font-mono text-xs" id="activeCellValue">Ready</span>
         </div>
 
-        <!-- Main Viewport: Full-Bleed GrapeCity SpreadJS Native Excel Workbook Host -->
-        <div class="flex-1 w-full h-full overflow-hidden bg-white relative flex flex-col" id="spreadsheetViewport">
+        <!-- Sheet Selector Tabs -->
+        <div id="sheetTabs" class="bg-gray-200 px-4 py-1 border-b border-gray-300 flex gap-1 overflow-x-auto text-xs select-none">
+            <!-- Populated dynamically -->
+        </div>
+
+        <!-- Main Viewport: In-House Pure Canvas Spreadsheet & Chart Host -->
+        <div class="flex-1 w-full h-full overflow-hidden bg-slate-100 relative flex flex-col" id="spreadsheetViewport">
             <!-- Loading Indicator -->
             <div id="excelLoading" class="absolute inset-0 flex flex-col items-center justify-center bg-white/95 z-20">
                 <span class="loading loading-spinner loading-lg text-emerald-700"></span>
-                <p class="text-sm font-bold text-gray-700 mt-3">Loading Excel Workbook with SpreadJS...</p>
-                <p class="text-xs text-gray-400">Rendering Native Charts, Shapes, Formulas & Formatting</p>
+                <p class="text-sm font-bold text-gray-700 mt-3">Rendering OpenXML Workbook on Canvas...</p>
+                <p class="text-xs text-gray-400">100% In-House Engine • Zero Watermark • Zero Server Load</p>
             </div>
 
-            <!-- SpreadJS Excel Host Canvas Container (Takes 100% of Viewport) -->
+            <!-- In-House Canvas Host -->
             <div id="spreadSheetHost" class="w-full h-full min-h-[500px] flex-1"></div>
         </div>
 
         <!-- Footer -->
         <div class="px-5 py-2 bg-gray-100 border-t border-gray-300 flex items-center justify-between text-xs text-gray-600 font-mono select-none">
-            <span id="footerInfo"><i class="fa-solid fa-file-excel text-emerald-700 mr-1"></i> GrapeCity SpreadJS Engine (100% In-Browser Rendering)</span>
-            <span class="text-emerald-700 font-bold"><i class="fa-solid fa-circle-check text-xs"></i> Native Excel Fidelity</span>
+            <span id="footerInfo"><i class="fa-solid fa-shield-halved text-emerald-700 mr-1"></i> In-House Custom OpenXML Engine (100% Client-Side)</span>
+            <span class="text-emerald-700 font-bold"><i class="fa-solid fa-circle-check text-xs"></i> Permanent & Free</span>
         </div>
     </div>
 </dialog>
 
 <script>
-let spreadInstance = null;
-let excelIOInstance = null;
+let engineInstance = null;
 let isMaximized = false;
 
 function toggleFullscreenViewer() {
@@ -160,11 +164,8 @@ function toggleFullscreenViewer() {
         icon.className = 'fa-solid fa-expand';
     }
 
-    // Trigger SpreadJS to recalibrate canvas dimensions
     setTimeout(() => {
-        if (spreadInstance) {
-            spreadInstance.refresh();
-        }
+        if (engineInstance) engineInstance.resize();
     }, 150);
 }
 
@@ -176,6 +177,8 @@ window.openExcelViewer = async function(reportId, filename, recipeName, serial, 
     document.getElementById('modalDownloadBtn').href = downloadUrl;
     
     const loading = document.getElementById('excelLoading');
+    const tabs = document.getElementById('sheetTabs');
+    tabs.innerHTML = '';
     loading.classList.remove('hidden');
     modal.showModal();
 
@@ -183,66 +186,34 @@ window.openExcelViewer = async function(reportId, filename, recipeName, serial, 
         const response = await fetch(`/view-raw/${reportId}`);
         if (!response.ok) throw new Error("Could not load report file.");
         
-        const blob = await response.blob();
+        const arrayBuffer = await response.arrayBuffer();
         const hostElement = document.getElementById('spreadSheetHost');
 
-        // Initialize SpreadJS workbook instance if not already initialized
-        if (!spreadInstance) {
-            spreadInstance = new GC.Spread.Sheets.Workbook(hostElement, {
-                sheetCount: 1,
-                tabStripVisible: true,
-                tabEditable: false,
-                newTabVisible: false,
-                allowUserDragMerge: false,
-                allowUserResize: true,
-                scrollbarMaxAlign: true,
-                scrollbarShowMax: true
-            });
-
-            // Update formula bar on cell selection
-            spreadInstance.bind(GC.Spread.Sheets.Events.SelectionChanged, function (sender, args) {
-                const sheet = spreadInstance.getActiveSheet();
-                if (sheet && args.newSelections && args.newSelections.length > 0) {
-                    const sel = args.newSelections[0];
-                    const colLetter = GC.Spread.Sheets.CalcEngine.rangeToFormula(new GC.Spread.Sheets.Range(sel.row, sel.col, 1, 1)).replace('$', '').replace('$', '');
-                    document.getElementById('activeCellRef').textContent = colLetter;
-                    const val = sheet.getValue(sel.row, sel.col);
-                    document.getElementById('activeCellValue').textContent = val !== null && val !== undefined ? String(val) : '';
-                }
-            });
-
-            // Handle window resize dynamically
-            window.addEventListener('resize', () => {
-                if (spreadInstance) spreadInstance.refresh();
-            });
+        if (!engineInstance) {
+            engineInstance = new TpsExcelEngine(hostElement);
         }
 
-        if (!excelIOInstance) {
-            excelIOInstance = new GC.Spread.Excel.IO();
-        }
+        await engineInstance.load(arrayBuffer);
 
-        // Import Excel Blob directly into SpreadJS workbook (100% client-side in browser)
-        excelIOInstance.open(blob, function (json) {
-            spreadInstance.fromJSON(json);
-            
-            // Adjust sheets and layout for inspection view
-            for (let i = 0; i < spreadInstance.getSheetCount(); i++) {
-                const sheet = spreadInstance.getSheet(i);
-                sheet.options.isProtected = false;
-                sheet.options.gridline = { showVerticalGridline: true, showHorizontalGridline: true };
-            }
-            
-            spreadInstance.refresh();
-            loading.classList.add('hidden');
-        }, function (error) {
-            console.error("SpreadJS ExcelIO open error:", error);
-            alert("Error importing Excel file in SpreadJS: " + (error.errorMessage || error));
-            loading.classList.add('hidden');
+        // Populate Sheet Selector Tabs
+        tabs.innerHTML = '';
+        engineInstance.sheets.forEach((sheet, idx) => {
+            const btn = document.createElement('button');
+            btn.className = `btn btn-xs ${idx === 0 ? 'bg-white text-emerald-800 font-bold border-b-2 border-emerald-700 shadow-sm' : 'btn-ghost text-gray-600'} rounded-t rounded-b-none px-3 py-1`;
+            btn.innerHTML = `<i class="fa-solid fa-table mr-1 text-xs"></i> ${sheet.name}`;
+            btn.onclick = () => {
+                for (let b of tabs.children) b.className = 'btn btn-xs btn-ghost text-gray-600 rounded-t rounded-b-none px-3 py-1';
+                btn.className = 'btn btn-xs bg-white text-emerald-800 font-bold border-b-2 border-emerald-700 shadow-sm rounded-t rounded-b-none px-3 py-1';
+                engineInstance.activeSheetName = sheet.name;
+                engineInstance.render();
+            };
+            tabs.appendChild(btn);
         });
 
     } catch (err) {
-        console.error("SpreadJS Load Error:", err);
+        console.error("Custom Engine Load Error:", err);
         alert("Error loading Excel report: " + err.message);
+    } finally {
         loading.classList.add('hidden');
     }
 };

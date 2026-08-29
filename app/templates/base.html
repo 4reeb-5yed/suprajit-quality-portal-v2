@@ -13,12 +13,11 @@
     <!-- HTMX -->
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
     
-    <!-- GrapeCity SpreadJS (SpreadJS Core, Charts Plugin, Shapes, ExcelIO) -->
-    <link href="https://cdn.grapecity.com/spreadjs/hosted/css/gc.spread.sheets.excel2013white.16.2.6.css" rel="stylesheet" type="text/css" />
-    <script src="https://cdn.grapecity.com/spreadjs/hosted/scripts/gc.spread.sheets.all.16.2.6.min.js"></script>
-    <script src="https://cdn.grapecity.com/spreadjs/hosted/scripts/plugins/gc.spread.sheets.shapes.16.2.6.min.js"></script>
-    <script src="https://cdn.grapecity.com/spreadjs/hosted/scripts/plugins/gc.spread.sheets.charts.16.2.6.min.js"></script>
-    <script src="https://cdn.grapecity.com/spreadjs/hosted/scripts/interop/gc.spread.excelio.16.2.6.min.js"></script>
+    <!-- JSZip for In-Browser OpenXML Parsing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+    <!-- In-House Custom OpenXML Canvas Spreadsheet & Scatter Chart Engine -->
+    <script src="{{ url_for('static', filename='js/tps-excel-canvas.js') }}"></script>
     
     <!-- Tailwind & DaisyUI -->
     <link href="https://cdn.jsdelivr.net/npm/daisyui@4.7.2/dist/full.min.css" rel="stylesheet" type="text/css" />
