@@ -1,62 +1,162 @@
-﻿# Suprajit Quality Portal V2 - System Internals & Developer Guide
+# Suprajit Quality Portal (V3 Enterprise Edition) - System Internals & Engineering Reference
 
-This document is the absolute source of truth for the Suprajit Quality Portal V2. It explains exactly how the software works, where data lives, how security is enforced, and what every file does.
-
----
-
-## 1. How Data is Stored
-
-### The Database (`portal.db`)
-Unlike V1 which relied on complex setups, V2 uses a single file: `data/portal.db`. 
-- **Engine:** SQLite running in **WAL (Write-Ahead Logging) mode**. This allows the background ingestion thread to write to the database at the exact same time a customer is searching it on the frontend, without locking each other out.
-- **Location:** The database is stored inside a `data/` folder sitting right next to the `.exe` file.
-- **Data Safety:** If you need to backup the entire system or move it to a new server, you only need to copy the `data/` folder.
-
-### The Watched Folder (Storage)
-- The system does *not* move or alter the factory's Excel files.
-- The path to the watched folder (e.g., `Z:\FactoryData`) is configured in the UI under **Admin -> Settings** and stored in the database's `system_settings` table under the key `root_search_path`.
-- The system reads this path, scans the files, extracts metadata, and maps the SQL row's `file_path` directly to the original file. 
+This document is the authoritative technical reference for developers, security auditors, and system architects. It details the system's execution pipeline, database schema, cryptographic invariants, and security boundaries.
 
 ---
 
-## 2. Security & Credentials
+## 💾 1. Database Architecture & Schema (`data/portal.db`)
 
-### Passwords
-- **Storage:** Passwords are NEVER stored in plain text. They are hashed using **Werkzeug's `scrypt` algorithm** and stored in the `password_hash` column of the `users` table. 
-- **Encryption Process:** When a user logs in, the system hashes the password they typed and compares it to the hash in the database. Even if the database is stolen, passwords cannot be reversed.
-- **SMTP/Email Password:** Stored in the `system_settings` table. It is no longer echoed into the HTML frontend, preventing "View Source" leaks.
+The database is powered by **SQLite 3** operating in **WAL (Write-Ahead Logging)** mode with `SYNCHRONOUS=NORMAL` and `BUSY_TIMEOUT=5000ms`.
 
-### Network Defenses (OWASP Compliance)
-- **CSRF (Cross-Site Request Forgery):** Powered by `Flask-WTF`. Every form submission requires a hidden security token, preventing attackers from tricking admins into submitting requests via malicious links.
-- **Brute Force & Credential Spraying:** Powered by `Flask-Limiter`. The `/login` endpoint strictly allows a maximum of 5 attempts per minute per IP address. Attackers cannot script login attempts.
-- **Path Traversal Guard:** Downloads are protected by `app.helpers.is_safe_path()`, meaning a user cannot manipulate the URL to download `C:\Windows\System32\cmd.exe` or the database itself.
+### Complete Table Schema:
+
+```sql
+-- Multi-Tenant Customer Organizations
+CREATE TABLE customers (
+    id TEXT PRIMARY KEY,
+    company_name TEXT NOT NULL,
+    portal_suspended INTEGER DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Company Email Domain Whitelists (Self-Serve Auto-Join)
+CREATE TABLE customer_domains (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    customer_id TEXT NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
+    domain_name TEXT NOT NULL UNIQUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- User Accounts & 3-Tier RBAC
+CREATE TABLE users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    customer_id TEXT REFERENCES customers(id) ON DELETE SET NULL,
+    username TEXT UNIQUE NOT NULL,
+    email TEXT UNIQUE,
+    password_hash TEXT,
+    display_name TEXT,
+    role TEXT NOT NULL CHECK(role IN ('admin', 'company_admin', 'customer_viewer')),
+    access_mode TEXT DEFAULT 'ALL' CHECK(access_mode IN ('ALL', 'CUSTOM')),
+    is_active INTEGER DEFAULT 1,
+    failed_attempts INTEGER DEFAULT 0,
+    locked_until TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Granular User Recipe Assignments (When access_mode='CUSTOM')
+CREATE TABLE user_recipes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    recipe_name TEXT NOT NULL,
+    UNIQUE(user_id, recipe_name)
+);
+
+-- Organization-Wide Recipe Assignments
+CREATE TABLE customer_recipes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    customer_id TEXT NOT NULL REFERENCES customers(id) ON DELETE CASCADE,
+    recipe_name TEXT NOT NULL,
+    UNIQUE(customer_id, recipe_name)
+);
+
+-- Ingestion Batch Execution Run Tracking
+CREATE TABLE batch_runs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    run_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    status TEXT NOT NULL,
+    files_discovered INTEGER DEFAULT 0,
+    files_indexed INTEGER DEFAULT 0,
+    files_skipped INTEGER DEFAULT 0,
+    duration_seconds REAL DEFAULT 0,
+    log_output TEXT
+);
+
+-- Indexed Quality Reports
+CREATE TABLE reports (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    batch_run_id INTEGER REFERENCES batch_runs(id),
+    recipe_name TEXT NOT NULL,
+    report_date TEXT NOT NULL,
+    report_time TEXT,
+    serial_normalized TEXT NOT NULL,
+    original_filename TEXT NOT NULL,
+    file_path TEXT NOT NULL,
+    file_hash TEXT UNIQUE NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Full-Text Search (FTS5) Virtual Table
+CREATE VIRTUAL TABLE reports_fts USING fts5(
+    recipe_name,
+    report_date,
+    serial_normalized,
+    original_filename,
+    content='reports',
+    content_rowid='id'
+);
+
+-- Forensic Audit Trail & Telemetry
+CREATE TABLE audit_logs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER,
+    customer_id TEXT,
+    action TEXT NOT NULL, -- 'login', 'search', 'download', 'view_online', etc.
+    details TEXT,
+    ip_address TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- System Key-Value Configuration & Reversible AES-256 Secrets
+CREATE TABLE system_settings (
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
 
 ---
 
-## 3. The Codebase Architecture (File by File)
+## 🔒 2. Cryptographic Security & Invariants
 
-### Core Engine
-*   **`run.py` & `web_server.py`:** The entry points. `run.py` is for local dev (Flask internal server). `web_server.py` is for production, booting the **Waitress** WSGI server to handle hundreds of concurrent Windows connections.
-*   **`app/__init__.py`:** The Factory. This boots the Flask app, connects the database, arms the rate limiters, enforces the unique `SECRET_KEY`, generates the `bootstrap_admin` account, and injects the Enterprise Log Rotation.
-*   **`app/config.py`:** Reads environmental variables (`.env`) or provides fallback configurations (like the default Port 5000).
-*   **`app/database.py`:** Manages SQLite connections and houses the `ensure_schema()` function which automatically creates the tables if they are missing. It also stores the raw SQL query constants.
-
-### The Ingestion Pipeline (The Magic)
-*   **`app/scheduler.py`:** An infinite loop running on a separate background thread. Every 60 seconds, it checks if the current time falls within a 5-minute window of the `sync_time` setting. If so, it triggers the `SyncEngine`. It also acts as the **Zombie Watchdog**, detecting and flagging crashed ingestion runs.
-*   **`app/sync_engine.py`:** The workhorse. It traverses the Watched Folder, skips files modified today (N-1 day logic to prevent file locks), checks if files are already in the DB, and orchestrates the insertion of new records.
-*   **`app/parser.py`:** The brain of the extraction. It uses **Regex (Regular Expressions)** to instantly extract the Recipe, Date, Time, and Serial Number directly from the filename (e.g., `EV_TPS_13-06-2026_22.33.21_12.xlsx`). Because it uses Regex instead of Excel libraries, it can process 10,000 files in under a second.
-
-### The Web Interface (Routes & Views)
-*   **`app/routes/auth.py`:** Handles login, logout, and password resets using secure time-signed URL tokens.
-*   **`app/routes/portal.py`:** The Customer Frontend. Handles the search bar, filtering, and the secure downloading of reports (which also triggers an insert into the `audit_log` table).
-*   **`app/routes/admin.py`:** The SysAdmin Backend. Manages users, customers, settings, the Diagnostics log viewer, and manual "Force Sync" triggers.
-*   **`app/helpers.py`:** Contains utilities like `customer_scope()`, which ensures that when Customer A queries the database, the SQL string is forcefully appended with `AND customer_id = 'CustomerA'`, making cross-tenant data leaks mathematically impossible.
-
-### Telemetry & Diagnostics
-*   **`app/mail.py`:** Uses Python's native `smtplib` to send welcome emails, password resets, and (if configured) daily system health telemetry to the developers. 
-*   **`logs/suprajit_system.log`:** The active diagnostic file. If the `SyncEngine` crashes due to a corrupt hard drive, Python's raw traceback is written here. The UI downloads this file for the SysAdmin.
+1. **Password Storage**: Passwords are mathematically hashed using **Werkzeug's `scrypt`** with automatic salt generation. Plaintext passwords never touch logs or disk.
+2. **Reversible Secret Encryption (AES-256 Fernet)**: Sensitive configurations stored in `system_settings` (e.g. SMTP passwords, OAuth 2.0 Client Secrets) are encrypted at rest using `cryptography.fernet.Fernet` derived from the server's master `SECRET_KEY`.
+3. **File Deduplication (SHA-256)**: Every indexed file is hashed in 64KB blocks. Identical files placed in multiple subdirectories are indexed once, preserving database integrity.
+4. **Path Traversal Shield**: All file download and raw streaming endpoints validate paths against `app.helpers.is_safe_path()`, strictly enforcing realpath containment inside the configured root directory.
 
 ---
+
+## 🚀 3. Core Subsystems & Execution Lifecycles
+
+### A. Dynamic Filename Parser (`app/parser.py`)
+- Reads the dynamic regex stored in `system_settings` under `custom_filename_regex`.
+- Matches named capture groups (`recipe`, `year`, `month`, `day`, `hour`, `minute`, `second`, `serial`).
+- Cleans Windows copy suffixes (e.g. ` (1).xlsx`, ` - Copy.xlsx`).
+- Falls back to built-in manufacturing ISO regex if the custom pattern fails or is unset.
+
+### B. In-Browser Spreadsheet Streamer (`app/routes/portal.py` & SheetJS)
+- **Endpoint**: `/view-raw/<int:report_id>`
+- **Workflow**:
+  1. Validates user authentication and tenancy authorization via `customer_scope()`.
+  2. Blocks path traversal.
+  3. Returns raw binary stream with header `Content-Disposition: inline`.
+  4. Client-side JS fetches the `ArrayBuffer`, parses the workbook using `XLSX.read(data, {type: 'array'})`, and renders interactive HTML tables.
+  5. Inserts an immutable `view_online` record into `audit_logs`.
+
+### C. Native Cloudflare Tunnel Runner (`app/tunnel.py`)
+- Manages an isolated background subprocess for `cloudflared.exe`.
+- Dynamically parses the generated `https://*.trycloudflare.com` tunnel URL from process stderr.
+- Updates `system_settings.public_base_url` to guarantee outbound email links always point to the active public endpoint.
+
+---
+
+## 🧪 4. Three-Way Test Defense Matrix
+
+The test framework (`pytest`) verifies all 107 critical paths:
+1. `tests/test_v3_company_rbac.py` &rarr; 62 Tests (3-Tier RBAC, Dynamic Regex, SSO Client Registration, Tunnel Runner, Bulk Onboarding).
+2. `tests/test_exhaustive.py` & `tests/test_exhaustive2.py` &rarr; 26 Tests (Full route surface, search lifecycle, SheetJS raw streams, Admin CRUD).
+3. `tests/test_security_asvs.py` &rarr; 4 Tests (OWASP ASVS 2025 multi-tenant isolation, SQL injection immunization, path traversal blocks).
+4. `tests/test_sync_engine_dimensions.py` & `tests/test_suite.py` &rarr; 15 Tests (Batch engine N-1 safety, deduplication, FTS5 sync).
+
 
 ## 4. How Everything Talks To Each Other
 

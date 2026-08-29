@@ -1,39 +1,49 @@
-﻿# Architecture & Decision Records (ADR)
+# Architecture & Decision Records (ADR) - Version 3.0 Enterprise
 
-In enterprise software engineering, an Architecture Decision Record (ADR) captures the core technological choices and the exact reasoning behind why they were chosen over alternatives. 
-
-This document explains the "Why" behind the Suprajit Quality Portal (V2).
+This document captures the architectural decisions, structural constraints, and technological rationale governing the **Suprajit Quality Portal (V3)**.
 
 ---
 
-## 1. The Deployment Environment (The Constraint)
-**The Problem:** The software must run on a physical factory Windows PC, ingest 10,000+ files daily from local network folders, and simultaneously serve a fast, secure web portal to clients on the internet. 
-**The Constraint:** It must require **zero IT maintenance**. Factory IT teams cannot be expected to manage complex cloud infrastructure, container orchestration, or database migrations.
+## 🏛️ ADR Index
+
+### 1. Ingestion Strategy: N-1 Batch Ingestion vs Real-Time Watchdogs
+- **Decision**: Process files strictly from the previous calendar day ($N-1$).
+- **Rationale**: Real-time file system watchers (e.g. `watchdog`) fail when manufacturing machines slowly write large Excel files over network shares or when plant workers leave spreadsheets open. The N-1 lifecycle guarantees all files are fully flushed, closed, and unlocked.
+- **Safety Heuristic**: Combined with `ensure_file_safe()`, verifying OS write locks before reading.
 
 ---
 
-## 2. The Database: SQLite WAL vs PostgreSQL
-**The Alternative (PostgreSQL/MySQL):** Traditional web apps use PostgreSQL. However, PostgreSQL requires a dedicated background service, complex installation, user privilege management, and heavy IT overhead.
-**The Choice (SQLite with WAL):** We chose a standalone SQLite database, strictly configured in **Write-Ahead Logging (WAL)** mode.
-* **Why:** SQLite requires zero configuration and lives in a single `portal.db` file (making backups as simple as copy-pasting the file). By enabling WAL mode, we unlocked Enterprise-level concurrency. A background thread can ingest 10,000 files while internet users simultaneously search the database, with mathematically zero deadlocks or race conditions.
+### 2. High-Concurrency Storage: SQLite WAL vs Client-Server Relational DBs
+- **Decision**: Dedicated single-file SQLite database configured strictly in Write-Ahead Logging (`WAL`) mode with `NORMAL` synchronous mode and 5000ms busy timeouts.
+- **Rationale**: Eliminates the operational and maintenance burden of managing PostgreSQL or MySQL background services on plant PCs. SQLite WAL enables concurrent readers while batch indexing proceeds in the background with zero lock contention. Backups require copying a single `portal.db` file.
 
 ---
 
-## 3. The Ingestion Engine: N-1 Batching vs Real-Time Watchdog
-**The Alternative (Real-Time Watchdog):** V1 attempted to ingest files the exact millisecond they were created in the factory folder. This resulted in catastrophic OS File Lock crashes if a machine was slowly copying a file over the network, or if an engineer still had the Excel file open.
-**The Choice (N-1 Lifecycle):** We implemented a nightly background chronological batch processor that strictly processes files from *yesterday* (N-1).
-* **Why:** By waiting until the next day, the software mathematically guarantees that the file is completely closed, unlocked, and safe to hash. Furthermore, we injected an `ensure_file_safe()` heuristic that actively tests for Windows OS locks and active network copies before ingestion.
+### 3. Spreadsheet Rendering: Client-Side SheetJS WebAssembly vs Server-Side LibreOffice/Python Conversion
+- **Decision**: Stream authorized binary file blobs directly to the client browser and render interactively using **SheetJS (xlsx.js)**.
+- **Rationale**: Converting complex Excel spreadsheets on the server using headless LibreOffice or Python libraries (e.g. `openpyxl`, `pandas`) consumes immense CPU and RAM, creating severe server bottlenecks under multi-user traffic. Client-side WebAssembly execution offloads 100% of rendering computational cost to the client device while preserving workbook tab navigation.
 
 ---
 
-## 4. The Runtime: PyInstaller Executable vs Docker Containers
-**The Alternative (Docker):** Silicon Valley standardizes on Docker containers. However, deploying Docker on a Windows Factory Server requires WSL2 (Windows Subsystem for Linux), Hyper-V virtualization, and advanced IT knowledge.
-**The Choice (PyInstaller + NSSM):** We bundled the entire Python environment, the Flask server, and the database engine into a single compiled `.exe` using PyInstaller, managed by NSSM (Non-Sucking Service Manager).
-* **Why:** It allows "Double-Click Deployment." The factory IT team does not even need to install Python. The NSSM wrapper acts as a watchdog, automatically restarting the `.exe` if the server reboots or crashes.
+### 4. Enterprise Identity: Dual Authentication (Local RBAC + OAuth 2.0 / SSO)
+- **Decision**: Turnkey OAuth 2.0 integration for Microsoft 365 / Entra ID, Google Workspace, and GitHub with automated Corporate Domain Whitelisting.
+- **Rationale**: Tier-1 automotive clients (TVS, Mahindra, Tata) require SSO governance. Users signing in via corporate email domains automatically join their organization tenant without manual provisioning overhead, while preserving local admin fallback during internet interruptions.
 
 ---
 
-## 5. The Frontend: HTMX vs React/Angular
-**The Alternative (React SPA):** Building a React frontend requires a complex Node.js build pipeline, massive `node_modules` folders, and API serialization logic.
-**The Choice (HTMX + Tailwind CSS):** We utilized HTMX directly inside server-side Jinja templates.
-* **Why:** HTMX provides the exact same frictionless, instant "Single Page Application" feel (e.g., searching for a serial number updates the table without reloading the page), but requires zero JavaScript build pipelines. It keeps the binary extremely small and lightning-fast.
+### 5. Remote Connectivity: Cloudflare Zero Trust Tunnels vs Public Port-Forwarding
+- **Decision**: Native process orchestration of Cloudflare Zero Trust Tunnels (`cloudflared`).
+- **Rationale**: Factory servers sit behind restrictive corporate NATs and firewalls. Port-forwarding port 5000 exposes factory networks to brute-force attacks. Cloudflare tunnels establish outbound-only encrypted tunnels, providing enterprise DDoS protection, automatic SSL termination, and immediate public access without modifying router configurations.
+
+---
+
+### 6. Dynamic Parsing Architecture: Configurable Regex vs Hardcoded String Slicing
+- **Decision**: Dynamic regex engine with database-persisted named capture groups (`(?P<recipe>...)`, `(?P<serial>...)`).
+- **Rationale**: Manufacturing part naming conventions evolve over time. Hardcoded string parsers require rebuilding and redeploying binary executables. The dynamic engine allows IT administrators to add or adjust regex patterns directly in the web UI with interactive validation.
+
+---
+
+### 7. Quality Assurance: 3-Way Test Defense Matrix
+- **Decision**: Layered 100+ automated test suites spanning Unit Isolation, Multi-Tenant Security (OWASP ASVS), and End-to-End browser smoke checks.
+- **Rationale**: Guarantees zero regressions across cryptographic deduplication, multi-tenant company isolation boundaries, and executable binary compilation.
+
