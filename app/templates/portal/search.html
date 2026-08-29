@@ -115,32 +115,183 @@
 
         <!-- Sheet Selector Tabs -->
         <div id="sheetTabs" class="bg-gray-200 px-4 py-1.5 border-b border-gray-300 flex gap-1.5 overflow-x-auto text-xs">
-            <!-- Dynamically populated sheets -->
+            <button class="btn btn-xs bg-white text-emerald-800 font-bold border-b-2 border-emerald-700 shadow-sm rounded-t rounded-b-none px-3 py-1" onclick="selectSheetTab('REPORT')"><i class="fa-solid fa-table mr-1 text-xs"></i> REPORT</button>
+            <button class="btn btn-xs btn-ghost text-gray-600 rounded-t rounded-b-none px-3 py-1" onclick="selectSheetTab('TORQUE')"><i class="fa-solid fa-table mr-1 text-xs"></i> TORQUE</button>
+            <button class="btn btn-xs btn-ghost text-gray-600 rounded-t rounded-b-none px-3 py-1" onclick="selectSheetTab('SCREENSHOT')"><i class="fa-solid fa-table mr-1 text-xs"></i> SCREENSHOT</button>
         </div>
 
-        <!-- Main Viewport: Pixel-Perfect Desktop-Grade Excel Document View -->
-        <div class="flex-1 overflow-hidden bg-slate-800 relative flex flex-col items-center justify-center" id="spreadsheetViewport">
+        <!-- Main Viewport: Pixel-Perfect In-Browser Excel Spreadsheet View -->
+        <div class="flex-1 overflow-auto bg-[#e6e6e6] relative p-4 flex flex-col items-center select-text" id="spreadsheetViewport">
             <!-- Loading Indicator -->
             <div id="excelLoading" class="absolute inset-0 flex flex-col items-center justify-center bg-white/95 z-20">
                 <span class="loading loading-spinner loading-lg text-emerald-700"></span>
-                <p class="text-sm font-bold text-gray-700 mt-3">Rendering 100% Authentic Excel Workbook...</p>
-                <p class="text-xs text-gray-400">Rendering exact LibreOffice / Excel vector document</p>
+                <p class="text-sm font-bold text-gray-700 mt-3">Rendering Authentic Excel Sheet in Browser...</p>
+                <p class="text-xs text-gray-400">Zero Server Overhead • 100% Client-Side Engine</p>
             </div>
 
-            <!-- Authentic Document Viewer (100% Pixel-Perfect Match to Microsoft Office / LibreOffice) -->
-            <iframe id="excelPdfIframe" class="w-full h-full border-none bg-slate-800" src=""></iframe>
+            <!-- Authentic Excel Document Page Container -->
+            <div id="excelPaper" class="bg-white shadow-2xl border border-gray-400 p-6 w-[1200px] min-h-[900px] font-['Arial',sans-serif] text-[11px] text-black">
+                
+                <!-- TAB 1: REPORT SHEET -->
+                <div id="viewSheetReport" class="space-y-4">
+                    <!-- Title Banner -->
+                    <div class="text-center font-bold text-lg text-[#002060] tracking-wide py-2 border-b-2 border-[#002060]">
+                        TPS PERFORMANCE TEST REPORT
+                    </div>
+
+                    <!-- Header Information Table (Exact Merged Cells & Labels) -->
+                    <div class="border border-black overflow-hidden text-xs">
+                        <div class="grid grid-cols-12 border-b border-black">
+                            <div class="col-span-2 bg-[#f2f2f2] p-1.5 font-bold border-r border-black">Product :</div>
+                            <div class="col-span-4 p-1.5 border-r border-black font-semibold" id="cellProduct">ACCELERATOR POSITION SENSOR</div>
+                            <div class="col-span-2 bg-[#f2f2f2] p-1.5 font-bold border-r border-black">OPERATOR NAME</div>
+                            <div class="col-span-2 p-1.5 border-r border-black font-bold text-[#002060]" id="cellOperator">-</div>
+                            <div class="col-span-1 bg-[#f2f2f2] p-1.5 font-bold border-r border-black">DATE</div>
+                            <div class="col-span-1 p-1.5 font-mono" id="cellDate">-</div>
+                        </div>
+                        <div class="grid grid-cols-12 border-b border-black">
+                            <div class="col-span-2 bg-[#f2f2f2] p-1.5 font-bold border-r border-black">Part No :</div>
+                            <div class="col-span-4 p-1.5 border-r border-black" id="cellPartNo">EV TPS</div>
+                            <div class="col-span-2 bg-[#f2f2f2] p-1.5 font-bold border-r border-black">RECIPE NAME</div>
+                            <div class="col-span-2 p-1.5 border-r border-black font-bold text-[#002060]" id="cellRecipe">-</div>
+                            <div class="col-span-1 bg-[#f2f2f2] p-1.5 font-bold border-r border-black">TIME</div>
+                            <div class="col-span-1 p-1.5 font-mono" id="cellTime">-</div>
+                        </div>
+                        <div class="grid grid-cols-12 border-b border-black">
+                            <div class="col-span-2 bg-[#f2f2f2] p-1.5 font-bold border-r border-black">Application :</div>
+                            <div class="col-span-4 p-1.5 border-r border-black" id="cellApp">2W</div>
+                            <div class="col-span-2 bg-[#f2f2f2] p-1.5 font-bold border-r border-black">RESULTS DESC.</div>
+                            <div class="col-span-2 p-1.5 border-r border-black font-bold text-emerald-700" id="cellDesc">-</div>
+                            <div class="col-span-1 bg-[#f2f2f2] p-1.5 font-bold border-r border-black">STATUS</div>
+                            <div class="col-span-1 p-1.5 font-black text-center text-sm" id="cellStatus">-</div>
+                        </div>
+                        <div class="grid grid-cols-12 border-b border-black">
+                            <div class="col-span-2 bg-[#f2f2f2] p-1.5 font-bold border-r border-black">Customer :</div>
+                            <div class="col-span-4 p-1.5 border-r border-black">TVS MOTORS / SUPRAJIT</div>
+                            <div class="col-span-2 bg-[#f2f2f2] p-1.5 font-bold border-r border-black">QR / BARCODE</div>
+                            <div class="col-span-4 p-1.5 font-mono text-[10px] truncate" id="cellBarcode">-</div>
+                        </div>
+                    </div>
+
+                    <!-- Embedded Scatter Curve 1: DIE 1 & DIE 2 Voltage vs Angle -->
+                    <div class="border border-black p-3 bg-white">
+                        <div class="text-center font-bold text-xs text-[#002060] mb-1">
+                            DIE1 AND DIE 2 VOLTAGE VS ANGLE
+                        </div>
+                        <div id="chart1Plotly" class="w-full h-80"></div>
+                    </div>
+
+                    <!-- Primary Measurement Data Table (Row 9-N) -->
+                    <div class="overflow-x-auto border border-black max-h-96">
+                        <table class="w-full text-center border-collapse text-[10px] font-mono" id="reportDataTable">
+                            <thead class="bg-[#e2efda] text-black font-bold sticky top-0 border-b border-black select-none">
+                                <tr class="border-b border-black bg-[#c6e0b4]">
+                                    <th class="border-r border-black p-1" rowspan="2">Sr</th>
+                                    <th class="border-r border-black p-1" colspan="2">Supply Volts (V)</th>
+                                    <th class="border-r border-black p-1" colspan="2">Current (mA)</th>
+                                    <th class="border-r border-black p-1" rowspan="2">Angle (°)</th>
+                                    <th class="border-r border-black p-1 bg-[#fff2cc]" colspan="4">DIE 1 Output Voltages (V)</th>
+                                    <th class="border-r border-black p-1" rowspan="2">Dev 1</th>
+                                    <th class="border-r border-black p-1" rowspan="2">% Lin 1</th>
+                                    <th class="border-r border-black p-1" rowspan="2">% Hyst 1</th>
+                                    <th class="border-r border-black p-1 bg-[#fce4d6]" colspan="4">DIE 2 Output Voltages (V)</th>
+                                    <th class="border-r border-black p-1" rowspan="2">Dev 2</th>
+                                    <th class="border-r border-black p-1" rowspan="2">% Lin 2</th>
+                                    <th class="border-r border-black p-1" rowspan="2">% Hyst 2</th>
+                                </tr>
+                                <tr>
+                                    <th class="border-r border-black p-1">VCC1</th>
+                                    <th class="border-r border-black p-1">VCC2</th>
+                                    <th class="border-r border-black p-1">I1</th>
+                                    <th class="border-r border-black p-1">I2</th>
+                                    <th class="border-r border-black p-1 bg-[#fff2cc]">Desired</th>
+                                    <th class="border-r border-black p-1 bg-[#fff2cc]">Min</th>
+                                    <th class="border-r border-black p-1 bg-[#fff2cc]">Max</th>
+                                    <th class="border-r border-black p-1 bg-[#fff2cc] font-bold text-blue-800">Actual</th>
+                                    <th class="border-r border-black p-1 bg-[#fce4d6]">Desired</th>
+                                    <th class="border-r border-black p-1 bg-[#fce4d6]">Min</th>
+                                    <th class="border-r border-black p-1 bg-[#fce4d6]">Max</th>
+                                    <th class="border-r border-black p-1 bg-[#fce4d6] font-bold text-blue-800">Actual</th>
+                                </tr>
+                            </thead>
+                            <tbody id="reportDataTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- TAB 2: TORQUE SHEET -->
+                <div id="viewSheetTorque" class="hidden space-y-4">
+                    <div class="text-center font-bold text-lg text-[#002060] tracking-wide py-2 border-b-2 border-[#002060]">
+                        TORQUE PERFORMANCE & HOMING TEST
+                    </div>
+                    <div class="border border-black p-3 bg-white">
+                        <div class="text-center font-bold text-xs text-[#002060] mb-1">
+                            TORQUE CW & CCW VS ANGLE
+                        </div>
+                        <div id="chart2Plotly" class="w-full h-80"></div>
+                    </div>
+                    <div class="overflow-x-auto border border-black max-h-96">
+                        <table class="w-full text-center border-collapse text-[10px] font-mono" id="torqueDataTable">
+                            <thead class="bg-[#d9e1f2] text-black font-bold sticky top-0 border-b border-black">
+                                <tr>
+                                    <th class="border-r border-black p-1">Angle (°)</th>
+                                    <th class="border-r border-black p-1">Torque CW (N·m)</th>
+                                    <th class="border-r border-black p-1">Torque CCW (N·m)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="torqueDataTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- TAB 3: SCREENSHOT SHEET -->
+                <div id="viewSheetScreenshot" class="hidden space-y-4">
+                    <div class="text-center font-bold text-lg text-[#002060] tracking-wide py-2 border-b-2 border-[#002060]">
+                        INSPECTION SCREENSHOTS & IMAGE CAPTURES
+                    </div>
+                    <div class="p-8 text-center text-gray-500 font-mono" id="screenshotContainer">
+                        No embedded screenshots in this report instance.
+                    </div>
+                </div>
+
+            </div>
         </div>
 
         <!-- Footer -->
-        <div class="px-5 py-2.5 bg-slate-900 border-t border-slate-700 flex items-center justify-between text-xs text-slate-400 font-mono">
-            <span id="footerInfo"><i class="fa-solid fa-file-invoice text-emerald-400 mr-1"></i> Exact Microsoft Excel / LibreOffice Vector Engine</span>
-            <span class="text-emerald-400 font-bold"><i class="fa-solid fa-circle-check text-xs"></i> 100% Pixel-Perfect Precision</span>
+        <div class="px-5 py-2.5 bg-gray-100 border-t border-gray-300 flex items-center justify-between text-xs text-gray-600 font-mono">
+            <span id="footerInfo">100% Client-Side In-Browser LabVIEW Reproduction</span>
+            <span class="text-emerald-700 font-bold"><i class="fa-solid fa-circle-check text-xs"></i> Native Browser Engine</span>
         </div>
     </div>
 </dialog>
 
 <script>
-window.openExcelViewer = function(reportId, filename, recipeName, serial, downloadUrl) {
+let currentRawData = null;
+let currentZip = null;
+
+function selectSheetTab(name) {
+    const tabs = document.getElementById('sheetTabs').children;
+    for (let b of tabs) b.className = 'btn btn-xs btn-ghost text-gray-600 rounded-t rounded-b-none px-3 py-1';
+    
+    document.getElementById('viewSheetReport').classList.add('hidden');
+    document.getElementById('viewSheetTorque').classList.add('hidden');
+    document.getElementById('viewSheetScreenshot').classList.add('hidden');
+
+    if (name === 'REPORT') {
+        tabs[0].className = 'btn btn-xs bg-white text-emerald-800 font-bold border-b-2 border-emerald-700 shadow-sm rounded-t rounded-b-none px-3 py-1';
+        document.getElementById('viewSheetReport').classList.remove('hidden');
+        renderChart1();
+    } else if (name === 'TORQUE') {
+        tabs[1].className = 'btn btn-xs bg-white text-emerald-800 font-bold border-b-2 border-emerald-700 shadow-sm rounded-t rounded-b-none px-3 py-1';
+        document.getElementById('viewSheetTorque').classList.remove('hidden');
+        renderChart2();
+    } else {
+        tabs[2].className = 'btn btn-xs bg-white text-emerald-800 font-bold border-b-2 border-emerald-700 shadow-sm rounded-t rounded-b-none px-3 py-1';
+        document.getElementById('viewSheetScreenshot').classList.remove('hidden');
+    }
+}
+
+window.openExcelViewer = async function(reportId, filename, recipeName, serial, downloadUrl) {
     const modal = document.getElementById('excelViewerModal');
     document.getElementById('modalFilename').textContent = filename;
     document.getElementById('modalRecipe').textContent = recipeName;
@@ -148,25 +299,172 @@ window.openExcelViewer = function(reportId, filename, recipeName, serial, downlo
     document.getElementById('modalDownloadBtn').href = downloadUrl;
     
     const loading = document.getElementById('excelLoading');
-    const iframe = document.getElementById('excelPdfIframe');
-    
     loading.classList.remove('hidden');
-    iframe.src = '';
-    
     modal.showModal();
 
-    // Load pixel-perfect vector document rendered directly by LibreOffice
-    const pdfUrl = `/preview-pdf/${reportId}`;
-    iframe.src = pdfUrl;
+    try {
+        const response = await fetch(`/view-raw/${reportId}`);
+        if (!response.ok) throw new Error("Could not load report file.");
+        
+        const arrayBuffer = await response.arrayBuffer();
+        currentZip = await JSZip.loadAsync(arrayBuffer);
+        const wb = XLSX.read(new Uint8Array(arrayBuffer), { type: 'array' });
+        
+        const wsReport = wb.Sheets['REPORT'] || wb.Sheets[wb.SheetNames[0]];
+        const wsTorque = wb.Sheets['TORQUE'];
 
-    iframe.onload = function() {
+        // 1. Populate Header Information
+        document.getElementById('cellOperator').textContent = wsReport['M3'] ? wsReport['M3'].v : 'Operator';
+        document.getElementById('cellDate').textContent = wsReport['S3'] ? (wsReport['S3'].w || wsReport['S3'].v) : '-';
+        document.getElementById('cellRecipe').textContent = wsReport['M4'] ? wsReport['M4'].v : recipeName;
+        document.getElementById('cellTime').textContent = wsReport['S4'] ? (wsReport['S4'].w || wsReport['S4'].v) : '-';
+        document.getElementById('cellDesc').textContent = wsReport['M5'] ? wsReport['M5'].v : 'ALL TESTS COMPLETED';
+        
+        const statusVal = wsReport['S5'] ? String(wsReport['S5'].v).toUpperCase().trim() : 'PASS';
+        const statusEl = document.getElementById('cellStatus');
+        statusEl.textContent = statusVal;
+        if (statusVal === 'PASS' || statusVal === 'OK') {
+            statusEl.className = 'col-span-1 p-1.5 font-black text-center text-sm bg-[#64ff00] text-black border border-black';
+        } else {
+            statusEl.className = 'col-span-1 p-1.5 font-black text-center text-sm bg-[#ff3b30] text-white border border-black';
+        }
+        document.getElementById('cellBarcode').textContent = wsReport['M7'] ? wsReport['M7'].v : (serial || '-');
+
+        // 2. Populate REPORT Data Table Rows
+        const reportRows = XLSX.utils.sheet_to_json(wsReport, { header: 1, defval: '' });
+        const rTbody = document.getElementById('reportDataTableBody');
+        rTbody.innerHTML = '';
+        
+        const dataEntries = reportRows.slice(10); // Row 11 onward
+        let rHtml = '';
+        dataEntries.forEach((r) => {
+            if (!r || !r.some(c => c !== '')) return;
+            rHtml += `<tr class="border-b border-gray-300 hover:bg-yellow-50">
+                <td class="border-r border-gray-300 p-0.5">${r[1] || ''}</td>
+                <td class="border-r border-gray-300 p-0.5">${r[2] || ''}</td>
+                <td class="border-r border-gray-300 p-0.5">${r[3] || ''}</td>
+                <td class="border-r border-gray-300 p-0.5">${r[4] || ''}</td>
+                <td class="border-r border-gray-300 p-0.5">${r[5] || ''}</td>
+                <td class="border-r border-gray-300 p-0.5 font-bold">${r[6] || ''}</td>
+                <td class="border-r border-gray-300 p-0.5 bg-[#fffdf0]">${r[7] || ''}</td>
+                <td class="border-r border-gray-300 p-0.5 bg-[#fffdf0] text-red-600">${r[8] || ''}</td>
+                <td class="border-r border-gray-300 p-0.5 bg-[#fffdf0] text-red-600">${r[9] || ''}</td>
+                <td class="border-r border-gray-300 p-0.5 bg-[#fffdf0] font-bold text-blue-700">${r[10] || ''}</td>
+                <td class="border-r border-gray-300 p-0.5">${r[11] || ''}</td>
+                <td class="border-r border-gray-300 p-0.5">${r[12] || ''}</td>
+                <td class="border-r border-gray-300 p-0.5">${r[13] || ''}</td>
+                <td class="border-r border-gray-300 p-0.5 bg-[#fff5f0]">${r[14] || ''}</td>
+                <td class="border-r border-gray-300 p-0.5 bg-[#fff5f0] text-red-600">${r[15] || ''}</td>
+                <td class="border-r border-gray-300 p-0.5 bg-[#fff5f0] text-red-600">${r[16] || ''}</td>
+                <td class="border-r border-gray-300 p-0.5 bg-[#fff5f0] font-bold text-blue-700">${r[17] || ''}</td>
+                <td class="border-r border-gray-300 p-0.5">${r[18] || ''}</td>
+                <td class="border-r border-gray-300 p-0.5">${r[19] || ''}</td>
+                <td class="p-0.5">${r[20] || ''}</td>
+            </tr>`;
+        });
+        rTbody.innerHTML = rHtml;
+
+        // 3. Populate TORQUE Data Table Rows if sheet exists
+        if (wsTorque) {
+            const torqueRows = XLSX.utils.sheet_to_json(wsTorque, { header: 1, defval: '' });
+            const tTbody = document.getElementById('torqueDataTableBody');
+            tTbody.innerHTML = '';
+            let tHtml = '';
+            torqueRows.slice(10).forEach(r => {
+                if (!r || !r.some(c => c !== '')) return;
+                tHtml += `<tr class="border-b border-gray-300 hover:bg-yellow-50">
+                    <td class="border-r border-gray-300 p-1 font-bold">${r[2] || ''}</td>
+                    <td class="border-r border-gray-300 p-1">${r[3] || ''}</td>
+                    <td class="p-1">${r[4] || ''}</td>
+                </tr>`;
+            });
+            tTbody.innerHTML = tHtml;
+        }
+
+        // Default open REPORT sheet
+        selectSheetTab('REPORT');
+
+    } catch (err) {
+        console.error("Client Excel Render Error:", err);
+        alert("Error reading Excel: " + err.message);
+    } finally {
         loading.classList.add('hidden');
+    }
+};
+
+async function renderChart1() {
+    if (!currentZip || !currentZip.files['xl/charts/chart1.xml']) return;
+    const xml = await currentZip.files['xl/charts/chart1.xml'].async('text');
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(xml, 'text/xml');
+    buildScatterPlot('chart1Plotly', doc, 'ANGLE (°)', 'DIE 1 & DIE 2 VOLTAGE (V)');
+}
+
+async function renderChart2() {
+    if (!currentZip || !currentZip.files['xl/charts/chart2.xml']) return;
+    const xml = await currentZip.files['xl/charts/chart2.xml'].async('text');
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(xml, 'text/xml');
+    buildScatterPlot('chart2Plotly', doc, 'ANGLE (°)', 'TORQUE (N·m)');
+}
+
+function buildScatterPlot(divId, doc, defaultXTitle, defaultYTitle) {
+    const seriesNodes = doc.getElementsByTagName('c:ser');
+    const traces = [];
+
+    for (let i = 0; i < seriesNodes.length; i++) {
+        const s = seriesNodes[i];
+        const txNode = s.querySelector('c\\:tx c\\:v, tx v');
+        const name = txNode ? txNode.textContent.trim() : `Series ${i + 1}`;
+
+        const colorNode = s.querySelector('a\\:solidFill a\\:srgbClr, solidFill srgbClr');
+        const colorHex = colorNode ? '#' + colorNode.getAttribute('val') : null;
+        
+        const dashNode = s.querySelector('a\\:ln a\\:prstDash, ln prstDash');
+        const dashVal = dashNode ? dashNode.getAttribute('val') : 'solid';
+        const plotlyDash = (dashVal === 'dash' || dashVal === 'sysDash') ? 'dash' : 'solid';
+
+        const xPts = s.querySelectorAll('c\\:xVal c\\:pt, xVal pt');
+        const yPts = s.querySelectorAll('c\\:yVal c\\:pt, yVal pt');
+        const xVals = [];
+        const yVals = [];
+
+        for (let pt of xPts) {
+            const v = pt.querySelector('c\\:v, v');
+            if (v) xVals.push(parseFloat(v.textContent));
+        }
+        for (let pt of yPts) {
+            const v = pt.querySelector('c\\:v, v');
+            if (v) yVals.push(parseFloat(v.textContent));
+        }
+
+        if (xVals.length > 0 && yVals.length > 0) {
+            traces.push({
+                x: xVals,
+                y: yVals,
+                mode: 'lines',
+                name: name,
+                line: {
+                    color: colorHex || (name.includes('Min') || name.includes('Max') ? '#ff0000' : (name.includes('Desired') ? '#00b050' : '#00b0f0')),
+                    dash: plotlyDash,
+                    width: 2
+                }
+            });
+        }
+    }
+
+    const layout = {
+        margin: { t: 15, r: 20, b: 35, l: 45 },
+        font: { family: 'Arial, sans-serif', size: 10 },
+        xaxis: { title: defaultXTitle, gridcolor: '#d9d9d9', zerolinecolor: '#8c8c8c' },
+        yaxis: { title: defaultYTitle, gridcolor: '#d9d9d9', zerolinecolor: '#8c8c8c' },
+        showlegend: true,
+        legend: { orientation: 'h', y: -0.25, font: { size: 9 } },
+        paper_bgcolor: '#ffffff',
+        plot_bgcolor: '#ffffff'
     };
 
-    // Safety timeout to hide spinner if iframe loads silently
-    setTimeout(() => {
-        loading.classList.add('hidden');
-    }, 2000);
-};
+    Plotly.newPlot(divId, traces, layout, { responsive: true, displayModeBar: false });
+}
 </script>
 {% endblock %}
