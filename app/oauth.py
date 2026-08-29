@@ -47,7 +47,10 @@ def get_registered_client(provider_name: str, db):
     if provider_name == "google":
         if settings.get("sso_google_enabled") != "1" or not settings.get("sso_google_client_id"):
             return None
-        metadata_url = settings.get("sso_google_server_metadata_url") or "https://accounts.google.com/.well-known/openid-configuration"
+        metadata_url = (
+            settings.get("sso_google_server_metadata_url")
+            or "https://accounts.google.com/.well-known/openid-configuration"
+        )
         client = oauth.register(
             name="google",
             client_id=settings.get("sso_google_client_id"),
@@ -64,7 +67,10 @@ def get_registered_client(provider_name: str, db):
         if settings.get("sso_microsoft_enabled") != "1" or not settings.get("sso_microsoft_client_id"):
             return None
         tenant_id = settings.get("sso_microsoft_tenant_id") or "common"
-        metadata_url = settings.get("sso_microsoft_server_metadata_url") or f"https://login.microsoftonline.com/{tenant_id}/v2.0/.well-known/openid-configuration"
+        metadata_url = (
+            settings.get("sso_microsoft_server_metadata_url")
+            or f"https://login.microsoftonline.com/{tenant_id}/v2.0/.well-known/openid-configuration"
+        )
         return oauth.register(
             name="microsoft",
             client_id=settings.get("sso_microsoft_client_id"),
