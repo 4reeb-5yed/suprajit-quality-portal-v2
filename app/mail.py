@@ -1,7 +1,48 @@
-import smtplib
+﻿import smtplib
 from email.message import EmailMessage
 from flask import current_app, request
 from app.database import get_connection
+
+DEFAULT_WELCOME_TEMPLATE = """Welcome to the Suprajit Quality Portal!
+
+An administrator has created an account for you.
+You can log in here: {portal_url}
+
+Your Username: {username}
+Your Temporary Password: {temporary_password}
+
+For security reasons, please log in and change your password immediately.
+
+--
+Suprajit Quality Assurance Team"""
+
+DEFAULT_INVITE_TEMPLATE = """Hello,
+
+You have been invited{company_tag} to access the Suprajit Quality Inspection Portal.
+
+----------------------------------------
+Portal URL: {portal_url}
+Username  : {username}
+Temporary Password: {temporary_password}
+----------------------------------------
+
+Next Steps:
+1. Open the portal URL: {portal_url}
+2. Sign in with your username and temporary password.
+3. You can update your password at any time via your account settings.
+
+If you did not expect this invitation, please contact your organization administrator.
+
+--
+Suprajit Quality Assurance Team"""
+
+DEFAULT_RESET_TEMPLATE = """Click the link below to reset your Suprajit Portal password:
+{reset_url}
+
+This link is valid for 1 hour. If you did not request a password reset, please ignore this email.
+
+--
+Suprajit Quality Assurance Team"""
 
 def get_email_setting(key, default=""):
     try:
@@ -11,6 +52,22 @@ def get_email_setting(key, default=""):
         return row['value'] if row else default
     except Exception:
         return default
+
+def get_effective_portal_url() -> str:
+    """
+    Resolves the public portal URL.
+    1. If custom 'public_portal_url' is set in settings, uses that.
+    2. Otherwise uses current request.host_url or localhost.
+    """
+    configured = get_email_setting('public_portal_url', '').strip()
+    if configured:
+        return configured.rstrip('/')
+    try:
+        if request and request.host_url:
+            return request.host_url.rstrip('/')
+    except Exception:
+        pass
+    return "http://localhost:5000"
 
 def _send_smtp(subject, recipients, body):
     smtp_server = get_email_setting('mail_server', 'smtp.gmail.com')
@@ -47,34 +104,31 @@ def get_serializer():
     return URLSafeTimedSerializer(current_app.config['SECRET_KEY'])
 
 def send_password_reset_email(user_email: str, user_id: int):
-    """Generates a token and sends a password reset email."""
+    """Generates a token and sends a configurable password reset email."""
     try:
         s = get_serializer()
         token = s.dumps(user_id, salt='password-reset-salt')
-        reset_url = f"{request.host_url.rstrip('/')}/reset-password/{token}"
+        base_url = get_effective_portal_url()
+        reset_url = f"{base_url}/reset-password/{token}"
         
-        body = f"Click the link to reset your password: {reset_url}\n\nThis link expires in 1 hour."
+        template = get_email_setting('template_reset_password', DEFAULT_RESET_TEMPLATE)
+        body = template.format(reset_url=reset_url)
         return _send_smtp("Suprajit Quality Portal - Password Reset", [user_email], body)
     except Exception as e:
         current_app.logger.error(f"Failed to send reset email: {e}")
         return False
 
 def send_welcome_email(user_email: str, username: str, raw_password: str, login_url: str = ""):
-    """Sends a welcome email with initial login credentials."""
+    """Sends a configurable welcome email with initial login credentials."""
     try:
         if not login_url:
-            try:
-                login_url = f"{request.host_url.rstrip('/')}/login"
-            except:
-                login_url = "http://localhost:5000/login"
+            login_url = f"{get_effective_portal_url()}/login"
                 
-        body = (
-            f"Welcome to the Suprajit Quality Portal!\n\n"
-            f"An administrator has created an account for you.\n"
-            f"You can log in here: {login_url}\n\n"
-            f"Your Username: {username}\n"
-            f"Your Temporary Password: {raw_password}\n\n"
-            f"For security reasons, please log in and change your password immediately."
+        template = get_email_setting('template_welcome_email', DEFAULT_WELCOME_TEMPLATE)
+        body = template.format(
+            portal_url=login_url,
+            username=username,
+            temporary_password=raw_password
         )
         
         return _send_smtp("Welcome to Suprajit Quality Portal - Your Login Info", [user_email], body)
@@ -83,29 +137,19 @@ def send_welcome_email(user_email: str, username: str, raw_password: str, login_
         return False
 
 def send_bulk_invite_email(user_email: str, username: str, raw_password: str, company_name: str = "", login_url: str = ""):
-    """Sends an official onboarding invite email with login credentials."""
+    """Sends a configurable bulk invite email with login credentials."""
     try:
         if not login_url:
-            try:
-                login_url = f"{request.host_url.rstrip('/')}/login"
-            except:
-                login_url = "http://localhost:5000/login"
+            login_url = f"{get_effective_portal_url()}/login"
                 
         company_tag = f" on behalf of {company_name}" if company_name else ""
-        body = (
-            f"Hello,\n\n"
-            f"You have been invited{company_tag} to access the Suprajit Quality Inspection Portal.\n\n"
-            f"----------------------------------------\n"
-            f"Portal URL: {login_url}\n"
-            f"Username  : {username}\n"
-            f"Temporary Password: {raw_password}\n"
-            f"----------------------------------------\n\n"
-            f"Next Steps:\n"
-            f"1. Open the portal URL: {login_url}\n"
-            f"2. Sign in with your username and temporary password.\n"
-            f"3. You can update your password at any time via your account settings.\n\n"
-            f"If you did not expect this invitation, please contact your organization administrator.\n\n"
-            f"--\nSuprajit Quality Assurance Team"
+        template = get_email_setting('template_invite_email', DEFAULT_INVITE_TEMPLATE)
+        body = template.format(
+            portal_url=login_url,
+            username=username,
+            temporary_password=raw_password,
+            company_name=company_name,
+            company_tag=company_tag
         )
         
         return _send_smtp("Invitation to Suprajit Quality Inspection Portal", [user_email], body)

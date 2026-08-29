@@ -132,6 +132,19 @@ def settings():
             elif val is not None:
                 g.db.execute(SET_SETTING, (sk, val.strip()))
 
+        # Public Portal URL (for Cloudflare/Tailscale/Ngrok tunnels)
+        public_url = request.form.get('public_portal_url')
+        if public_url is not None:
+            g.db.execute(SET_SETTING, ('public_portal_url', public_url.strip()))
+
+        # Configurable Email Templates
+        t_welcome = request.form.get('template_welcome_email')
+        t_invite = request.form.get('template_invite_email')
+        t_reset = request.form.get('template_reset_password')
+        if t_welcome is not None: g.db.execute(SET_SETTING, ('template_welcome_email', t_welcome))
+        if t_invite is not None: g.db.execute(SET_SETTING, ('template_invite_email', t_invite))
+        if t_reset is not None: g.db.execute(SET_SETTING, ('template_reset_password', t_reset))
+
         if new_time: g.db.execute(SET_SETTING, ('sync_time', new_time))
         if new_storage: g.db.execute(SET_SETTING, ('root_search_path', new_storage))
         if m_srv is not None: g.db.execute(SET_SETTING, ('mail_server', m_srv))
@@ -153,9 +166,17 @@ def settings():
         
     from app.parser import DEFAULT_FILENAME_PATTERN
     from app.oauth import get_oauth_settings
+    from app.mail import DEFAULT_WELCOME_TEMPLATE, DEFAULT_INVITE_TEMPLATE, DEFAULT_RESET_TEMPLATE
+    from app.tunnel_manager import get_tunnel_status, get_installed_tunnel_binaries
+
     sync_time = get_val('sync_time', '01:00')
     root_search_path = get_val('root_search_path', '')
     filename_regex_pattern = get_val('filename_regex_pattern', DEFAULT_FILENAME_PATTERN)
+    public_portal_url = get_val('public_portal_url', '')
+
+    template_welcome_email = get_val('template_welcome_email', DEFAULT_WELCOME_TEMPLATE)
+    template_invite_email = get_val('template_invite_email', DEFAULT_INVITE_TEMPLATE)
+    template_reset_password = get_val('template_reset_password', DEFAULT_RESET_TEMPLATE)
     
     m_srv = get_val('mail_server', 'smtp.gmail.com')
     m_prt = get_val('mail_port', '587')
@@ -165,6 +186,8 @@ def settings():
     tel_freq = get_val('telemetry_frequency', 'daily')
     
     oauth_settings = get_oauth_settings(g.db)
+    tunnel_status = get_tunnel_status()
+    tunnel_binaries = get_installed_tunnel_binaries()
     
     system_admins = g.db.execute("SELECT * FROM users WHERE role = 'admin'").fetchall()
     return render_template('admin/settings.html', 
@@ -174,12 +197,52 @@ def settings():
                            root_search_path=root_search_path,
                            filename_regex_pattern=filename_regex_pattern,
                            default_regex_pattern=DEFAULT_FILENAME_PATTERN,
+                           public_portal_url=public_portal_url,
+                           template_welcome_email=template_welcome_email,
+                           template_invite_email=template_invite_email,
+                           template_reset_password=template_reset_password,
                            mail_server=m_srv,
                            mail_port=m_prt,
                            mail_username=m_usr,
                            has_mail_password=has_mail_pwd,
                            oauth_settings=oauth_settings,
+                           tunnel_status=tunnel_status,
+                           tunnel_binaries=tunnel_binaries,
                            system_admins=system_admins)
+
+@admin_bp.route('/tunnel/action', methods=['POST'])
+def tunnel_action():
+    """Handles starting and stopping native Cloudflare / Tailscale tunnels."""
+    from app.tunnel_manager import start_cloudflared_quick_tunnel, start_named_cloudflared_tunnel, stop_tunnel
+    from app.database import SET_SETTING
+    action = request.form.get('action')
+    token = request.form.get('tunnel_token', '')
+
+    if action == 'start_quick':
+        res = start_cloudflared_quick_tunnel(port=5000)
+        if res.get('success'):
+            if res.get('url') and res.get('url') != 'Starting...':
+                g.db.execute(SET_SETTING, ('public_portal_url', res['url']))
+                g.db.commit()
+            flash(f"Cloudflare Tunnel started! Public URL: {res.get('url')}", "success")
+        else:
+            flash(f"Could not start Cloudflare tunnel: {res.get('error')}", "error")
+
+    elif action == 'start_token':
+        if not token:
+            flash("Please provide a Cloudflare Tunnel Token.", "error")
+        else:
+            res = start_named_cloudflared_tunnel(token)
+            if res.get('success'):
+                flash("Cloudflare Named Tunnel started successfully.", "success")
+            else:
+                flash(f"Could not start Named Tunnel: {res.get('error')}", "error")
+
+    elif action == 'stop':
+        stop_tunnel()
+        flash("Tunnel stopped successfully.", "success")
+
+    return redirect(url_for('admin.settings'))
 @admin_bp.route('/customers', methods=['GET'])
 def customers():
     from app.database import GET_ALL_CUSTOMERS
