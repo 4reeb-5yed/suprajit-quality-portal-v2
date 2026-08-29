@@ -77,44 +77,103 @@
     </div>
 </div>
 
-<!-- In-Browser Excel Viewer Modal (Zero Server Overhead - Client Side Rendered) -->
+<!-- In-Browser Professional Excel Viewer Modal (100% Client-Side Rendered - Zero Server Overhead) -->
 <dialog id="excelViewerModal" class="modal">
-    <div class="modal-box w-11/12 max-w-6xl h-[90vh] flex flex-col p-0 bg-white rounded-lg shadow-2xl overflow-hidden">
-        <!-- Header -->
-        <div class="p-4 bg-gray-900 text-white flex items-center justify-between border-b border-gray-800">
+    <div class="modal-box w-11/12 max-w-7xl h-[92vh] flex flex-col p-0 bg-white rounded-lg shadow-2xl overflow-hidden border border-gray-300">
+        <!-- Excel Ribbon / Header -->
+        <div class="px-5 py-3.5 bg-emerald-800 text-white flex items-center justify-between shadow-md">
             <div class="flex items-center gap-3">
-                <i class="fa-solid fa-file-excel text-emerald-400 text-2xl"></i>
+                <div class="bg-white/20 p-2 rounded text-white flex items-center justify-center">
+                    <i class="fa-solid fa-file-excel text-2xl text-white"></i>
+                </div>
                 <div>
-                    <h3 id="modalFilename" class="font-bold text-base text-gray-100 leading-tight">Inspection Report</h3>
-                    <div class="flex items-center gap-2 text-xs text-gray-400 mt-0.5">
-                        <span id="modalRecipe" class="badge badge-sm badge-info font-mono"></span>
-                        <span id="modalSerial" class="badge badge-sm badge-ghost font-mono"></span>
+                    <h3 id="modalFilename" class="font-bold text-base text-white tracking-wide">Inspection Report</h3>
+                    <div class="flex items-center gap-2 text-xs text-emerald-100 mt-0.5">
+                        <span id="modalRecipe" class="badge badge-sm bg-emerald-950 text-emerald-200 border-none font-mono"></span>
+                        <span id="modalSerial" class="badge badge-sm bg-white/20 text-white border-none font-mono"></span>
                     </div>
                 </div>
             </div>
+            
             <div class="flex items-center gap-2">
-                <a id="modalDownloadBtn" href="#" class="btn btn-sm btn-primary suprajit-blue-bg border-none text-white font-semibold">
-                    <i class="fa-solid fa-download mr-1"></i> Download File
+                <!-- View Mode Toggle -->
+                <div class="join bg-emerald-900/60 p-0.5 rounded-lg border border-emerald-700">
+                    <button id="btnViewGrid" onclick="switchView('grid')" class="btn btn-xs join-item bg-white text-emerald-900 font-bold border-none">
+                        <i class="fa-solid fa-table-cells mr-1"></i> Worksheet Grid
+                    </button>
+                    <button id="btnViewCharts" onclick="switchView('charts')" class="btn btn-xs join-item btn-ghost text-white font-semibold">
+                        <i class="fa-solid fa-chart-line mr-1"></i> Data Analytics & Graphs
+                    </button>
+                </div>
+                
+                <a id="modalDownloadBtn" href="#" class="btn btn-sm bg-white text-emerald-900 hover:bg-emerald-50 border-none font-bold shadow">
+                    <i class="fa-solid fa-download mr-1"></i> Download Original .xlsx
                 </a>
                 <form method="dialog">
-                    <button class="btn btn-sm btn-circle btn-ghost text-gray-400 hover:text-white">✕</button>
+                    <button class="btn btn-sm btn-circle btn-ghost text-emerald-200 hover:text-white hover:bg-emerald-700">✕</button>
                 </form>
             </div>
         </div>
 
+        <!-- Formula Bar / Status Bar -->
+        <div class="bg-gray-100 px-4 py-2 border-b border-gray-300 flex items-center gap-3 text-xs font-mono text-gray-700">
+            <span class="font-bold bg-white px-2 py-0.5 rounded border border-gray-300 text-gray-600 shadow-sm" id="activeCellRef">A1</span>
+            <div class="h-4 w-px bg-gray-300"></div>
+            <i class="fa-solid fa-square-root-variable text-gray-400"></i>
+            <span class="flex-1 bg-white px-3 py-1 rounded border border-gray-300 text-gray-800 shadow-inner truncate" id="activeCellValue">Ready</span>
+        </div>
+
         <!-- Sheet Selector Tabs -->
-        <div id="sheetTabs" class="bg-gray-100 px-4 py-2 border-b border-gray-200 flex gap-2 overflow-x-auto text-xs">
+        <div id="sheetTabs" class="bg-gray-200 px-4 py-1.5 border-b border-gray-300 flex gap-1.5 overflow-x-auto text-xs">
             <!-- Dynamically populated sheets -->
         </div>
 
-        <!-- Spreadsheet Container -->
-        <div class="flex-1 overflow-auto p-4 bg-gray-50 relative" id="spreadsheetViewport">
-            <div id="excelLoading" class="absolute inset-0 flex flex-col items-center justify-center bg-white/90 z-10">
-                <span class="loading loading-spinner loading-lg text-blue-600"></span>
-                <p class="text-xs font-semibold text-gray-600 mt-3">Rendering Quality Worksheet...</p>
+        <!-- Main Viewport -->
+        <div class="flex-1 overflow-auto bg-gray-100 relative" id="spreadsheetViewport">
+            <!-- Loading Indicator -->
+            <div id="excelLoading" class="absolute inset-0 flex flex-col items-center justify-center bg-white/95 z-20">
+                <span class="loading loading-spinner loading-lg text-emerald-700"></span>
+                <p class="text-sm font-bold text-gray-700 mt-3">Parsing Excel Spreadsheet in Browser...</p>
+                <p class="text-xs text-gray-400">Rendering high-resolution workbook grid</p>
             </div>
-            <div id="excelContent" class="bg-white rounded border border-gray-300 shadow-sm overflow-x-auto">
-                <!-- HTML Table generated by SheetJS -->
+
+            <!-- View 1: Authentic Excel Grid -->
+            <div id="gridContainer" class="p-4 overflow-auto min-w-full">
+                <div id="excelContent" class="bg-white rounded border border-gray-300 shadow overflow-auto">
+                    <!-- Excel Table with A-Z Headers & 1-N Rows -->
+                </div>
+            </div>
+
+            <!-- View 2: Client-Side Interactive Graphs -->
+            <div id="chartsContainer" class="p-6 hidden space-y-6">
+                <div class="bg-white p-6 rounded-lg border border-gray-300 shadow-sm">
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <h4 class="font-bold text-gray-800 text-base flex items-center gap-2">
+                                <i class="fa-solid fa-chart-column text-emerald-600"></i>
+                                Numerical Trends & Quality Parameter Measurements
+                            </h4>
+                            <p class="text-xs text-gray-500">Automatically extracted numerical inspection dimensions from active sheet</p>
+                        </div>
+                        <span class="badge badge-success text-white font-bold text-xs" id="chartDataPointsBadge">0 Data Points</span>
+                    </div>
+                    <div class="h-96 relative w-full">
+                        <canvas id="excelTrendChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Excel Footer Statistics -->
+        <div class="px-4 py-2 bg-gray-100 border-t border-gray-300 flex items-center justify-between text-xs text-gray-600 font-mono">
+            <div class="flex items-center gap-4">
+                <span id="footerTotalRows">Rows: 0</span>
+                <span id="footerTotalCols">Columns: 0</span>
+            </div>
+            <div class="flex items-center gap-4">
+                <span class="text-emerald-700 font-bold"><i class="fa-solid fa-circle-check text-xs"></i> Client-Side WebAssembly Rendering</span>
+                <span class="text-gray-400">|</span>
+                <span>Zoom: 100%</span>
             </div>
         </div>
     </div>
@@ -122,6 +181,8 @@
 
 <script>
 let currentWorkbook = null;
+let currentChart = null;
+let activeSheetData = [];
 
 async function openExcelViewer(reportId, filename, recipeName, serial, downloadUrl) {
     const modal = document.getElementById('excelViewerModal');
@@ -137,6 +198,7 @@ async function openExcelViewer(reportId, filename, recipeName, serial, downloadU
     loading.classList.remove('hidden');
     content.innerHTML = '';
     tabs.innerHTML = '';
+    switchView('grid');
     
     modal.showModal();
 
@@ -146,14 +208,21 @@ async function openExcelViewer(reportId, filename, recipeName, serial, downloadU
         
         const arrayBuffer = await response.arrayBuffer();
         const data = new Uint8Array(arrayBuffer);
-        currentWorkbook = XLSX.read(data, { type: 'array' });
+        
+        // Parse with full cell styles, formula headers and formatting
+        currentWorkbook = XLSX.read(data, { 
+            type: 'array',
+            cellDates: true,
+            cellStyles: true,
+            cellNF: true
+        });
         
         // Render Sheet Tabs
         tabs.innerHTML = '';
         currentWorkbook.SheetNames.forEach((sheetName, index) => {
             const btn = document.createElement('button');
-            btn.className = `btn btn-xs ${index === 0 ? 'btn-primary suprajit-blue-bg text-white' : 'btn-ghost text-gray-700'} font-semibold`;
-            btn.textContent = sheetName;
+            btn.className = `btn btn-xs ${index === 0 ? 'bg-white text-emerald-800 font-bold border-b-2 border-emerald-700 shadow-sm' : 'btn-ghost text-gray-600'} rounded-t rounded-b-none px-3 py-1 font-medium`;
+            btn.innerHTML = `<i class="fa-solid fa-table mr-1 text-xs"></i> ${sheetName}`;
             btn.onclick = () => renderSheet(sheetName, btn);
             tabs.appendChild(btn);
         });
@@ -163,7 +232,7 @@ async function openExcelViewer(reportId, filename, recipeName, serial, downloadU
             renderSheet(currentWorkbook.SheetNames[0], tabs.children[0]);
         }
     } catch (err) {
-        content.innerHTML = `<div class="p-8 text-center text-red-600"><i class="fa-solid fa-triangle-exclamation text-3xl mb-2"></i><p class="font-bold">Error rendering Excel sheet</p><p class="text-xs text-gray-500">${err.message}</p></div>`;
+        content.innerHTML = `<div class="p-12 text-center text-red-600"><i class="fa-solid fa-triangle-exclamation text-4xl mb-3"></i><p class="font-bold text-lg">Error rendering Excel worksheet</p><p class="text-sm text-gray-500 mt-1">${err.message}</p></div>`;
     } finally {
         loading.classList.add('hidden');
     }
@@ -175,29 +244,169 @@ function renderSheet(sheetName, activeBtn) {
     // Update active tab styling
     const tabs = document.getElementById('sheetTabs').children;
     for (let b of tabs) {
-        b.className = 'btn btn-xs btn-ghost text-gray-700 font-semibold';
+        b.className = 'btn btn-xs btn-ghost text-gray-600 rounded-t rounded-b-none px-3 py-1 font-medium';
     }
     if (activeBtn) {
-        activeBtn.className = 'btn btn-xs btn-primary suprajit-blue-bg text-white font-semibold';
+        activeBtn.className = 'btn btn-xs bg-white text-emerald-800 font-bold border-b-2 border-emerald-700 shadow-sm rounded-t rounded-b-none px-3 py-1 font-medium';
     }
 
     const worksheet = currentWorkbook.Sheets[sheetName];
-    const html = XLSX.utils.sheet_to_html(worksheet, { id: 'renderedSheetTable', editable: false });
-    
-    const content = document.getElementById('excelContent');
-    content.innerHTML = html;
-    
-    // Style the rendered table cleanly with Tailwind classes
-    const table = document.getElementById('renderedSheetTable');
-    if (table) {
-        table.className = 'table table-xs table-zebra w-full border-collapse border border-gray-200 font-mono text-xs';
-        table.querySelectorAll('td, th').forEach(cell => {
-            cell.classList.add('border', 'border-gray-200', 'px-3', 'py-1.5', 'whitespace-nowrap');
-        });
-        table.querySelectorAll('tr:first-child td, tr:first-child th').forEach(cell => {
-            cell.classList.add('bg-gray-100', 'font-bold', 'text-gray-800');
-        });
+    if (!worksheet || !worksheet['!ref']) {
+        document.getElementById('excelContent').innerHTML = '<div class="p-8 text-center text-gray-400">Empty Sheet</div>';
+        return;
     }
+
+    const range = XLSX.utils.decode_range(worksheet['!ref']);
+    const rowCount = range.e.r - range.s.r + 1;
+    const colCount = range.e.c - range.s.c + 1;
+
+    document.getElementById('footerTotalRows').textContent = `Rows: ${rowCount}`;
+    document.getElementById('footerTotalCols').textContent = `Columns: ${colCount}`;
+
+    // Convert to 2D JSON array for fast analytical parsing
+    activeSheetData = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
+
+    // Generate Excel HTML Table with Column Headers (A, B, C...) & Row Numbers (1, 2, 3...)
+    let tableHtml = '<table class="table table-xs w-full border-collapse border border-gray-300 font-mono text-xs select-text">';
+    
+    // Header Row with A, B, C Column Labels
+    tableHtml += '<thead class="bg-gray-200 text-gray-600 font-bold sticky top-0 z-10 select-none shadow-sm">';
+    tableHtml += '<tr><th class="w-12 bg-gray-300 border border-gray-300 text-center text-gray-500">#</th>';
+    for (let c = range.s.c; c <= range.e.c; c++) {
+        tableHtml += `<th class="border border-gray-300 px-3 py-1.5 text-center min-w-[100px]">${XLSX.utils.encode_col(c)}</th>`;
+    }
+    tableHtml += '</tr></thead><tbody>';
+
+    // Table Data Rows with Line Numbers
+    for (let r = range.s.r; r <= range.e.r; r++) {
+        tableHtml += `<tr class="hover:bg-blue-50/50 transition"><td class="bg-gray-100 border border-gray-300 text-center font-bold text-gray-500 select-none">${r + 1}</td>`;
+        for (let c = range.s.c; c <= range.e.c; c++) {
+            const cellAddress = XLSX.utils.encode_cell({ r: r, c: c });
+            const cell = worksheet[cellAddress];
+            let val = cell ? (cell.w || cell.v || '') : '';
+            
+            // Format styling based on status tags
+            let badgeClass = '';
+            const strVal = String(val).toUpperCase().trim();
+            if (strVal === 'PASS' || strVal === 'OK' || strVal === 'ACCEPTED') {
+                badgeClass = 'bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded';
+            } else if (strVal === 'FAIL' || strVal === 'REJECT' || strVal === 'NOT OK' || strVal === 'NG') {
+                badgeClass = 'bg-red-100 text-red-800 font-bold px-1.5 py-0.5 rounded';
+            }
+
+            const displayVal = badgeClass ? `<span class="${badgeClass}">${val}</span>` : val;
+            tableHtml += `<td class="border border-gray-200 px-3 py-1.5 whitespace-nowrap cursor-cell text-gray-800" onclick="selectCell('${cellAddress}', '${String(val).replace(/'/g, "\\'")}')">${displayVal}</td>`;
+        }
+        tableHtml += '</tr>';
+    }
+    tableHtml += '</tbody></table>';
+
+    document.getElementById('excelContent').innerHTML = tableHtml;
+    
+    // Auto-generate chart from sheet numeric columns
+    buildDynamicChart(activeSheetData);
+}
+
+function selectCell(ref, val) {
+    document.getElementById('activeCellRef').textContent = ref;
+    document.getElementById('activeCellValue').textContent = val || '(empty)';
+}
+
+function switchView(viewName) {
+    const grid = document.getElementById('gridContainer');
+    const charts = document.getElementById('chartsContainer');
+    const btnGrid = document.getElementById('btnViewGrid');
+    const btnCharts = document.getElementById('btnViewCharts');
+
+    if (viewName === 'grid') {
+        grid.classList.remove('hidden');
+        charts.classList.add('hidden');
+        btnGrid.className = 'btn btn-xs join-item bg-white text-emerald-900 font-bold border-none';
+        btnCharts.className = 'btn btn-xs join-item btn-ghost text-white font-semibold';
+    } else {
+        grid.classList.add('hidden');
+        charts.classList.remove('hidden');
+        btnCharts.className = 'btn btn-xs join-item bg-white text-emerald-900 font-bold border-none';
+        btnGrid.className = 'btn btn-xs join-item btn-ghost text-white font-semibold';
+        if (currentChart) currentChart.resize();
+    }
+}
+
+function buildDynamicChart(data) {
+    if (!data || data.length < 2) return;
+    
+    const headers = data[0];
+    const rows = data.slice(1);
+    
+    // Find numeric columns
+    let numericCols = [];
+    headers.forEach((header, colIndex) => {
+        if (!header) return;
+        const hasNumbers = rows.some(r => typeof r[colIndex] === 'number' || (!isNaN(parseFloat(r[colIndex])) && isFinite(r[colIndex])));
+        if (hasNumbers) {
+            numericCols.push({ header: String(header), index: colIndex });
+        }
+    });
+
+    const ctx = document.getElementById('excelTrendChart');
+    if (!ctx) return;
+
+    if (currentChart) {
+        currentChart.destroy();
+    }
+
+    if (numericCols.length === 0) {
+        document.getElementById('chartDataPointsBadge').textContent = 'No numerical columns found';
+        return;
+    }
+
+    const labels = rows.map((r, i) => `Row ${i + 1}`);
+    const datasets = numericCols.slice(0, 4).map((col, idx) => {
+        const colors = [
+            { border: '#059669', bg: 'rgba(5, 150, 105, 0.1)' },
+            { border: '#2563eb', bg: 'rgba(37, 99, 235, 0.1)' },
+            { border: '#d97706', bg: 'rgba(217, 119, 6, 0.1)' },
+            { border: '#dc2626', bg: 'rgba(220, 38, 38, 0.1)' }
+        ];
+        const color = colors[idx % colors.length];
+        
+        return {
+            label: col.header,
+            data: rows.map(r => parseFloat(r[col.index]) || 0),
+            borderColor: color.border,
+            backgroundColor: color.bg,
+            borderWidth: 2,
+            tension: 0.25,
+            fill: true,
+            pointRadius: 3
+        };
+    });
+
+    document.getElementById('chartDataPointsBadge').textContent = `${rows.length} Data Points Analyzed`;
+
+    currentChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: datasets
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false
+            },
+            plugins: {
+                legend: { position: 'top', labels: { font: { family: 'JetBrains Mono', size: 11 } } },
+                tooltip: { backgroundColor: '#1e293b' }
+            },
+            scales: {
+                x: { grid: { color: '#f1f5f9' }, ticks: { font: { family: 'JetBrains Mono', size: 10 } } },
+                y: { grid: { color: '#f1f5f9' }, ticks: { font: { family: 'JetBrains Mono', size: 10 } } }
+            }
+        }
+    });
 }
 </script>
 {% endblock %}
