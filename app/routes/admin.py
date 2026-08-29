@@ -504,39 +504,10 @@ def repair():
         except Exception as e:
             error_msg = str(e)
             
-    # Include Health & Diagnostics Data directly inside Repair
-    import os
-    from flask import current_app
-    db_path = current_app.config['DATABASE_PATH']
-    db_size_mb = round(os.path.getsize(db_path) / (1024 * 1024), 2) if os.path.exists(db_path) else 0.0
-    total_reports = g.db.execute("SELECT COUNT(*) FROM reports").fetchone()[0]
-    
-    from app.database import GET_SETTING
-    sync_time_row = g.db.execute(GET_SETTING, ('sync_time',)).fetchone()
-    sync_time_str = sync_time_row['value'] if sync_time_row else "02:00"
-    
-    last_run = g.db.execute("SELECT * FROM batch_runs ORDER BY run_started DESC LIMIT 1").fetchone()
-    
-    try:
-        log_path = current_app.config.get('LOG_FILE_PATH')
-        if log_path and os.path.exists(log_path):
-            with open(log_path, 'r', encoding='utf-8') as f:
-                lines = f.readlines()
-                log_lines = lines[-50:]
-        else:
-            log_lines = ["No active log stream found."]
-    except Exception as e:
-        log_lines = [f"Error reading logs: {e}"]
-            
     return __import__('flask').render_template('admin/repair.html', 
                              trace_log=trace_log, 
                              success_msg=success_msg, 
-                             error_msg=error_msg,
-                             db_size_mb=db_size_mb,
-                             total_reports=total_reports,
-                             sync_time_str=sync_time_str,
-                             last_run=last_run,
-                             log_lines=log_lines)
+                             error_msg=error_msg)
 
 @admin_bp.route('/trigger_sync', methods=['POST'])
 def trigger_sync():
