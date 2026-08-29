@@ -76,8 +76,12 @@
         let x2tModule = null;
 
         const urlParams = new URLSearchParams(window.location.search);
-        const reportId = urlParams.get('report_id');
-        const filename = urlParams.get('filename') || 'report.xlsx';
+        let reportId = urlParams.get('report_id') || {{ report_id | tojson }};
+        if (!reportId) {
+            const pathParts = window.location.pathname.split('/');
+            reportId = pathParts[pathParts.length - 1];
+        }
+        const filename = urlParams.get('filename') || {{ filename | tojson }} || 'report.xlsx';
 
         function updateStatus(msg) {
             const el = document.getElementById('status-msg');
