@@ -1,7 +1,6 @@
 import pytest
 import os
 import sys
-import sqlite3
 import tempfile
 import shutil
 

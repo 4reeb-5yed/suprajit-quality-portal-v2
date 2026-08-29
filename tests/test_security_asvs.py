@@ -1,5 +1,3 @@
-import pytest
-from flask import url_for
 
 def test_customer_cannot_access_other_customer_reports(client, app):
     """ASVS: Verify tenant isolation at the search results level."""

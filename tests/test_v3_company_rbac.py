@@ -49,13 +49,11 @@ def test_three_tier_rbac_and_recipe_permissions(tmp_path):
 # EXTENDED COMPREHENSIVE TEST MATRIX FOR V3 PORTAL (80+ TEST CASES)
 # -----------------------------------------------------------------------------
 import os
-import tempfile
-from datetime import date, datetime
-from werkzeug.security import generate_password_hash, check_password_hash
-from app.helpers import encrypt_password, decrypt_password, hash_file, customer_scope, is_safe_path
-from app.parser import parse_filename, get_compiled_pattern, DEFAULT_FILENAME_PATTERN
+from werkzeug.security import generate_password_hash
+from app.helpers import decrypt_password, hash_file
+from app.parser import parse_filename
 from app.sync_engine import ensure_file_safe
-from app.mail import get_effective_portal_url, send_welcome_email, send_bulk_invite_email, send_password_reset_email, send_heartbeat_email
+from app.mail import get_effective_portal_url
 from app.oauth import get_oauth_settings, get_registered_client
 from app.tunnel_manager import get_installed_tunnel_binaries, get_tunnel_status, stop_tunnel
 

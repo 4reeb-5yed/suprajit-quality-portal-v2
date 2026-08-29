@@ -15,7 +15,6 @@ in app/tunnel_manager.py:
 """
 
 import shutil
-import socket
 import threading
 import time
 import urllib.request

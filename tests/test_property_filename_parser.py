@@ -3,11 +3,9 @@ PROPERTY-BASED HYPOTHESIS TEST SUITE FOR FILENAME PARSING
 Verifies algebraic invariants of the filename parser across arbitrary generated inputs.
 """
 
-from hypothesis import given, strategies as st, assume, settings, HealthCheck
-import os
-import re
+from hypothesis import given, strategies as st, settings, HealthCheck
 from datetime import datetime
-from app.parser import parse_filename, DEFAULT_FILENAME_PATTERN
+from app.parser import parse_filename
 
 # -----------------------------------------------------------------------------
 # Strategy Generators

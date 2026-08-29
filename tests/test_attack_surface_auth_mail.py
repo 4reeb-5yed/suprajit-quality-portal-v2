@@ -8,10 +8,9 @@ Tests security-critical token flows and email dispatches:
 """
 
 import pytest
-from datetime import datetime, timedelta
 from werkzeug.security import check_password_hash
 from app.database import get_connection, ensure_schema
-from app.mail import get_serializer, get_effective_portal_url, send_password_reset_email
+from app.mail import get_serializer, get_effective_portal_url
 
 # =============================================================================
 # 1. PASSWORD RESET SERIALIZER & TOKEN LIFECYCLE

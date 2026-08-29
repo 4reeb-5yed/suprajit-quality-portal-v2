@@ -6,7 +6,6 @@ customer lifecycle, folder mappings, user management, and diagnostic tools.
 
 import io
 import os
-import pytest
 from app.database import get_connection, ensure_schema
 from werkzeug.security import generate_password_hash
 

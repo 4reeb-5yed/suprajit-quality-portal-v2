@@ -7,7 +7,6 @@ Covers:
 - Forgot password & reset password: token invalid/expired, weak password reject, valid reset
 - Self registration: missing fields, invalid email format, unauthorized domain, suspended company, existing user reject, weak password reject, successful creation
 """
-import pytest
 from app.database import get_connection, ensure_schema
 from app.mail import get_serializer
 from werkzeug.security import generate_password_hash

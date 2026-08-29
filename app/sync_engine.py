@@ -39,7 +39,7 @@ logger = logging.getLogger(__name__)
 
 
 class SyncEngine:
-    def __init__(self, db_path: str, default_storage_base: str):
+    def __init__(self, db_path: str, default_storage_base: str = ""):
         self.db_path = db_path
 
     def _get_folder_customer_mapping(self) -> dict[str, str | None]:

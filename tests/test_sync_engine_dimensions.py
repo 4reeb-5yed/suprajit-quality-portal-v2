@@ -1,10 +1,7 @@
-﻿import pytest
-import os
-from unittest.mock import patch, MagicMock
-import sqlite3
+﻿import os
+from unittest.mock import patch
 
 from app.sync_engine import SyncEngine
-from app.database import get_connection
 
 def test_dimension_1_file_locked(app):
     with app.app_context():

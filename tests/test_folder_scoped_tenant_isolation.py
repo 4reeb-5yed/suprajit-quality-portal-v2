@@ -11,7 +11,6 @@ Proves:
 """
 
 import os
-import tempfile
 import pytest
 from app import create_app
 from app.database import get_connection, ensure_schema

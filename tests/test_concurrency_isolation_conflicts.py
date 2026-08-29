@@ -6,7 +6,6 @@ Simulates simultaneous threads attempting to execute write-write collisions and 
 import threading
 import tempfile
 import os
-import sqlite3
 import time
 from app.database import get_connection, ensure_schema
 

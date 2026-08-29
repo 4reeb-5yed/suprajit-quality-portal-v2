@@ -5,7 +5,6 @@ path traversal block), raw_report, onlyoffice_viewer, preview_pdf branches.
 """
 import os
 import tempfile
-import pytest
 from werkzeug.security import generate_password_hash
 from app.database import get_connection, ensure_schema
 
@@ -248,7 +247,6 @@ def test_portal_preview_pdf_real_generation_and_cached(client, app):
 
 def test_portal_network_share_root_search_path(client, app):
     """Test download and view-raw with multi-root network share path configured in system_settings."""
-    storage = app.config["STORAGE_FOLDER"]
     share_dir = tempfile.mkdtemp()
     fd, fp = tempfile.mkstemp(suffix=".xlsx", dir=share_dir)
     os.write(fd, b"PK network share file content")

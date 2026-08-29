@@ -7,7 +7,6 @@ and returns HTTP 429 Too Many Requests on the 11th attempt.
 import tempfile
 import os
 import shutil
-import pytest
 from app import create_app, limiter
 from app.database import get_connection, ensure_schema
 

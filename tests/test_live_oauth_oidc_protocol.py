@@ -19,15 +19,12 @@ CAPTCHAs and rate limit triggers.
 """
 
 import threading
-import time
-import socket
 import json
 import urllib.parse
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from socketserver import ThreadingMixIn
 import pytest
 from app.database import get_connection, ensure_schema
-from app.oauth import get_registered_client, oauth
 
 
 class ThreadingHTTPServer(ThreadingMixIn, HTTPServer):
@@ -100,7 +97,8 @@ class LocalOAuthProviderHandler(BaseHTTPRequestHandler):
         # Token Endpoint
         if parsed.path in ("/oauth/token", "/login/oauth/access_token"):
             length = int(self.headers.get("Content-Length", 0))
-            body = self.rfile.read(length).decode("utf-8")
+            if length > 0:
+                self.rfile.read(length)
             
             data = {
                 "access_token": "mock_access_token_xyz987",
