@@ -220,7 +220,16 @@
 
             } catch (err) {
                 console.error('ONLYOFFICE WASM Load Error:', err);
-                updateStatus('Error: ' + err.message);
+                const overlay = document.getElementById('loading-overlay');
+                overlay.innerHTML = `
+                    <div style="max-width: 600px; padding: 24px; background: #fff1f2; border: 1px solid #fecdd3; border-radius: 8px; color: #9f1239; font-family: monospace;">
+                        <h3 style="margin-top:0; font-size: 16px; font-weight: bold;">ONLYOFFICE WebAssembly Initialization Notice</h3>
+                        <p style="font-size: 13px;">${err.message}</p>
+                        <div style="margin-top: 12px; font-size: 11px; color: #881337; word-break: break-all;">
+                            ${err.stack || ''}
+                        </div>
+                    </div>
+                `;
             }
         }
 
