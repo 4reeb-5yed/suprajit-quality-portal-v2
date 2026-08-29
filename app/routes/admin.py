@@ -7,15 +7,8 @@ admin_bp = Blueprint('admin', __name__)
 @admin_bp.before_request
 @login_required
 def require_admin():
-    from flask import request
     if not current_user.is_admin:
         abort(403)
-        
-    if current_user.username == 'bootstrap_admin' and request.endpoint not in ['admin.setup', 'auth.logout']:
-        from werkzeug.security import check_password_hash
-        user_row = g.db.execute("SELECT password_hash FROM users WHERE id = ?", (current_user.id,)).fetchone()
-        if user_row and check_password_hash(user_row['password_hash'], 'admin123'):
-            return __import__('flask').redirect(__import__('flask').url_for('admin.setup'))
 
 @admin_bp.route('/setup', methods=['GET', 'POST'])
 def setup():
@@ -192,7 +185,11 @@ def customer_detail(customer_id):
         
     users = g.db.execute(GET_USERS_BY_CUSTOMER, (customer_id,)).fetchall()
     allowed_recipes = g.db.execute("SELECT * FROM customer_recipes WHERE customer_id = ? ORDER BY recipe_name", (customer_id,)).fetchall()
-    available_recipes = [r['recipe_name'] for r in g.db.execute("SELECT DISTINCT recipe_name FROM reports ORDER BY recipe_name").fetchall()]
+    already_granted = {r['recipe_name'] for r in allowed_recipes}
+    
+    # Filter available recipes to only those NOT already assigned to this customer
+    all_known_recipes = [r['recipe_name'] for r in g.db.execute("SELECT DISTINCT recipe_name FROM reports ORDER BY recipe_name").fetchall()]
+    available_recipes = [r for r in all_known_recipes if r not in already_granted]
     
     # Fetch granular assignments for each user
     user_assigned_recipes = {}

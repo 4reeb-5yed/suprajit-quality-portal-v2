@@ -6,7 +6,7 @@
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-200 pb-4">
         <div>
             <div class="text-xs text-gray-500 mb-1">
-                <a href="{{ url_for('admin.customers') }}" class="text-blue-600 hover:underline">Customers</a> / <span class="font-bold text-gray-700">{{ customer.company_name }}</span>
+                <a href="{{ url_for('admin.customers') }}" class="text-blue-600 hover:underline">Clients</a> / <span class="font-bold text-gray-700">{{ customer.company_name }}</span>
             </div>
             <h1 class="text-3xl font-bold text-gray-800 flex items-center gap-2">
                 <i class="fa-solid fa-building text-blue-800"></i> {{ customer.company_name }}
@@ -15,7 +15,7 @@
         </div>
         <div class="flex gap-2">
             <a href="{{ url_for('admin.customers') }}" class="btn btn-outline btn-sm">
-                <i class="fa-solid fa-arrow-left mr-1"></i> All Customers
+                <i class="fa-solid fa-arrow-left mr-1"></i> Back
             </a>
         </div>
     </div>
@@ -104,7 +104,7 @@
                 <h2 class="text-lg font-bold text-gray-800"><i class="fa-solid fa-user-shield mr-2 text-blue-600"></i>Company Administrators</h2>
                 <p class="text-xs text-gray-500 mt-0.5">Admins who can manage users and recipe access for {{ customer.company_name }}.</p>
             </div>
-            <button class="btn btn-sm btn-primary suprajit-blue-bg border-none text-white" onclick="addUserModal.showModal()">
+            <button class="btn btn-sm btn-primary suprajit-blue-bg border-none text-white" onclick="addCompanyAdminModal.showModal()">
                 <i class="fa-solid fa-user-plus mr-1"></i> Create Company Admin
             </button>
         </div>
@@ -220,7 +220,7 @@
                     <!-- Permissions / Custom Recipe Modal for this user -->
                     <dialog id="editPermissionsModal-{{ u.id }}" class="modal">
                         <div class="modal-box bg-white max-w-xl">
-                            <form method="dialog"><button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">?</button></form>
+                            <form method="dialog"><button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2 font-bold text-gray-500 hover:text-gray-800">✕</button></form>
                             <h3 class="font-bold text-lg text-gray-800 border-b pb-2 mb-4">
                                 <i class="fa-solid fa-sliders text-blue-600 mr-2"></i>Configure Recipe Access: {{ u.display_name }}
                             </h3>
@@ -273,27 +273,59 @@
     </div>
 </div>
 
-<!-- Add User Modal for this company -->
-<dialog id="addUserModal" class="modal">
+<!-- Add Company Administrator Modal -->
+<dialog id="addCompanyAdminModal" class="modal">
     <div class="modal-box bg-white">
-        <form method="dialog"><button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">?</button></form>
-        <h3 class="font-bold text-lg text-blue-900 border-b pb-2 mb-4">Add User to {{ customer.company_name }}</h3>
+        <form method="dialog"><button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2 font-bold text-gray-500 hover:text-gray-800">✕</button></form>
+        <h3 class="font-bold text-lg text-blue-900 border-b pb-2 mb-4"><i class="fa-solid fa-user-shield me-2 text-primary"></i>Create Company Administrator</h3>
         <form method="POST" action="{{ url_for('admin.add_user') }}" class="space-y-3">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
             <input type="hidden" name="customer_id" value="{{ customer.id }}"/>
+            <input type="hidden" name="role" value="company_admin"/>
             <input type="hidden" name="redirect_url" value="{{ url_for('admin.customer_detail', customer_id=customer.id) }}"/>
 
             <div class="form-control">
-                <label class="label font-bold text-gray-700"><span class="label-text">Role</span></label>
-                <select name="role" class="select select-bordered select-sm w-full">
-                    <option value="customer_viewer" selected>Company Viewer (Standard Access)</option>
-                    <option value="company_admin">Company Administrator (Can manage team)</option>
-                </select>
+                <label class="label font-bold text-gray-700"><span class="label-text">Username</span></label>
+                <input type="text" name="username" placeholder="e.g. {{ customer.id }}_admin" required class="input input-sm input-bordered w-full font-mono" />
             </div>
 
             <div class="form-control">
+                <label class="label font-bold text-gray-700"><span class="label-text">Full Name / Display Name</span></label>
+                <input type="text" name="display_name" placeholder="e.g. Admin Name" required class="input input-sm input-bordered w-full" />
+            </div>
+
+            <div class="form-control">
+                <label class="label font-bold text-gray-700"><span class="label-text">Contact Email</span></label>
+                <input type="email" name="email" placeholder="e.g. admin@{{ customer.id }}.com" class="input input-sm input-bordered w-full" />
+            </div>
+
+            <div class="form-control">
+                <label class="label font-bold text-gray-700"><span class="label-text">Temporary Password</span></label>
+                <input type="text" name="password" required class="input input-sm input-bordered w-full" />
+            </div>
+
+            <div class="modal-action mt-6">
+                <button type="submit" class="btn btn-primary suprajit-blue-bg border-none text-white w-full">Create Company Administrator</button>
+            </div>
+        </form>
+    </div>
+    <form method="dialog" class="modal-backdrop"><button>close</button></form>
+</dialog>
+
+<!-- Add Standard User Modal -->
+<dialog id="addUserModal" class="modal">
+    <div class="modal-box bg-white">
+        <form method="dialog"><button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2 font-bold text-gray-500 hover:text-gray-800">✕</button></form>
+        <h3 class="font-bold text-lg text-blue-900 border-b pb-2 mb-4"><i class="fa-solid fa-user-plus me-2 text-primary"></i>Add User to {{ customer.company_name }}</h3>
+        <form method="POST" action="{{ url_for('admin.add_user') }}" class="space-y-3">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <input type="hidden" name="customer_id" value="{{ customer.id }}"/>
+            <input type="hidden" name="role" value="customer_viewer"/>
+            <input type="hidden" name="redirect_url" value="{{ url_for('admin.customer_detail', customer_id=customer.id) }}"/>
+
+            <div class="form-control">
                 <label class="label font-bold text-gray-700"><span class="label-text">Username</span></label>
-                <input type="text" name="username" placeholder="e.g. {{ customer.id }}_rahul" required class="input input-sm input-bordered w-full" />
+                <input type="text" name="username" placeholder="e.g. {{ customer.id }}_viewer1" required class="input input-sm input-bordered w-full font-mono" />
             </div>
 
             <div class="form-control">
@@ -303,7 +335,7 @@
 
             <div class="form-control">
                 <label class="label font-bold text-gray-700"><span class="label-text">Contact Email</span></label>
-                <input type="email" name="email" placeholder="e.g. rahul@{{ customer.id }}.com" required class="input input-sm input-bordered w-full" />
+                <input type="email" name="email" placeholder="e.g. rahul@{{ customer.id }}.com" class="input input-sm input-bordered w-full" />
             </div>
 
             <div class="form-control">
@@ -312,7 +344,7 @@
             </div>
 
             <div class="modal-action mt-6">
-                <button type="submit" class="btn btn-primary suprajit-blue-bg border-none text-white w-full">Create Account</button>
+                <button type="submit" class="btn btn-primary suprajit-blue-bg border-none text-white w-full">Create User</button>
             </div>
         </form>
     </div>
@@ -322,7 +354,7 @@
 <!-- Grant Recipe Modal -->
 <dialog id="grantRecipeModal" class="modal">
     <div class="modal-box bg-white">
-        <form method="dialog"><button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">?</button></form>
+        <form method="dialog"><button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2 font-bold text-gray-500 hover:text-gray-800">✕</button></form>
         <h3 class="font-bold text-lg text-blue-900 border-b pb-2 mb-4">Grant Recipe Access</h3>
         <form method="POST" action="{{ url_for('admin.add_recipe') }}" class="space-y-4">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>

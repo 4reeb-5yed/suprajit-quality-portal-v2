@@ -100,7 +100,7 @@
                     <!-- Permissions Modal -->
                     <dialog id="editPermissionsModal-{{ u.id }}" class="modal">
                         <div class="modal-box bg-white max-w-xl">
-                            <form method="dialog"><button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">?</button></form>
+                            <form method="dialog"><button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2 font-bold text-gray-500 hover:text-gray-800">✕</button></form>
                             <h3 class="font-bold text-lg text-gray-800 border-b pb-2 mb-4">
                                 <i class="fa-solid fa-sliders text-blue-600 mr-2"></i>Configure Recipe Access: {{ u.display_name }}
                             </h3>
@@ -155,7 +155,7 @@
 <!-- Add User Modal for Company Admin -->
 <dialog id="addUserModal" class="modal">
     <div class="modal-box bg-white">
-        <form method="dialog"><button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">?</button></form>
+        <form method="dialog"><button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2 font-bold text-gray-500 hover:text-gray-800">✕</button></form>
         <h3 class="font-bold text-lg text-blue-900 border-b pb-2 mb-4">Add Team Member</h3>
         <form method="POST" action="{{ url_for('company.add_user') }}" class="space-y-3">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>

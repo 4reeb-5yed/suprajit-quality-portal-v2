@@ -5,11 +5,11 @@
     <!-- Header -->
     <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-            <h1 class="text-3xl font-bold text-gray-800"><i class="fa-solid fa-building text-blue-800 mr-2"></i>Customer Management</h1>
-            <p class="text-sm text-gray-500 mt-1">Manage tenants, view recipe allocations, and direct access controls.</p>
+            <h1 class="text-3xl font-bold text-gray-800"><i class="fa-solid fa-building text-blue-800 mr-2"></i>Client Management</h1>
+            <p class="text-sm text-gray-500 mt-1">Manage client companies, view recipe allocations, and direct access controls.</p>
         </div>
         <button class="btn btn-primary suprajit-blue-bg border-none text-white shadow" onclick="addCustomerModal.showModal()">
-            <i class="fa-solid fa-plus mr-1"></i> Add Customer
+            <i class="fa-solid fa-plus mr-1"></i> Add Client
         </button>
     </div>
 
@@ -91,15 +91,15 @@
     </div>
 </div>
 
-<!-- Modal: Add Customer -->
+<!-- Modal: Add Client -->
 <dialog id="addCustomerModal" class="modal">
     <div class="modal-box bg-white">
         <form method="dialog"><button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2">✕</button></form>
-        <h3 class="font-bold text-lg text-blue-900 border-b pb-2 mb-4"><i class="fa-solid fa-building me-2 text-primary"></i>New Customer</h3>
+        <h3 class="font-bold text-lg text-blue-900 border-b pb-2 mb-4"><i class="fa-solid fa-building me-2 text-primary"></i>New Client</h3>
         <form action="{{ url_for('admin.add_customer') }}" method="POST" class="space-y-4">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
             <div class="form-control">
-                <label class="label"><span class="label-text font-bold">Tenant ID (Short Code)</span></label>
+                <label class="label"><span class="label-text font-bold">Client ID (Short Code)</span></label>
                 <input type="text" class="input input-bordered w-full font-mono" name="id" placeholder="e.g. tvs, mahindra" required pattern="[a-zA-Z0-9_-]+" title="No spaces allowed">
             </div>
             <div class="form-control">
@@ -107,7 +107,7 @@
                 <input type="text" class="input input-bordered w-full" name="company_name" placeholder="e.g. Honda Motors" required>
             </div>
             <div class="modal-action mt-6">
-                <button type="submit" class="btn btn-primary suprajit-blue-bg border-none text-white w-full">Create Customer</button>
+                <button type="submit" class="btn btn-primary suprajit-blue-bg border-none text-white w-full">Create Client</button>
             </div>
         </form>
     </div>
