@@ -31,7 +31,12 @@ suprajit.log
 .env
 data/
 storage/
+app/static/onlyoffice/
 app/static/onlyoffice_raw/
+app/static/x2t/
+app/static/x2t.zip
+app/static/ranuts_doc/
+app/static/ranuts_full/
 scratch/
 .coverage
 .hypothesis/

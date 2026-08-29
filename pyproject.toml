@@ -6,7 +6,7 @@ readme = "README.md"
 authors = [
     { name = "4reeb-5yed", email = "4reeb-5yed@users.noreply.github.com" }
 ]
-requires-python = ">=3.13"
+requires-python = ">=3.10"
 dependencies = [
     "flask>=3.1.3",
     "flask-limiter>=4.1.1",
@@ -31,6 +31,15 @@ build-backend = "uv_build"
 dev = [
     "pytest>=9.1.1",
     "pytest-cov>=7.1.0",
+    "hypothesis>=6.100.0",
+    "allpairspy>=2.5.0",
+    "playwright>=1.40.0",
+    "pytest-playwright>=0.5.0",
+    "openpyxl>=3.1.0",
+    "bandit>=1.7.0",
+    "ruff>=0.1.0",
+    "mypy>=1.8.0",
+    "pip-audit>=2.7.0",
 ]
 
 [tool.pytest.ini_options]

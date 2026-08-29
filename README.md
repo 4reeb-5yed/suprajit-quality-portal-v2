@@ -35,18 +35,27 @@ It autonomously indexes factory quality inspection reports (Excel `.xlsx` / `.cs
 
 ---
 
-## 🚀 Quick Start (Development & Local Run)
-
 ### 1. Clone & Setup Environment
 ```bash
 git clone https://github.com/4reeb-5yed/suprajit-quality-portal-v2.git
 cd suprajit-quality-portal-v2
 python -m venv .venv
+
+# On Windows:
 .venv\Scripts\activate
+# On Linux/macOS:
+# source .venv/bin/activate
+
 pip install -e ".[dev]"
+playwright install chromium
 ```
 
-### 2. Run Development Server
+### 2. Optional: In-Browser ONLYOFFICE WebAssembly / x2t Binaries
+The primary quality portal uses zero-overhead client-side SheetJS / PDF rendering for spreadsheet previews out-of-the-box. If using the optional standalone ONLYOFFICE WebAssembly / x2t conversion engine:
+1. Place the `onlyoffice/` build folder into `app/static/onlyoffice/`.
+2. Extract the `x2t` binary distribution into `app/static/x2t/`.
+
+### 3. Run Development Server
 ```bash
 python web_server.py
 ```
@@ -54,9 +63,9 @@ python web_server.py
 
 ---
 
-## 🧪 3-Way Test Matrix (107 Tests)
+## 🧪 Comprehensive Enterprise Test Matrix
 
-The repository enforces a comprehensive 3-way test matrix executed locally and in GitHub CI Actions:
+The repository enforces a complete test matrix covering RBAC, tenant isolation, security boundaries, property tests, and Playwright browser E2E journeys:
 
 ```bash
 # Run complete test suite with coverage

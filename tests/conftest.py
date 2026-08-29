@@ -8,6 +8,9 @@ import shutil
 # Ensure app root is on python path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
+# Set SECRET_KEY in environment before importing app modules to satisfy startup check at import time
+os.environ["SECRET_KEY"] = "test-secret-key-for-testing-only-0123456789abcdef"
+
 from app import create_app
 from app.database import get_connection, ensure_schema
 
