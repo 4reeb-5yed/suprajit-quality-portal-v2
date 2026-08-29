@@ -57,7 +57,9 @@ class SyncEngine:
 
             # Also check legacy root_search_path if folder_mappings is empty
             if not mapping:
-                setting_row = conn.execute("SELECT value FROM system_settings WHERE key = 'root_search_path'").fetchone()
+                setting_row = conn.execute(
+                    "SELECT value FROM system_settings WHERE key = 'root_search_path'"
+                ).fetchone()
                 if setting_row and setting_row["value"]:
                     for p in setting_row["value"].split(";"):
                         p_str = p.strip()
@@ -207,7 +209,9 @@ class SyncEngine:
                     )
                 )
                 inserted += 1
-                logger.info(f"Successfully mapped {filename_only} to Recipe '{parsed['recipe_name']}' (Customer: {customer_id})")
+                logger.info(
+                    f"Successfully mapped {filename_only} to Recipe '{parsed['recipe_name']}' (Customer: {customer_id})"
+                )
 
             except Exception as e:
                 failed += 1
