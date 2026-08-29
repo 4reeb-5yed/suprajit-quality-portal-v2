@@ -87,6 +87,146 @@ def add_user():
         
     return redirect(url_for('company.manage_users'))
 
+@company_bp.route('/users/bulk_add', methods=['POST'])
+@company_admin_required
+def bulk_add_users():
+    """Allows Company Admins to bulk onboard users to their company via CSV or text paste."""
+    import secrets
+    import string
+    import io
+    import csv
+    import threading
+    from flask import current_app
+    from app.database import INSERT_USER
+    from app.mail import send_bulk_invite_email
+
+    customer_id = current_user.customer_id
+    customer = g.db.execute("SELECT company_name FROM customers WHERE id = ?", (customer_id,)).fetchone()
+    company_name = customer['company_name'] if customer else ""
+
+    raw_text = request.form.get('bulk_text', '').strip()
+    uploaded_file = request.files.get('bulk_file')
+    send_invites = request.form.get('send_invites') == '1'
+
+    rows_to_process = []
+
+    # 1. Parse uploaded CSV file if provided
+    if uploaded_file and uploaded_file.filename:
+        try:
+            stream = io.StringIO(uploaded_file.stream.read().decode("utf-8", errors="ignore"))
+            reader = csv.reader(stream)
+            for row in reader:
+                if not row or not any(row):
+                    continue
+                first_cell = row[0].strip().lower()
+                if first_cell in ('email', 'username', 'name', 'full_name'):
+                    continue
+                rows_to_process.append([c.strip() for c in row])
+        except Exception as e:
+            flash(f"Error reading CSV file: {e}", "error")
+            return redirect(url_for('company.manage_users'))
+
+    # 2. Parse raw text paste
+    if raw_text:
+        for line in raw_text.splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            if ',' in line:
+                parts = [p.strip() for p in line.split(',')]
+            elif ';' in line:
+                parts = [p.strip() for p in line.split(';')]
+            elif '\t' in line:
+                parts = [p.strip() for p in line.split('\t')]
+            else:
+                parts = [line]
+            
+            if parts and parts[0].lower() not in ('email', 'username', 'name', 'full_name'):
+                rows_to_process.append(parts)
+
+    if not rows_to_process:
+        flash("No valid email addresses or records found in upload/paste.", "warning")
+        return redirect(url_for('company.manage_users'))
+
+    created_count = 0
+    skipped_count = 0
+    invites_to_dispatch = []
+
+    def generate_random_pwd():
+        alphabet = string.ascii_letters + string.digits + "!@#$%^&*"
+        return "".join(secrets.choice(alphabet) for _ in range(10))
+
+    for item in rows_to_process:
+        email = None
+        display_name = None
+        username = None
+        user_role = 'customer_viewer'
+
+        if len(item) == 1:
+            val = item[0]
+            if '@' in val:
+                email = val
+                username = val.split('@')[0].lower()
+                display_name = val.split('@')[0].replace('.', ' ').replace('_', ' ').title()
+            else:
+                username = val.lower()
+                display_name = val
+        elif len(item) == 2:
+            if '@' in item[0]:
+                email, display_name = item[0], item[1]
+                username = email.split('@')[0].lower()
+            else:
+                username, display_name = item[0], item[1]
+        elif len(item) >= 3:
+            email = item[0] if '@' in item[0] else None
+            display_name = item[1]
+            username = item[2].lower()
+            if len(item) >= 4 and item[3] == 'company_admin':
+                user_role = 'company_admin'
+
+        if not username:
+            skipped_count += 1
+            continue
+
+        username = "".join(c for c in username if c.isalnum() or c in ('_', '-'))
+
+        # Check existing user
+        existing = g.db.execute("SELECT id FROM users WHERE username = ? OR (email IS NOT NULL AND email = ?)", (username, email)).fetchone()
+        if existing:
+            skipped_count += 1
+            continue
+
+        temp_pwd = generate_random_pwd()
+        pwd_hash = generate_password_hash(temp_pwd)
+
+        try:
+            g.db.execute(INSERT_USER, (username, email, pwd_hash, display_name or username, user_role, customer_id, 'ALL'))
+            created_count += 1
+            if email and send_invites:
+                invites_to_dispatch.append((email, username, temp_pwd))
+        except Exception:
+            skipped_count += 1
+
+    g.db.commit()
+
+    if invites_to_dispatch:
+        app_context = current_app._get_current_object().app_context()
+        host_login = f"{request.host_url.rstrip('/')}/login"
+        def run_invites(inv_list, url, comp_name):
+            with app_context:
+                for mail, uname, pwd in inv_list:
+                    send_bulk_invite_email(mail, uname, pwd, comp_name, url)
+        threading.Thread(target=run_invites, args=(invites_to_dispatch, host_login, company_name)).start()
+
+    msg = f"Bulk Provisioning Completed: {created_count} team members added successfully."
+    if skipped_count > 0:
+        msg += f" {skipped_count} skipped (duplicates or invalid)."
+    if invites_to_dispatch:
+        msg += f" {len(invites_to_dispatch)} welcome emails dispatched."
+
+    flash(msg, "success" if created_count > 0 else "warning")
+    return redirect(url_for('company.manage_users'))
+
 @company_bp.route('/users/toggle', methods=['POST'])
 @company_admin_required
 def toggle_user():

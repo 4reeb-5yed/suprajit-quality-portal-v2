@@ -22,9 +22,14 @@
                 </h2>
                 <p class="text-sm text-gray-400 mt-1">Master IT accounts with unrestricted quality portal control.</p>
             </div>
-            <button type="button" class="btn btn-primary suprajit-blue-bg border-none text-white font-bold px-4 shadow" onclick="document.getElementById('addAdminModal').showModal()">
-                <i class="fa-solid fa-plus mr-1.5"></i> Add Administrator
-            </button>
+            <div class="flex items-center gap-2">
+                <button type="button" class="btn btn-outline border-gray-700 text-gray-300 hover:bg-gray-800 font-semibold px-3 shadow" onclick="document.getElementById('bulkAdminModal').showModal()">
+                    <i class="fa-solid fa-file-import mr-1 text-blue-400"></i> Bulk Import
+                </button>
+                <button type="button" class="btn btn-primary suprajit-blue-bg border-none text-white font-bold px-4 shadow" onclick="document.getElementById('addAdminModal').showModal()">
+                    <i class="fa-solid fa-plus mr-1.5"></i> Add Administrator
+                </button>
+            </div>
         </div>
         <div class="p-0 overflow-x-auto">
             <table class="table w-full text-base text-gray-200">
@@ -217,6 +222,52 @@
             <div class="modal-action pt-3 mt-3 border-t border-gray-100 flex justify-end gap-2">
                 <button type="button" class="btn btn-sm btn-ghost" onclick="document.getElementById('addAdminModal').close()">Cancel</button>
                 <button type="submit" class="btn btn-sm btn-primary suprajit-blue-bg border-none text-white font-semibold px-4">Create Admin</button>
+            </div>
+        </form>
+    </div>
+    <form method="dialog" class="modal-backdrop"><button>close</button></form>
+</dialog>
+
+<!-- Bulk Import Administrators Modal -->
+<dialog id="bulkAdminModal" class="modal">
+    <div class="modal-box bg-white max-w-2xl">
+        <form method="dialog"><button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2 font-bold text-gray-500 hover:text-gray-800">✕</button></form>
+        <h3 class="font-bold text-xl text-gray-900 border-b pb-3 mb-4 flex items-center gap-2">
+            <i class="fa-solid fa-user-shield text-blue-600"></i>
+            Bulk Import Master Administrators
+        </h3>
+        <p class="text-xs text-gray-500 mb-4">Provision multiple IT Administrator accounts via CSV upload or email paste.</p>
+
+        <form method="POST" action="{{ url_for('admin.bulk_import_users') }}" enctype="multipart/form-data" class="space-y-4">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <input type="hidden" name="role" value="admin"/>
+            <input type="hidden" name="redirect_url" value="{{ url_for('admin.settings') }}"/>
+
+            <div class="form-control">
+                <label class="cursor-pointer label justify-start gap-2 border border-gray-300 rounded px-3 py-2 bg-gray-50">
+                    <input type="checkbox" name="send_invites" value="1" checked class="checkbox checkbox-sm checkbox-primary" />
+                    <span class="label-text text-xs font-semibold text-gray-800">Send Welcome Email with temporary login credentials</span>
+                </label>
+            </div>
+
+            <!-- Option 1: CSV Upload -->
+            <div class="form-control bg-slate-50 p-3.5 rounded border border-gray-200">
+                <label class="label py-0.5"><span class="label-text text-xs font-bold text-gray-800"><i class="fa-solid fa-file-csv text-blue-600 mr-1"></i> Option A: Upload CSV File</span></label>
+                <input type="file" name="bulk_file" accept=".csv,text/csv" class="file-input file-input-sm file-input-bordered w-full text-xs mt-1" />
+                <span class="text-[11px] text-gray-400 mt-1">Columns: <code>email, full_name, username</code></span>
+            </div>
+
+            <!-- Option 2: Text Paste -->
+            <div class="form-control">
+                <label class="label py-0.5"><span class="label-text text-xs font-bold text-gray-800"><i class="fa-solid fa-paste text-blue-600 mr-1"></i> Option B: Or Paste Admin Emails Directly</span></label>
+                <textarea name="bulk_text" rows="5" class="textarea textarea-bordered font-mono text-xs w-full" placeholder="admin1@canspirit.com, IT Admin One&#10;admin2@canspirit.com, IT Admin Two"></textarea>
+                <span class="text-[11px] text-gray-400 mt-1">Enter one per line: <code>email</code> or <code>email, Full Name</code></span>
+            </div>
+
+            <div class="modal-action mt-6">
+                <button type="submit" class="btn btn-primary suprajit-blue-bg border-none text-white w-full font-bold">
+                    <i class="fa-solid fa-cloud-arrow-up mr-2"></i> Import Administrators
+                </button>
             </div>
         </form>
     </div>

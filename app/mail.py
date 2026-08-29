@@ -1,4 +1,4 @@
-﻿import smtplib
+import smtplib
 from email.message import EmailMessage
 from flask import current_app, request
 from app.database import get_connection
@@ -68,12 +68,51 @@ def send_welcome_email(user_email: str, username: str, raw_password: str, login_
             except:
                 login_url = "http://localhost:5000/login"
                 
-        body = f"Welcome to the Suprajit Quality Portal!\n\nAn administrator has created an account for you.\nYou can log in here: {login_url}\n\nYour Username: {username}\nYour Temporary Password: {raw_password}\n\nFor security reasons, please log in and change your password immediately or use the Forgot Password link."
+        body = (
+            f"Welcome to the Suprajit Quality Portal!\n\n"
+            f"An administrator has created an account for you.\n"
+            f"You can log in here: {login_url}\n\n"
+            f"Your Username: {username}\n"
+            f"Your Temporary Password: {raw_password}\n\n"
+            f"For security reasons, please log in and change your password immediately."
+        )
         
         return _send_smtp("Welcome to Suprajit Quality Portal - Your Login Info", [user_email], body)
     except Exception as e:
         current_app.logger.error(f"Failed to send welcome email: {e}")
         return False
+
+def send_bulk_invite_email(user_email: str, username: str, raw_password: str, company_name: str = "", login_url: str = ""):
+    """Sends an official onboarding invite email with login credentials."""
+    try:
+        if not login_url:
+            try:
+                login_url = f"{request.host_url.rstrip('/')}/login"
+            except:
+                login_url = "http://localhost:5000/login"
+                
+        company_tag = f" on behalf of {company_name}" if company_name else ""
+        body = (
+            f"Hello,\n\n"
+            f"You have been invited{company_tag} to access the Suprajit Quality Inspection Portal.\n\n"
+            f"----------------------------------------\n"
+            f"Portal URL: {login_url}\n"
+            f"Username  : {username}\n"
+            f"Temporary Password: {raw_password}\n"
+            f"----------------------------------------\n\n"
+            f"Next Steps:\n"
+            f"1. Open the portal URL: {login_url}\n"
+            f"2. Sign in with your username and temporary password.\n"
+            f"3. You can update your password at any time via your account settings.\n\n"
+            f"If you did not expect this invitation, please contact your organization administrator.\n\n"
+            f"--\nSuprajit Quality Assurance Team"
+        )
+        
+        return _send_smtp("Invitation to Suprajit Quality Inspection Portal", [user_email], body)
+    except Exception as e:
+        current_app.logger.error(f"Failed to send bulk invite email to {user_email}: {e}")
+        return False
+
 def send_heartbeat_email(files_processed: int, files_failed: int, status: str, error_msg: str):
     """Sends a daily telemetry/health report to Canspirit developers."""
     try:
@@ -97,5 +136,3 @@ def send_heartbeat_email(files_processed: int, files_failed: int, status: str, e
     except Exception as e:
         current_app.logger.error(f"Failed to send telemetry email: {e}")
         return False
-
-

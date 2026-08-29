@@ -163,9 +163,14 @@
                 <h2 class="text-lg font-bold text-gray-800"><i class="fa-solid fa-users mr-2 text-blue-600"></i>Company Users & Roles</h2>
                 <p class="text-xs text-gray-500 mt-0.5">Manage logins, company administrators, and access modes for {{ customer.company_name }}.</p>
             </div>
-            <button class="btn btn-sm btn-outline text-blue-700" onclick="addUserModal.showModal()">
-                <i class="fa-solid fa-plus mr-1"></i> Add User
-            </button>
+            <div class="flex items-center gap-2">
+                <button class="btn btn-sm btn-outline text-blue-700" onclick="bulkImportModal.showModal()">
+                    <i class="fa-solid fa-file-import mr-1"></i> Bulk Import Users
+                </button>
+                <button class="btn btn-sm btn-primary suprajit-blue-bg border-none text-white shadow" onclick="addUserModal.showModal()">
+                    <i class="fa-solid fa-plus mr-1"></i> Add User
+                </button>
+            </div>
         </div>
 
         <div class="overflow-x-auto">
@@ -393,6 +398,62 @@
 
             <div class="modal-action mt-6">
                 <button type="submit" class="btn btn-primary suprajit-blue-bg border-none text-white w-full">Grant Access to Recipe</button>
+            </div>
+        </form>
+    </div>
+    <form method="dialog" class="modal-backdrop"><button>close</button></form>
+</dialog>
+
+<!-- Bulk Import Users Modal -->
+<dialog id="bulkImportModal" class="modal">
+    <div class="modal-box bg-white max-w-2xl">
+        <form method="dialog"><button class="btn btn-sm btn-circle btn-ghost absolute right-2 top-2 font-bold text-gray-500 hover:text-gray-800">✕</button></form>
+        <h3 class="font-bold text-xl text-gray-900 border-b pb-3 mb-4 flex items-center gap-2">
+            <i class="fa-solid fa-users-rays text-blue-600"></i>
+            Bulk Import & Invite Users
+        </h3>
+        <p class="text-xs text-gray-500 mb-4">Quickly onboard multiple team members to <strong class="text-gray-800">{{ customer.company_name }}</strong> via CSV file or copy-pasting an email list.</p>
+
+        <form method="POST" action="{{ url_for('admin.bulk_import_users') }}" enctype="multipart/form-data" class="space-y-4">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+            <input type="hidden" name="customer_id" value="{{ customer.id }}"/>
+            <input type="hidden" name="redirect_url" value="{{ url_for('admin.customer_detail', customer_id=customer.id) }}"/>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div class="form-control">
+                    <label class="label py-1"><span class="label-text text-xs font-bold text-gray-700">Default Role</span></label>
+                    <select name="role" class="select select-sm select-bordered w-full text-xs">
+                        <option value="customer_viewer" selected>Customer Viewer (Read Only)</option>
+                        <option value="company_admin">Company Administrator (Manager)</option>
+                    </select>
+                </div>
+                <div class="form-control">
+                    <label class="label py-1"><span class="label-text text-xs font-bold text-gray-700">Email Invitation</span></label>
+                    <label class="cursor-pointer label justify-start gap-2 border border-gray-300 rounded px-3 py-1.5 bg-gray-50">
+                        <input type="checkbox" name="send_invites" value="1" checked class="checkbox checkbox-sm checkbox-primary" />
+                        <span class="label-text text-xs font-semibold text-gray-700">Send Welcome Email with credentials</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Option 1: CSV Upload -->
+            <div class="form-control bg-slate-50 p-3.5 rounded border border-gray-200">
+                <label class="label py-0.5"><span class="label-text text-xs font-bold text-gray-800"><i class="fa-solid fa-file-csv text-blue-600 mr-1"></i> Option A: Upload CSV File</span></label>
+                <input type="file" name="bulk_file" accept=".csv,text/csv" class="file-input file-input-sm file-input-bordered w-full text-xs mt-1" />
+                <span class="text-[11px] text-gray-400 mt-1">Columns format: <code>email, full_name, username</code></span>
+            </div>
+
+            <!-- Option 2: Text Paste -->
+            <div class="form-control">
+                <label class="label py-0.5"><span class="label-text text-xs font-bold text-gray-800"><i class="fa-solid fa-paste text-blue-600 mr-1"></i> Option B: Or Paste Email List Directly</span></label>
+                <textarea name="bulk_text" rows="5" class="textarea textarea-bordered font-mono text-xs w-full" placeholder="rahul@{{ customer.id }}.com, Rahul Sharma&#10;sneha@{{ customer.id }}.com, Sneha Patel&#10;amit@{{ customer.id }}.com"></textarea>
+                <span class="text-[11px] text-gray-400 mt-1">Enter one per line. Formats: <code>email</code> or <code>email, Full Name</code></span>
+            </div>
+
+            <div class="modal-action mt-6">
+                <button type="submit" class="btn btn-primary suprajit-blue-bg border-none text-white w-full font-bold">
+                    <i class="fa-solid fa-cloud-arrow-up mr-2"></i> Import & Provision Accounts
+                </button>
             </div>
         </form>
     </div>
