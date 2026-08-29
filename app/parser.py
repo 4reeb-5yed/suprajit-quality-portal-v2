@@ -2,7 +2,7 @@ import re
 import os
 from typing import Dict, Optional
 
-DEFAULT_FILENAME_PATTERN = r"^(.+)_(\d{2}-\d{2}-\d{4})_(\d{2}\.\d{2}\.\d{2})_([a-zA-Z0-9_-]+?)(?:\s*\(\d+\)|\s*-\s*Copy)*\.(?:xlsx|csv)$"
+DEFAULT_FILENAME_PATTERN = r"^(.+)_(\d{2,4}[-\/]\d{2}[-\/]\d{2,4})_(\d{2}\.\d{2}\.\d{2})_([a-zA-Z0-9_-]+?)(?:\s*\(\d+\)|\s*-\s*Copy)*\.(?:xlsx|csv)$"
 
 def get_compiled_pattern(custom_pattern: Optional[str] = None):
     pattern_str = custom_pattern.strip() if custom_pattern and custom_pattern.strip() else DEFAULT_FILENAME_PATTERN
@@ -18,7 +18,10 @@ def parse_filename(filename: str, custom_pattern: Optional[str] = None) -> Optio
     The pattern must capture 4 groups: (1) recipe_name, (2) date, (3) time, (4) serial.
     Returns None if the filename does not match the expected pattern.
     """
-    basename = os.path.basename(filename)
+    # If it is a full path (e.g. contains backslashes or leading dir paths), take the last segment
+    basename = filename.replace('\\', '/').split('/')[-1] if ('/' in filename or '\\' in filename) and not ('_' in filename and '-' in filename and '/' in filename and not os.path.isabs(filename)) else filename
+    if os.path.isabs(filename):
+        basename = os.path.basename(filename)
     pattern = get_compiled_pattern(custom_pattern)
     match = pattern.match(basename)
     
