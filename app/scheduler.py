@@ -1,10 +1,10 @@
-﻿import threading
+import threading
 import time
 from datetime import datetime, timedelta
 import logging
 import traceback
 
-from app.database import get_connection, GET_SETTING, SET_SETTING
+from app.database import get_connection, ensure_schema, GET_SETTING, SET_SETTING
 from app.sync_engine import SyncEngine
 
 logger = logging.getLogger(__name__)
@@ -38,6 +38,7 @@ def run_scheduler(db_path, storage_base):
             cleanup_zombies(db_path)
             
             conn = get_connection(db_path)
+            ensure_schema(conn)
             row = conn.execute(GET_SETTING, ('sync_time',)).fetchone()
             sync_time = row['value'] if row else '02:00'
             

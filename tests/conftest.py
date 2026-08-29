@@ -1,8 +1,13 @@
-﻿import pytest
+import pytest
 import os
+import sys
 import sqlite3
 import tempfile
 import shutil
+
+# Ensure app root is on python path
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+
 from app import create_app
 from app.database import get_connection, ensure_schema
 
@@ -40,12 +45,15 @@ def app():
     
     os.close(db_fd)
     try:
-        os.unlink(db_path)
+        os.remove(db_path)
+        shutil.rmtree(storage_dir, ignore_errors=True)
     except Exception:
         pass
-    shutil.rmtree(storage_dir, ignore_errors=True)
 
 @pytest.fixture
 def client(app):
     return app.test_client()
 
+@pytest.fixture
+def runner(app):
+    return app.test_cli_runner()
