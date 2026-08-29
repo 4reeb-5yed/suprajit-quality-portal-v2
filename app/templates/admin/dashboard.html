@@ -56,58 +56,62 @@
         <div class="overflow-x-auto">
             <table class="table w-full text-left">
                 <thead>
-                    <tr class="border-b border-gray-200 bg-gray-50 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
-                        <th class="py-3 px-6">Run Timestamp</th>
-                        <th class="py-3 px-4">Status</th>
-                        <th class="py-3 px-4">Target Date</th>
-                        <th class="py-3 px-4 text-center">Processed</th>
-                        <th class="py-3 px-4 text-center">Failed</th>
-                        <th class="py-3 px-4 text-right">Duration</th>
-                        <th class="py-3 px-6">Details</th>
+                    <tr class="border-b border-gray-300 bg-gray-100 text-sm font-bold text-gray-700">
+                        <th class="py-3.5 px-6">Run Timestamp</th>
+                        <th class="py-3.5 px-4">Status</th>
+                        <th class="py-3.5 px-4">Target Date</th>
+                        <th class="py-3.5 px-4 text-center">Processed</th>
+                        <th class="py-3.5 px-4 text-center">Failed</th>
+                        <th class="py-3.5 px-4 text-right">Duration</th>
+                        <th class="py-3.5 px-6">Details</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-100 text-sm text-gray-700">
+                <tbody class="divide-y divide-gray-200 text-base text-gray-800 font-medium">
                     {% for b in recent_batches %}
-                    <tr class="hover:bg-slate-50/80 transition-colors">
-                        <td class="py-3 px-6 font-mono text-xs font-medium text-slate-700">{{ b.run_started }}</td>
-                        <td class="py-3 px-4">
+                    <tr class="hover:bg-blue-50/50 transition-colors">
+                        <td class="py-3.5 px-6 font-mono text-sm font-semibold text-gray-900">{{ b.run_started }}</td>
+                        <td class="py-3.5 px-4">
                             {% if b.status == 'completed' or b.status == 'success' %}
-                                <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Success
+                                <span class="badge badge-success text-white font-bold text-xs uppercase px-3 py-2">
+                                    <i class="fa-solid fa-circle-check mr-1"></i> Success
                                 </span>
                             {% elif b.status == 'failed' %}
-                                <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200">
-                                    <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span> Failed
+                                <span class="badge badge-error text-white font-bold text-xs uppercase px-3 py-2">
+                                    <i class="fa-solid fa-circle-xmark mr-1"></i> Failed
                                 </span>
                             {% else %}
-                                <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
-                                    <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span> {{ b.status }}
+                                <span class="badge badge-warning text-gray-900 font-bold text-xs uppercase px-3 py-2">
+                                    {{ b.status }}
                                 </span>
                             {% endif %}
                         </td>
-                        <td class="py-3 px-4 font-medium text-gray-800">{{ b.target_date or 'Full Scan' }}</td>
-                        <td class="py-3 px-4 text-center">
-                            <span class="font-mono text-xs font-semibold px-2 py-0.5 bg-slate-100 text-slate-800 rounded">{{ b.files_processed }}</span>
+                        <td class="py-3.5 px-4 font-bold text-gray-900">{{ b.target_date or 'Full Scan' }}</td>
+                        <td class="py-3.5 px-4 text-center">
+                            <span class="inline-block font-mono text-sm font-bold px-3 py-1 bg-blue-100 text-blue-900 rounded border border-blue-200">
+                                {{ b.files_processed }} files
+                            </span>
                         </td>
-                        <td class="py-3 px-4 text-center">
+                        <td class="py-3.5 px-4 text-center">
                             {% if b.files_failed > 0 %}
-                                <span class="font-mono text-xs font-semibold px-2 py-0.5 bg-red-100 text-red-700 rounded">{{ b.files_failed }}</span>
+                                <span class="inline-block font-mono text-sm font-bold px-3 py-1 bg-red-100 text-red-800 rounded border border-red-300">
+                                    {{ b.files_failed }} failed
+                                </span>
                             {% else %}
-                                <span class="font-mono text-xs text-gray-400">0</span>
+                                <span class="font-mono text-sm font-semibold text-gray-500">0</span>
                             {% endif %}
                         </td>
-                        <td class="py-3 px-4 text-right font-mono text-xs text-slate-500">{{ b.duration_sec }}s</td>
-                        <td class="py-3 px-6 text-xs font-mono">
+                        <td class="py-3.5 px-4 text-right font-mono text-sm font-semibold text-gray-700">{{ b.duration_sec }}s</td>
+                        <td class="py-3.5 px-6 text-sm font-mono">
                             {% if b.error_message %}
-                                <span class="text-rose-600 font-medium">{{ b.error_message }}</span>
+                                <span class="text-red-600 font-bold">{{ b.error_message }}</span>
                             {% else %}
-                                <span class="text-slate-400 font-sans">Clean</span>
+                                <span class="text-green-700 font-semibold font-sans"><i class="fa-solid fa-check mr-1 text-xs"></i>Clean</span>
                             {% endif %}
                         </td>
                     </tr>
                     {% else %}
                     <tr>
-                        <td colspan="7" class="text-center text-gray-400 py-10 italic">No ingestion batch logs found yet. Click "Trigger Ingestion Now" to run your first batch.</td>
+                        <td colspan="7" class="text-center text-gray-500 py-10 italic text-base">No ingestion batch logs found yet. Click "Trigger Ingestion Now" to run your first batch.</td>
                     </tr>
                     {% endfor %}
                 </tbody>
