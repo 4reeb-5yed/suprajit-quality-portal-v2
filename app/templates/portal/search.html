@@ -118,28 +118,32 @@
             <!-- Dynamically populated sheets -->
         </div>
 
-        <!-- Main Viewport: Pure Native Excel Spreadsheet View -->
-        <div class="flex-1 overflow-auto bg-gray-200 relative p-4" id="spreadsheetViewport">
+        <!-- Main Viewport: Pure Native Canvas Excel Spreadsheet View -->
+        <div class="flex-1 overflow-auto bg-gray-300 relative p-2 flex items-center justify-center min-h-[500px]" id="spreadsheetViewport">
             <!-- Loading Indicator -->
             <div id="excelLoading" class="absolute inset-0 flex flex-col items-center justify-center bg-white/95 z-20">
                 <span class="loading loading-spinner loading-lg text-emerald-700"></span>
-                <p class="text-sm font-bold text-gray-700 mt-3">Loading Excel Worksheet...</p>
-                <p class="text-xs text-gray-400">Rendering authentic spreadsheet</p>
+                <p class="text-sm font-bold text-gray-700 mt-3">Rendering Native Excel Spreadsheet...</p>
+                <p class="text-xs text-gray-400">Loading Rust + WebAssembly Canvas Engine</p>
             </div>
 
-            <div id="excelContent" class="bg-white rounded border border-gray-400 shadow-md overflow-auto min-w-full">
-                <!-- Exact Excel Table with Merged Cells, Formulas, and Formatting -->
+            <!-- Canvas for @silurus/ooxml Native Canvas 2D Engine -->
+            <div id="canvasWrapper" class="w-full h-full flex items-center justify-center overflow-auto">
+                <canvas id="excelCanvas" class="shadow-lg bg-white rounded"></canvas>
+            </div>
+
+            <!-- Fallback Table Container if Canvas needs fallback -->
+            <div id="excelContent" class="hidden bg-white rounded border border-gray-400 shadow-md overflow-auto min-w-full">
             </div>
         </div>
 
         <!-- Excel Footer Statistics -->
         <div class="px-4 py-2 bg-gray-100 border-t border-gray-300 flex items-center justify-between text-xs text-gray-600 font-mono">
             <div class="flex items-center gap-4">
-                <span id="footerTotalRows">Rows: 0</span>
-                <span id="footerTotalCols">Columns: 0</span>
+                <span id="footerTotalRows">Status: Ready</span>
             </div>
             <div class="flex items-center gap-4">
-                <span class="text-emerald-700 font-bold"><i class="fa-solid fa-circle-check text-xs"></i> Client-Side WebAssembly Rendering</span>
+                <span class="text-emerald-700 font-bold"><i class="fa-solid fa-circle-check text-xs"></i> Rust/WASM High-Fidelity Canvas Rendering</span>
                 <span class="text-gray-400">|</span>
                 <span>Zoom: 100%</span>
             </div>
@@ -147,12 +151,18 @@
     </div>
 </dialog>
 
-<script>
-let currentWorkbook = null;
-let currentChart = null;
-let activeSheetData = [];
+<script type="module">
+let activeViewer = null;
 
-async function openExcelViewer(reportId, filename, recipeName, serial, downloadUrl) {
+// Dynamic import of @silurus/ooxml ES module
+let silurusModule = null;
+try {
+    silurusModule = await import('https://cdn.jsdelivr.net/npm/@silurus/ooxml@0.82.1/dist/xlsx.mjs');
+} catch (e) {
+    console.warn("Could not preload @silurus/ooxml:", e);
+}
+
+window.openExcelViewer = async function(reportId, filename, recipeName, serial, downloadUrl) {
     const modal = document.getElementById('excelViewerModal');
     document.getElementById('modalFilename').textContent = filename;
     document.getElementById('modalRecipe').textContent = recipeName;
@@ -160,11 +170,12 @@ async function openExcelViewer(reportId, filename, recipeName, serial, downloadU
     document.getElementById('modalDownloadBtn').href = downloadUrl;
     
     const loading = document.getElementById('excelLoading');
-    const content = document.getElementById('excelContent');
+    const canvasWrapper = document.getElementById('canvasWrapper');
+    const canvas = document.getElementById('excelCanvas');
+    const tableFallback = document.getElementById('excelContent');
     const tabs = document.getElementById('sheetTabs');
     
     loading.classList.remove('hidden');
-    content.innerHTML = '';
     tabs.innerHTML = '';
     
     modal.showModal();
@@ -174,48 +185,83 @@ async function openExcelViewer(reportId, filename, recipeName, serial, downloadU
         if (!response.ok) throw new Error("Could not load report file.");
         
         const arrayBuffer = await response.arrayBuffer();
-        const data = new Uint8Array(arrayBuffer);
 
-        // Parse with full cell styles, formula headers and formatting
-        currentWorkbook = XLSX.read(data, { 
-            type: 'array',
-            cellDates: true,
-            cellStyles: true,
-            cellNF: true
-        });
-        
-        // Render Sheet Tabs
-        tabs.innerHTML = '';
-        currentWorkbook.SheetNames.forEach((sheetName, index) => {
-            const btn = document.createElement('button');
-            btn.className = `btn btn-xs ${index === 0 ? 'bg-white text-emerald-800 font-bold border-b-2 border-emerald-700 shadow-sm' : 'btn-ghost text-gray-600'} rounded-t rounded-b-none px-3 py-1 font-medium`;
-            btn.innerHTML = `<i class="fa-solid fa-table mr-1 text-xs"></i> ${sheetName}`;
-            btn.onclick = () => renderSheet(sheetName, btn);
-            tabs.appendChild(btn);
-        });
+        // 1. Primary: Use @silurus/ooxml Rust+WASM Canvas Engine
+        if (silurusModule && silurusModule.XlsxViewer) {
+            try {
+                canvasWrapper.classList.remove('hidden');
+                tableFallback.classList.add('hidden');
+                
+                // Destroy previous instance if present
+                if (activeViewer && typeof activeViewer.destroy === 'function') {
+                    activeViewer.destroy();
+                }
 
-        // Render first sheet by default
-        if (currentWorkbook.SheetNames.length > 0) {
-            renderSheet(currentWorkbook.SheetNames[0], tabs.children[0]);
+                activeViewer = new silurusModule.XlsxViewer(canvas, {
+                    wasmUrl: 'https://cdn.jsdelivr.net/npm/@silurus/ooxml@0.82.1/dist/xlsx_parser_bg.wasm'
+                });
+
+                await activeViewer.load(arrayBuffer);
+                
+                // Populate sheet tabs if provided by viewer
+                if (activeViewer.workbook && activeViewer.workbook.sheets) {
+                    tabs.innerHTML = '';
+                    activeViewer.workbook.sheets.forEach((sheet, idx) => {
+                        const btn = document.createElement('button');
+                        btn.className = `btn btn-xs ${idx === 0 ? 'bg-white text-emerald-800 font-bold border-b-2 border-emerald-700 shadow-sm' : 'btn-ghost text-gray-600'} rounded-t rounded-b-none px-3 py-1 font-medium`;
+                        btn.innerHTML = `<i class="fa-solid fa-table mr-1 text-xs"></i> ${sheet.name || ('Sheet ' + (idx + 1))}`;
+                        btn.onclick = () => {
+                            for (let b of tabs.children) b.className = 'btn btn-xs btn-ghost text-gray-600 rounded-t rounded-b-none px-3 py-1 font-medium';
+                            btn.className = 'btn btn-xs bg-white text-emerald-800 font-bold border-b-2 border-emerald-700 shadow-sm rounded-t rounded-b-none px-3 py-1 font-medium';
+                            if (typeof activeViewer.selectSheet === 'function') {
+                                activeViewer.selectSheet(idx);
+                            }
+                        };
+                        tabs.appendChild(btn);
+                    });
+                }
+                return;
+            } catch (wasmErr) {
+                console.warn("WASM Canvas rendering encountered issue, falling back to structured table:", wasmErr);
+            }
         }
+
+        // 2. High-Fidelity Table Fallback (SheetJS)
+        canvasWrapper.classList.add('hidden');
+        tableFallback.classList.remove('hidden');
+        renderStructuredTable(arrayBuffer);
+
     } catch (err) {
-        content.innerHTML = `<div class="p-12 text-center text-red-600"><i class="fa-solid fa-triangle-exclamation text-4xl mb-3"></i><p class="font-bold text-lg">Error rendering Excel worksheet</p><p class="text-sm text-gray-500 mt-1">${err.message}</p></div>`;
+        tableFallback.classList.remove('hidden');
+        tableFallback.innerHTML = `<div class="p-12 text-center text-red-600"><i class="fa-solid fa-triangle-exclamation text-4xl mb-3"></i><p class="font-bold text-lg">Error rendering Excel worksheet</p><p class="text-sm text-gray-500 mt-1">${err.message}</p></div>`;
     } finally {
         loading.classList.add('hidden');
     }
+};
+
+function renderStructuredTable(arrayBuffer) {
+    const data = new Uint8Array(arrayBuffer);
+    const currentWorkbook = XLSX.read(data, { type: 'array', cellDates: true, cellStyles: true, cellNF: true });
+    const tabs = document.getElementById('sheetTabs');
+    tabs.innerHTML = '';
+    
+    currentWorkbook.SheetNames.forEach((sheetName, index) => {
+        const btn = document.createElement('button');
+        btn.className = `btn btn-xs ${index === 0 ? 'bg-white text-emerald-800 font-bold border-b-2 border-emerald-700 shadow-sm' : 'btn-ghost text-gray-600'} rounded-t rounded-b-none px-3 py-1 font-medium`;
+        btn.innerHTML = `<i class="fa-solid fa-table mr-1 text-xs"></i> ${sheetName}`;
+        btn.onclick = () => renderSheetData(currentWorkbook, sheetName, btn);
+        tabs.appendChild(btn);
+    });
+
+    if (currentWorkbook.SheetNames.length > 0) {
+        renderSheetData(currentWorkbook, currentWorkbook.SheetNames[0], tabs.children[0]);
+    }
 }
 
-function renderSheet(sheetName, activeBtn) {
-    if (!currentWorkbook) return;
-    
-    // Update active tab styling
+function renderSheetData(currentWorkbook, sheetName, activeBtn) {
     const tabs = document.getElementById('sheetTabs').children;
-    for (let b of tabs) {
-        b.className = 'btn btn-xs btn-ghost text-gray-600 rounded-t rounded-b-none px-3 py-1 font-medium';
-    }
-    if (activeBtn) {
-        activeBtn.className = 'btn btn-xs bg-white text-emerald-800 font-bold border-b-2 border-emerald-700 shadow-sm rounded-t rounded-b-none px-3 py-1 font-medium';
-    }
+    for (let b of tabs) b.className = 'btn btn-xs btn-ghost text-gray-600 rounded-t rounded-b-none px-3 py-1 font-medium';
+    if (activeBtn) activeBtn.className = 'btn btn-xs bg-white text-emerald-800 font-bold border-b-2 border-emerald-700 shadow-sm rounded-t rounded-b-none px-3 py-1 font-medium';
 
     const worksheet = currentWorkbook.Sheets[sheetName];
     if (!worksheet || !worksheet['!ref']) {
@@ -224,45 +270,27 @@ function renderSheet(sheetName, activeBtn) {
     }
 
     const range = XLSX.utils.decode_range(worksheet['!ref']);
-    const rowCount = range.e.r - range.s.r + 1;
-    const colCount = range.e.c - range.s.c + 1;
-
-    document.getElementById('footerTotalRows').textContent = `Rows: ${rowCount}`;
-    document.getElementById('footerTotalCols').textContent = `Columns: ${colCount}`;
-
-    // Parse Merged Cell Ranges (!merges)
     const merges = worksheet['!merges'] || [];
     const mergeMap = {};
     const skipMap = {};
 
     merges.forEach(m => {
         const topKey = `${m.s.r}_${m.s.c}`;
-        const rowSpan = m.e.r - m.s.r + 1;
-        const colSpan = m.e.c - m.s.c + 1;
-        mergeMap[topKey] = { rowSpan, colSpan };
-
-        // Mark covered cells to skip them
+        mergeMap[topKey] = { rowSpan: m.e.r - m.s.r + 1, colSpan: m.e.c - m.s.c + 1 };
         for (let r = m.s.r; r <= m.e.r; r++) {
             for (let c = m.s.c; c <= m.e.c; c++) {
-                if (r !== m.s.r || c !== m.s.c) {
-                    skipMap[`${r}_${c}`] = true;
-                }
+                if (r !== m.s.r || c !== m.s.c) skipMap[`${r}_${c}`] = true;
             }
         }
     });
 
-    // Generate Excel HTML Table with Column Headers (A, B, C...) & Row Numbers (1, 2, 3...)
     let tableHtml = '<table class="table table-xs w-full border-collapse border border-gray-400 font-sans text-xs select-text bg-white">';
-    
-    // Header Row with A, B, C Column Labels
-    tableHtml += '<thead class="bg-gray-200 text-gray-700 font-bold sticky top-0 z-10 select-none shadow-sm">';
-    tableHtml += '<tr><th class="w-12 bg-gray-300 border border-gray-400 text-center text-gray-600 font-mono text-xs"></th>';
+    tableHtml += '<thead class="bg-gray-200 text-gray-700 font-bold sticky top-0 z-10 select-none shadow-sm"><tr><th class="w-12 bg-gray-300 border border-gray-400 text-center text-gray-600 font-mono text-xs"></th>';
     for (let c = range.s.c; c <= range.e.c; c++) {
         tableHtml += `<th class="border border-gray-300 px-3 py-1 text-center font-mono text-xs bg-gray-200">${XLSX.utils.encode_col(c)}</th>`;
     }
     tableHtml += '</tr></thead><tbody>';
 
-    // Table Data Rows with Line Numbers and Merged Range Layout
     for (let r = range.s.r; r <= range.e.r; r++) {
         tableHtml += `<tr class="hover:bg-blue-50/40"><td class="bg-gray-200 border border-gray-300 text-center font-bold text-gray-500 font-mono text-xs select-none w-12">${r + 1}</td>`;
         for (let c = range.s.c; c <= range.e.c; c++) {
@@ -273,37 +301,27 @@ function renderSheet(sheetName, activeBtn) {
             const cell = worksheet[cellAddress];
             let val = cell ? (cell.w || cell.v || '') : '';
             
-            // Format styling based on content
             let inlineStyle = 'border: 1px solid #cbd5e1; padding: 4px 8px;';
-            let cellClass = 'cursor-cell whitespace-nowrap text-gray-800 ';
-            
             const strVal = String(val).toUpperCase().trim();
             if (strVal === 'PASS' || strVal === 'OK' || strVal === 'ACCEPTED') {
                 inlineStyle += ' background-color: #dcfce7; color: #166534; font-weight: bold; text-align: center;';
             } else if (strVal === 'FAIL' || strVal === 'REJECT' || strVal === 'NOT OK' || strVal === 'NG') {
                 inlineStyle += ' background-color: #fee2e2; color: #991b1b; font-weight: bold; text-align: center;';
-            } else if (r === 0 || (cell && cell.s && cell.s.font && cell.s.font.bold)) {
+            } else if (r === 0) {
                 inlineStyle += ' font-weight: bold; background-color: #f8fafc;';
             }
 
             const merge = mergeMap[cellKey];
             const spanAttrs = merge ? ` rowspan="${merge.rowSpan}" colspan="${merge.colSpan}"` : '';
-            if (merge) {
-                inlineStyle += ' text-align: center; vertical-align: middle; font-weight: bold;';
-            }
+            if (merge) inlineStyle += ' text-align: center; vertical-align: middle; font-weight: bold;';
 
-            tableHtml += `<td class="${cellClass}" style="${inlineStyle}"${spanAttrs} onclick="selectCell('${cellAddress}', '${String(val).replace(/'/g, "\\'")}')">${val}</td>`;
+            tableHtml += `<td class="cursor-cell whitespace-nowrap text-gray-800" style="${inlineStyle}"${spanAttrs}>${val}</td>`;
         }
         tableHtml += '</tr>';
     }
     tableHtml += '</tbody></table>';
 
     document.getElementById('excelContent').innerHTML = tableHtml;
-}
-
-function selectCell(ref, val) {
-    document.getElementById('activeCellRef').textContent = ref;
-    document.getElementById('activeCellValue').textContent = val || '(empty)';
 }
 </script>
 {% endblock %}
