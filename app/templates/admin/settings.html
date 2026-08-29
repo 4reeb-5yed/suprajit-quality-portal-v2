@@ -62,58 +62,58 @@
         </div>
     </div>
 
-    <!-- 2-Column Grid for Schedule & Email Settings -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <!-- Automated Ingestion Schedule -->
+    <!-- 3 Settings Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <!-- 1. Automated Ingestion Schedule -->
         <div class="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden flex flex-col justify-between">
             <div>
-                <div class="px-5 py-3.5 border-b border-gray-200 bg-slate-50">
+                <div class="px-4 py-3 border-b border-gray-200 bg-slate-50">
                     <h2 class="text-sm font-bold text-gray-900 flex items-center gap-2">
                         <i class="fa-solid fa-clock text-blue-600"></i>
-                        Automated Ingestion Schedule
+                        Ingestion Schedule
                     </h2>
                     <p class="text-xs text-gray-500 mt-0.5">Recurring daily background crawl.</p>
                 </div>
-                <div class="p-5">
-                    <form id="scheduleForm" method="POST" action="{{ url_for('admin.settings') }}" class="space-y-4">
+                <div class="p-4">
+                    <form id="scheduleForm" method="POST" action="{{ url_for('admin.settings') }}" class="space-y-3">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                         
                         <div class="form-control">
-                            <label class="label py-1"><span class="label-text text-xs font-bold text-gray-700">Daily Sync Time (24hr)</span></label>
+                            <label class="label py-1"><span class="label-text text-xs font-bold text-gray-700">Daily Sync Time (24h)</span></label>
                             <input type="time" name="sync_time" value="{{ sync_time }}" required class="input input-sm input-bordered w-full font-mono" />
                         </div>
 
                         <div class="form-control">
-                            <label class="label py-1"><span class="label-text text-xs font-bold text-gray-700">Global Search Root Directories</span></label>
+                            <label class="label py-1"><span class="label-text text-xs font-bold text-gray-700">Global Root Directories</span></label>
                             <textarea name="root_search_path" rows="3" required class="textarea textarea-bordered textarea-sm w-full font-mono text-xs" placeholder="e.g. Z:\Suprajit\Test Reports; D:\Reports">{{ root_search_path }}</textarea>
-                            <label class="label py-0.5"><span class="label-text-alt text-gray-400 text-xs">Separate multiple paths with a semicolon (;)</span></label>
+                            <label class="label py-0.5"><span class="label-text-alt text-gray-400 text-xs">Separate paths with a semicolon (;)</span></label>
                         </div>
                     </form>
                 </div>
             </div>
-            <div class="px-5 py-3 bg-gray-50 border-t border-gray-100 flex justify-end">
-                <button type="submit" form="scheduleForm" class="btn btn-sm btn-primary suprajit-blue-bg border-none text-white text-xs font-semibold px-4 shadow-sm">
-                    <i class="fa-solid fa-save mr-1.5"></i> Save Schedule Settings
+            <div class="px-4 py-2.5 bg-gray-50 border-t border-gray-100 flex justify-end">
+                <button type="submit" form="scheduleForm" class="btn btn-sm btn-primary suprajit-blue-bg border-none text-white text-xs font-semibold px-3 shadow-sm">
+                    <i class="fa-solid fa-save mr-1"></i> Save Schedule
                 </button>
             </div>
         </div>
 
-        <!-- Email & Telemetry Settings -->
+        <!-- 2. SMTP Sender Configuration (Dedicated Card) -->
         <div class="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden flex flex-col justify-between">
             <div>
-                <div class="px-5 py-3.5 border-b border-gray-200 bg-slate-50">
+                <div class="px-4 py-3 border-b border-gray-200 bg-slate-50">
                     <h2 class="text-sm font-bold text-gray-900 flex items-center gap-2">
-                        <i class="fa-solid fa-envelope text-blue-600"></i>
-                        Email & Telemetry Settings
+                        <i class="fa-solid fa-paper-plane text-blue-600"></i>
+                        Sender Email (SMTP)
                     </h2>
-                    <p class="text-xs text-gray-500 mt-0.5">SMTP alerts and diagnostic health checks.</p>
+                    <p class="text-xs text-gray-500 mt-0.5">Outgoing mail for client invites & resets.</p>
                 </div>
-                <div class="p-5">
-                    <form id="emailForm" method="POST" action="{{ url_for('admin.settings') }}" class="space-y-3">
+                <div class="p-4">
+                    <form id="smtpForm" method="POST" action="{{ url_for('admin.settings') }}" class="space-y-3">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
                         
-                        <div class="grid grid-cols-2 gap-3">
-                            <div class="form-control">
+                        <div class="grid grid-cols-3 gap-2">
+                            <div class="form-control col-span-2">
                                 <label class="label py-0.5"><span class="label-text text-xs font-bold text-gray-700">SMTP Server</span></label>
                                 <input type="text" name="mail_server" value="{{ mail_server }}" placeholder="smtp.gmail.com" class="input input-sm input-bordered w-full text-xs" />
                             </div>
@@ -123,38 +123,60 @@
                             </div>
                         </div>
 
-                        <div class="grid grid-cols-2 gap-3">
-                            <div class="form-control">
-                                <label class="label py-0.5"><span class="label-text text-xs font-bold text-gray-700">Sender Email</span></label>
-                                <input type="email" name="mail_username" value="{{ mail_username }}" placeholder="factory@gmail.com" class="input input-sm input-bordered w-full text-xs" />
-                            </div>
-                            <div class="form-control">
-                                <label class="label py-0.5"><span class="label-text text-xs font-bold text-gray-700">App Password</span></label>
-                                <input type="password" name="mail_password" placeholder="{% if has_mail_password %}••••••••{% else %}Password{% endif %}" class="input input-sm input-bordered w-full text-xs" />
-                            </div>
+                        <div class="form-control">
+                            <label class="label py-0.5"><span class="label-text text-xs font-bold text-gray-700">Sender Email</span></label>
+                            <input type="email" name="mail_username" value="{{ mail_username }}" placeholder="factory@gmail.com" class="input input-sm input-bordered w-full text-xs" />
                         </div>
 
-                        <div class="grid grid-cols-2 gap-3">
-                            <div class="form-control">
-                                <label class="label py-0.5"><span class="label-text text-xs font-bold text-gray-700">Dev Alert Email</span></label>
-                                <input type="text" name="developer_email" value="{{ developer_email }}" class="input input-sm input-bordered w-full text-xs" placeholder="admin@canspirit.com" />
-                            </div>
-                            <div class="form-control">
-                                <label class="label py-0.5"><span class="label-text text-xs font-bold text-gray-700">Frequency</span></label>
-                                <select name="telemetry_frequency" class="select select-sm select-bordered w-full text-xs">
-                                    <option value="daily" {% if telemetry_frequency == 'daily' %}selected{% endif %}>Daily</option>
-                                    <option value="weekly" {% if telemetry_frequency == 'weekly' %}selected{% endif %}>Weekly</option>
-                                    <option value="monthly" {% if telemetry_frequency == 'monthly' %}selected{% endif %}>Monthly</option>
-                                    <option value="errors_only" {% if telemetry_frequency == 'errors_only' %}selected{% endif %}>Errors Only</option>
-                                </select>
-                            </div>
+                        <div class="form-control">
+                            <label class="label py-0.5"><span class="label-text text-xs font-bold text-gray-700">App Password</span></label>
+                            <input type="password" name="mail_password" placeholder="{% if has_mail_password %}•••••••• (Saved){% else %}App Password{% endif %}" class="input input-sm input-bordered w-full text-xs" />
                         </div>
                     </form>
                 </div>
             </div>
-            <div class="px-5 py-3 bg-gray-50 border-t border-gray-100 flex justify-end">
-                <button type="submit" form="emailForm" class="btn btn-sm btn-primary suprajit-blue-bg border-none text-white font-semibold px-4 shadow-sm text-xs">
-                    <i class="fa-solid fa-save mr-1.5"></i> Save Email Config
+            <div class="px-4 py-2.5 bg-gray-50 border-t border-gray-100 flex justify-end">
+                <button type="submit" form="smtpForm" class="btn btn-sm btn-primary suprajit-blue-bg border-none text-white text-xs font-semibold px-3 shadow-sm">
+                    <i class="fa-solid fa-save mr-1"></i> Save SMTP
+                </button>
+            </div>
+        </div>
+
+        <!-- 3. Developer Alerts & Telemetry (Dedicated Card) -->
+        <div class="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden flex flex-col justify-between">
+            <div>
+                <div class="px-4 py-3 border-b border-gray-200 bg-slate-50">
+                    <h2 class="text-sm font-bold text-gray-900 flex items-center gap-2">
+                        <i class="fa-solid fa-bell text-blue-600"></i>
+                        Developer Alerts
+                    </h2>
+                    <p class="text-xs text-gray-500 mt-0.5">Automated health & diagnostic reports.</p>
+                </div>
+                <div class="p-4">
+                    <form id="telemetryForm" method="POST" action="{{ url_for('admin.settings') }}" class="space-y-3">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                        
+                        <div class="form-control">
+                            <label class="label py-0.5"><span class="label-text text-xs font-bold text-gray-700">Developer Alert Email</span></label>
+                            <input type="text" name="developer_email" value="{{ developer_email }}" class="input input-sm input-bordered w-full text-xs" placeholder="e.g. admin@canspirit.com" />
+                            <label class="label py-0.5"><span class="label-text-alt text-gray-400 text-xs">Receives critical error dumps & health audits.</span></label>
+                        </div>
+
+                        <div class="form-control">
+                            <label class="label py-0.5"><span class="label-text text-xs font-bold text-gray-700">Heartbeat Frequency</span></label>
+                            <select name="telemetry_frequency" class="select select-sm select-bordered w-full text-xs">
+                                <option value="daily" {% if telemetry_frequency == 'daily' %}selected{% endif %}>Daily Heartbeat</option>
+                                <option value="weekly" {% if telemetry_frequency == 'weekly' %}selected{% endif %}>Weekly Heartbeat</option>
+                                <option value="monthly" {% if telemetry_frequency == 'monthly' %}selected{% endif %}>Monthly Heartbeat</option>
+                                <option value="errors_only" {% if telemetry_frequency == 'errors_only' %}selected{% endif %}>Critical Errors Only</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            <div class="px-4 py-2.5 bg-gray-50 border-t border-gray-100 flex justify-end">
+                <button type="submit" form="telemetryForm" class="btn btn-sm btn-primary suprajit-blue-bg border-none text-white text-xs font-semibold px-3 shadow-sm">
+                    <i class="fa-solid fa-save mr-1"></i> Save Alerts Config
                 </button>
             </div>
         </div>
