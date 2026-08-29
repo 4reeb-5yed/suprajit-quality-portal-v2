@@ -228,3 +228,80 @@ def test_oauth_unauthorized_domain_rejection(client, app, oidc_provider):
         flashes = sess.get("_flashes", [])
         flash_texts = " ".join([f[1] for f in flashes])
         assert "not authorized for auto-registration" in flash_texts
+def test_oauth_existing_user_login(client, app, oidc_provider):
+    """Verifies that an existing active user logs in without creating a duplicate record."""
+    setup_customer_and_sso(app, oidc_provider.server_port)
+    with app.app_context():
+        conn = get_connection(app.config["DATABASE_PATH"])
+        conn.execute(
+            "INSERT OR REPLACE INTO users (username, display_name, email, password_hash, role, customer_id, is_active) VALUES ('existing_sso', 'Existing SSO', 'existing_sso@tvs.com', 'hash', 'customer_viewer', 'tvs', 1)"
+        )
+        conn.commit()
+        conn.close()
+
+    oidc_provider.user_claims = {
+        "sub": "existing_sub_111",
+        "email": "existing_sso@tvs.com",
+        "name": "Existing SSO",
+        "email_verified": True
+    }
+
+    res_login = client.get("/oauth/login/google")
+    state = urllib.parse.parse_qs(urllib.parse.urlparse(res_login.headers.get("Location")).query).get("state", [""])[0]
+
+    res_cb = client.get(f"/oauth/callback/google?code=valid_auth_code_12345&state={state}", follow_redirects=True)
+    assert res_cb.status_code == 200
+    assert b"Welcome back" in res_cb.data
+
+
+def test_oauth_existing_revoked_user_blocked(client, app, oidc_provider):
+    """Verifies that an existing user whose account is revoked (is_active=0) is blocked."""
+    setup_customer_and_sso(app, oidc_provider.server_port)
+    with app.app_context():
+        conn = get_connection(app.config["DATABASE_PATH"])
+        conn.execute(
+            "INSERT OR REPLACE INTO users (username, display_name, email, password_hash, role, customer_id, is_active) VALUES ('revoked_sso', 'Revoked SSO', 'revoked_sso@tvs.com', 'hash', 'customer_viewer', 'tvs', 0)"
+        )
+        conn.commit()
+        conn.close()
+
+    oidc_provider.user_claims = {
+        "sub": "revoked_sub_222",
+        "email": "revoked_sso@tvs.com",
+        "name": "Revoked SSO",
+        "email_verified": True
+    }
+
+    res_login = client.get("/oauth/login/google")
+    state = urllib.parse.parse_qs(urllib.parse.urlparse(res_login.headers.get("Location")).query).get("state", [""])[0]
+
+    res_cb = client.get(f"/oauth/callback/google?code=valid_auth_code_12345&state={state}", follow_redirects=True)
+    assert res_cb.status_code == 200
+    assert b"revoked" in res_cb.data
+
+
+def test_oauth_suspended_company_blocked(client, app, oidc_provider):
+    """Verifies that OAuth login is blocked when the customer is suspended."""
+    setup_customer_and_sso(app, oidc_provider.server_port)
+    with app.app_context():
+        conn = get_connection(app.config["DATABASE_PATH"])
+        conn.execute(
+            "INSERT OR REPLACE INTO users (username, display_name, email, password_hash, role, customer_id, is_active) VALUES ('susp_sso', 'Susp SSO', 'susp_sso@tvs.com', 'hash', 'customer_viewer', 'tvs', 1)"
+        )
+        conn.execute("UPDATE customers SET portal_suspended = 1 WHERE id = 'tvs'")
+        conn.commit()
+        conn.close()
+
+    oidc_provider.user_claims = {
+        "sub": "susp_sub_333",
+        "email": "susp_sso@tvs.com",
+        "name": "Susp SSO",
+        "email_verified": True
+    }
+
+    res_login = client.get("/oauth/login/google")
+    state = urllib.parse.parse_qs(urllib.parse.urlparse(res_login.headers.get("Location")).query).get("state", [""])[0]
+
+    res_cb = client.get(f"/oauth/callback/google?code=valid_auth_code_12345&state={state}", follow_redirects=True)
+    assert res_cb.status_code == 200
+    assert b"suspended" in res_cb.data

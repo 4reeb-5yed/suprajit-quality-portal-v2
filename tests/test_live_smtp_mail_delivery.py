@@ -235,3 +235,27 @@ def test_send_heartbeat_email_live_smtp(app, smtp_server):
     assert "Files Processed: 1420" in body
     assert "Files Failed: 3" in body
     assert "CRITICAL ERROR LOG:\nZero-byte quarantine on 3 corrupt files" in body
+def test_mail_helpers_and_fallback_branches(app, smtp_server):
+    """Exercises get_email_setting fallbacks, get_effective_portal_url request and default fallbacks, and missing credentials."""
+    with app.app_context():
+        # 1. Missing credentials returns False
+        from app.mail import _send_smtp, get_effective_portal_url, get_email_setting, send_heartbeat_email
+        conn = get_connection(app.config["DATABASE_PATH"])
+        conn.execute("DELETE FROM system_settings WHERE key IN ('mail_username', 'mail_password', 'public_portal_url', 'developer_email')")
+        conn.commit()
+        conn.close()
+
+        res_no_creds = _send_smtp("Test", ["test@test.com"], "Body")
+        assert res_no_creds is False
+
+        # 2. get_effective_portal_url fallback to localhost
+        url = get_effective_portal_url()
+        assert "http" in url
+
+        # 3. get_email_setting with invalid key returns default
+        def_val = get_email_setting("non_existent_key_xyz", default="my_default")
+        assert def_val == "my_default"
+
+        # 4. send_heartbeat_email with no developer_email configured returns False
+        res_hb_no_dev = send_heartbeat_email(10, 0, "success", "")
+        assert res_hb_no_dev is False
