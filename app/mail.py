@@ -95,10 +95,14 @@ def _send_smtp(subject, recipients, body):
     msg["To"] = ", ".join(recipients)
     msg.set_content(body)
 
+    use_tls = get_email_setting("mail_use_tls", "1") != "0"
+
     try:
         with smtplib.SMTP(smtp_server, smtp_port) as server:
-            server.starttls()
-            server.login(smtp_user, smtp_pass)
+            if use_tls:
+                server.starttls()
+            if smtp_pass:
+                server.login(smtp_user, smtp_pass)
             server.send_message(msg)
         return True
     except Exception as e:

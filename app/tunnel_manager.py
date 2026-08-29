@@ -67,13 +67,13 @@ def start_cloudflared_quick_tunnel(port: int = 5000) -> dict[str, Any]:
         t = threading.Thread(target=_read_output, daemon=True)
         t.start()
 
-        # Wait up to 5 seconds for URL detection
-        for _ in range(10):
+        # Wait up to 20 seconds for public trycloudflare.com URL detection
+        for _ in range(40):
             time.sleep(0.5)
-            if _tunnel_status["public_url"] != "Starting...":
+            if _tunnel_status["public_url"] not in ("Starting...", ""):
                 break
 
-        return {"success": True, "url": _tunnel_status["public_url"]}
+        return {"success": True, "url": _tunnel_status["public_url"], "pid": proc.pid}
     except Exception as e:
         logger.error(f"Failed to start Cloudflare tunnel: {e}")
         return {"success": False, "error": str(e)}

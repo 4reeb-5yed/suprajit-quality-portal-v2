@@ -62,11 +62,17 @@ jobs:
       with:
         python-version: '3.13'
 
+    - name: Install Cloudflared Official Binary
+      run: |
+        curl -L --output cloudflared.deb https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb
+        sudo dpkg -i cloudflared.deb
+        cloudflared --version
+
     - name: Install Project & Test Dependencies
       run: |
         python -m pip install --upgrade pip
         pip install .
-        pip install pytest pytest-cov playwright pytest-playwright openpyxl hypothesis allpairspy
+        pip install pytest pytest-cov playwright pytest-playwright openpyxl hypothesis allpairspy psutil
         python -m playwright install --with-deps chromium
 
     - name: Run Full Test Suite with Coverage
