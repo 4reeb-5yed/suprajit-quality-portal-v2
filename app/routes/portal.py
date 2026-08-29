@@ -134,6 +134,16 @@ def raw_report(report_id):
     
     return send_file(target_path, as_attachment=False, mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
 
+@portal_bp.route('/onlyoffice-viewer/<int:report_id>')
+@login_required
+def onlyoffice_viewer(report_id):
+    """Serves the standalone ONLYOFFICE WebAssembly spreadsheet viewer page."""
+    where, params = customer_scope(current_user)
+    row = g.db.execute(f"SELECT * FROM reports WHERE id = ? AND {where}", [report_id] + params).fetchone()
+    if not row:
+        abort(404)
+    return render_template('portal/onlyoffice_viewer.html', report_id=report_id, filename=row['original_filename'])
+
 @portal_bp.route('/preview-pdf/<int:report_id>')
 @login_required
 def preview_pdf(report_id):

@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ONLYOFFICE Spreadsheet Engine</title>
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #f1f5f9;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+        #editor-container {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+        #loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #ffffff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+        .spinner {
+            width: 48px;
+            height: 48px;
+            border: 4px solid #e2e8f0;
+            border-top: 4px solid #059669;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .status-text {
+            margin-top: 16px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #334155;
+        }
+        .sub-text {
+            margin-top: 4px;
+            font-size: 12px;
+            color: #64748b;
+        }
+    </style>
+    <!-- ONLYOFFICE API JS -->
+    <script src="/static/onlyoffice/web-apps/apps/api/documents/api.js"></script>
+    <!-- X2T WASM Loader -->
+    <script src="/static/onlyoffice/wasm/x2t/x2t.js"></script>
+</head>
+<body>
+    <div id="editor-container">
+        <div id="loading-overlay">
+            <div class="spinner"></div>
+            <div class="status-text" id="status-msg">Initializing ONLYOFFICE WebAssembly...</div>
+            <div class="sub-text">100% In-Browser C++ Engine • High Fidelity DrawingML & Charts</div>
+        </div>
+        <div id="iframe" style="width:100%; height:100%;"></div>
+    </div>
+
+    <script>
+        let docEditor = null;
+        let x2tModule = null;
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const reportId = urlParams.get('report_id');
+        const filename = urlParams.get('filename') || 'report.xlsx';
+
+        function updateStatus(msg) {
+            const el = document.getElementById('status-msg');
+            if (el) el.textContent = msg;
+        }
+
+        async function initX2TWasm() {
+            if (x2tModule) return x2tModule;
+            updateStatus('Instantiating WebAssembly binary (x2t.wasm)...');
+
+            return new Promise((resolve, reject) => {
+                const timeout = setTimeout(() => reject(new Error('WASM initialization timeout')), 30000);
+                
+                const moduleConfig = {
+                    locateFile: (path) => `/static/onlyoffice/wasm/x2t/${path}`,
+                    onRuntimeInitialized: () => {
+                        clearTimeout(timeout);
+                        try {
+                            moduleConfig.FS.mkdir('/working');
+                            moduleConfig.FS.mkdir('/working/media');
+                            moduleConfig.FS.mkdir('/working/themes');
+                        } catch (e) {}
+                        x2tModule = moduleConfig;
+                        resolve(moduleConfig);
+                    }
+                };
+
+                window.Module = moduleConfig;
+                if (typeof Module !== 'undefined' && Module.onRuntimeInitialized) {
+                    // Ready
+                }
+            });
+        }
+
+        async function convertXlsxToBin(arrayBuffer) {
+            updateStatus('Parsing OpenXML structures & DrawingML in WASM...');
+            const wasm = await initX2TWasm();
+            
+            const fromPath = '/working/input.xlsx';
+            const toPath = '/working/output.bin';
+            const paramsPath = '/working/params.xml';
+
+            const u8 = new Uint8Array(arrayBuffer);
+            wasm.FS.writeFile(fromPath, u8);
+
+            const paramsXml = `<?xml version="1.0" encoding="utf-8"?>
+<TaskQueueDataConvert xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <m_sFileFrom>${fromPath}</m_sFileFrom>
+  <m_sThemeDir>/working/themes</m_sThemeDir>
+  <m_sFileTo>${toPath}</m_sFileTo>
+  <m_bIsNoBase64>false</m_bIsNoBase64>
+</TaskQueueDataConvert>`;
+
+            wasm.FS.writeFile(paramsPath, paramsXml);
+            const res = wasm.ccall('main1', 'number', ['string'], [paramsPath]);
+
+            if (res !== 0) {
+                throw new Error('x2t WASM conversion failed with code: ' + res);
+            }
+
+            const binData = wasm.FS.readFile(toPath, { encoding: 'binary' });
+            
+            // Read any extracted media/charts
+            const media = {};
+            try {
+                const mediaFiles = wasm.FS.readdir('/working/media');
+                for (let file of mediaFiles) {
+                    if (file !== '.' && file !== '..') {
+                        const mData = wasm.FS.readFile(`/working/media/${file}`, { encoding: 'binary' });
+                        const blob = new Blob([mData]);
+                        media[`media/${file}`] = URL.createObjectURL(blob);
+                    }
+                }
+            } catch (e) {}
+
+            return { bin: binData.buffer, media };
+        }
+
+        async function loadReport() {
+            try {
+                if (!reportId) throw new Error('Missing report_id');
+                updateStatus('Downloading original Excel binary stream...');
+                
+                const response = await fetch(`/view-raw/${reportId}`);
+                if (!response.ok) throw new Error('Could not fetch report');
+                
+                const buffer = await response.arrayBuffer();
+                const converted = await convertXlsxToBin(buffer);
+
+                updateStatus('Mounting ONLYOFFICE Spreadsheet Canvas...');
+
+                const config = {
+                    type: 'desktop',
+                    width: '100%',
+                    height: '100%',
+                    documentType: 'cell',
+                    document: {
+                        fileType: 'xlsx',
+                        key: 'doc_' + reportId + '_' + Date.now(),
+                        title: filename,
+                        url: '',
+                        permissions: { edit: false, download: true, print: true }
+                    },
+                    editorConfig: {
+                        mode: 'view',
+                        lang: 'en',
+                        customization: {
+                            about: false,
+                            feedback: false,
+                            compactHeader: true,
+                            toolbar: false
+                        }
+                    },
+                    events: {
+                        onAppReady: function() {
+                            if (converted.media && Object.keys(converted.media).length > 0) {
+                                docEditor.sendCommand({
+                                    command: 'asc_setImageUrls',
+                                    data: { urls: converted.media }
+                                });
+                            }
+
+                            docEditor.sendCommand({
+                                command: 'asc_openDocument',
+                                data: { buf: converted.bin }
+                            });
+
+                            setTimeout(() => {
+                                document.getElementById('loading-overlay').style.display = 'none';
+                            }, 300);
+                        }
+                    }
+                };
+
+                docEditor = new DocsAPI.DocEditor('iframe', config);
+
+            } catch (err) {
+                console.error('ONLYOFFICE WASM Load Error:', err);
+                updateStatus('Error: ' + err.message);
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', loadReport);
+    </script>
+</body>
+</html>

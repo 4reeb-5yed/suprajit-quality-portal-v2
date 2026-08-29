@@ -96,6 +96,11 @@
             </div>
             
             <div class="flex items-center gap-2">
+                <!-- Open in ONLYOFFICE WASM Viewer Mode -->
+                <a id="modalOnlyOfficeBtn" href="#" target="_blank" class="btn btn-sm bg-emerald-950 text-emerald-200 hover:bg-emerald-900 border border-emerald-700 font-bold shadow text-xs">
+                    <i class="fa-solid fa-up-right-from-square mr-1"></i> ONLYOFFICE WASM
+                </a>
+
                 <!-- Zoom / Fullscreen Toggle -->
                 <button type="button" onclick="toggleFullscreenViewer()" class="btn btn-sm btn-ghost text-emerald-100 hover:text-white hover:bg-emerald-700 font-normal" title="Toggle Fullscreen">
                     <i class="fa-solid fa-expand" id="fullscreenIcon"></i>
@@ -171,6 +176,7 @@ window.openExcelViewer = async function(reportId, filename, recipeName, serial, 
     document.getElementById('modalRecipe').textContent = recipeName;
     document.getElementById('modalSerial').textContent = 'Serial: ' + serial;
     document.getElementById('modalDownloadBtn').href = downloadUrl;
+    document.getElementById('modalOnlyOfficeBtn').href = `/onlyoffice-viewer/${reportId}`;
     
     const loading = document.getElementById('excelLoading');
     loading.classList.remove('hidden');
