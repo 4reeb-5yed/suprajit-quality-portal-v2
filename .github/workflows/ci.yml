@@ -62,11 +62,13 @@ jobs:
       with:
         python-version: '3.13'
 
-    - name: Install Cloudflared Official Binary
+    - name: Install Cloudflared Official Binary & LibreOffice
       run: |
         curl -L --output cloudflared.deb https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb
         sudo dpkg -i cloudflared.deb
         cloudflared --version
+        sudo apt-get update
+        sudo apt-get install -y libreoffice
 
     - name: Install Project & Test Dependencies
       run: |

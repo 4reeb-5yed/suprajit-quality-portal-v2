@@ -95,8 +95,9 @@ def test_tunnel_process_already_exited_poll():
     """When a tunnel process exits on its own, get_tunnel_status reflects active=False."""
     import app.tunnel_manager as tm
     import subprocess
-    # Run a fast exiting dummy process
-    proc = subprocess.Popen(["cmd.exe", "/c", "exit 0"])
+    import sys
+    # Run a fast exiting dummy python process (cross-platform)
+    proc = subprocess.Popen([sys.executable, "-c", "import sys; sys.exit(0)"])
     proc.wait()
     tm._tunnel_process = proc
     tm._tunnel_status = {"active": True, "provider": "test", "public_url": "", "log": ""}
