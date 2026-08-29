@@ -121,14 +121,19 @@ def test_integration_streaming_and_download(client, app, stream_idx):
     res_down = client.get(f'/download/{rep_id}')
     assert res_down.status_code == 200
     assert "attachment" in res_down.headers.get('Content-Disposition', '')
+    res_down.close()
 
     # Test Raw View Stream
     res_view = client.get(f'/view-raw/{rep_id}')
     assert res_view.status_code == 200
     assert "openxmlformats" in res_view.headers.get('Content-Type', '')
+    res_view.close()
 
-    if os.path.exists(temp_file):
-        os.remove(temp_file)
+    try:
+        if os.path.exists(temp_file):
+            os.remove(temp_file)
+    except OSError:
+        pass
 
 
 # =============================================================================
