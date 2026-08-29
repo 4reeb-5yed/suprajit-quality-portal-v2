@@ -43,7 +43,7 @@ jobs:
 
     - name: 4. Run Pip-Audit Dependency CVE Scanner
       run: |
-        python -m pip-audit
+        python -m pip_audit
 
     - uses: gitleaks/gitleaks-action@v2
       name: 5. Run Gitleaks Secret Scanner
