@@ -36,8 +36,13 @@ def app():
     conn = get_connection(db_path)
     ensure_schema(conn)
     
-    conn.execute("INSERT OR IGNORE INTO users (username, password_hash, role) VALUES ('testadmin', 'scrypt:32768:8:1$1uR9x$a', 'admin')")
-    conn.execute("INSERT OR IGNORE INTO users (username, password_hash, role) VALUES ('testuser', 'scrypt:32768:8:1$1uR9x$a', 'user')")
+    conn.execute("INSERT OR IGNORE INTO customers (id, company_name) VALUES ('suprajit', 'Suprajit Internal')")
+    conn.execute("INSERT OR IGNORE INTO customer_recipes (customer_id, recipe_name) VALUES ('suprajit', 'TEST_RECIPE')")
+    
+    from werkzeug.security import generate_password_hash
+    pass_hash = generate_password_hash('Password123!')
+    conn.execute("INSERT OR IGNORE INTO users (username, password_hash, display_name, email, role, is_active) VALUES ('testadmin', ?, 'Administrator', 'admin@example.com', 'admin', 1)", (pass_hash,))
+    conn.execute("INSERT OR IGNORE INTO users (username, password_hash, display_name, email, role, is_active) VALUES ('testuser', ?, 'Test User', 'user@example.com', 'user', 1)", (pass_hash,))
     conn.commit()
     conn.close()
 

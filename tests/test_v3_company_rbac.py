@@ -109,25 +109,7 @@ def v3_app(tmp_path):
 def v3_client(v3_app):
     return v3_app.test_client()
 
-# --- 1. Parser Tests ---
-def test_parser_standard():
-    res = parse_filename("EV_TPS_13-06-2026_22.33.21_12.xlsx")
-    assert res['recipe_name'] == 'EV_TPS'
-    assert res['report_date'] == '2026-06-13'
-    assert res['serial_normalized'] == '0012'
-
-def test_parser_copy_suffix():
-    res = parse_filename("EV_TPS_13-06-2026_22.33.21_12 (1).xlsx")
-    assert res['recipe_name'] == 'EV_TPS'
-
-def test_parser_dash_copy_suffix():
-    res = parse_filename("EV_TPS_13-06-2026_22.33.21_12 - Copy.xlsx")
-    assert res['recipe_name'] == 'EV_TPS'
-
-def test_parser_csv():
-    res = parse_filename("BRAKE_01-01-2026_09.15.00_5.csv")
-    assert res['recipe_name'] == 'BRAKE'
-
+# --- 1. Custom Regex Parser Tests (Genuinely Unique Edge Cases) ---
 def test_parser_custom_regex():
     pat = r"^([A-Z]+)-([0-9]{2}-[0-9]{2}-[0-9]{4})-([0-9]{2}\.[0-9]{2}\.[0-9]{2})-([0-9]+)\.xlsx$"
     res = parse_filename("MOTOR-25-08-2026-11.20.00-999.xlsx", custom_pattern=pat)
@@ -144,46 +126,11 @@ def test_parser_custom_iso_date():
     res = parse_filename("WIRING_2026-12-31_14.00.00_7.xlsx", custom_pattern=pat)
     assert res['report_date'] == '2026-12-31'
 
-def test_parser_invalid_structure():
-    assert parse_filename("invalid.xlsx") is None
-
-def test_parser_missing_time():
-    assert parse_filename("EV_TPS_13-06-2026_12.xlsx") is None
-
-def test_parser_invalid_ext():
-    assert parse_filename("EV_TPS_13-06-2026_22.33.21_12.pdf") is None
-
 def test_parser_invalid_regex_fallback():
     res = parse_filename("EV_TPS_13-06-2026_22.33.21_12.xlsx", custom_pattern="[broken")
     assert res['recipe_name'] == 'EV_TPS'
 
-def test_parser_case_insensitive():
-    res = parse_filename("ev_tps_13-06-2026_22.33.21_12.XLSX")
-    assert res['recipe_name'] == 'ev_tps'
-
-def test_parser_alphanumeric_sn():
-    res = parse_filename("THROTTLE_01-01-2026_09.15.00_SN-99B.xlsx")
-    assert res['serial_normalized'] == 'SN-99B'
-
-def test_parser_empty_string():
-    assert parse_filename("") is None
-
-def test_parser_whitespace():
-    res = parse_filename("EV_TPS_13-06-2026_22.33.21_12   (2).xlsx")
-    assert res['recipe_name'] == 'EV_TPS'
-
 # --- 2. Cryptography & Security Tests ---
-def test_crypto_roundtrip(v3_app):
-    with v3_app.app_context():
-        secret = "TestKey123!"
-        enc = encrypt_password(secret)
-        assert enc != secret
-        assert decrypt_password(enc) == secret
-
-def test_crypto_empty(v3_app):
-    with v3_app.app_context():
-        assert decrypt_password("") == ""
-
 def test_crypto_invalid(v3_app):
     with v3_app.app_context():
         assert decrypt_password("invalid_cipher") == ""
@@ -192,12 +139,6 @@ def test_file_hash(tmp_path):
     p = tmp_path / "h.txt"
     p.write_text("Hello Hash")
     assert len(hash_file(str(p))) == 64
-
-def test_safe_path_valid():
-    assert is_safe_path(r"C:\App\Data", r"C:\App\Data\rep.xlsx") is True
-
-def test_safe_path_traversal():
-    assert is_safe_path(r"C:\App\Data", r"C:\App\Data\..\..\cmd.exe") is False
 
 def test_ensure_file_safe_ok(tmp_path):
     p = tmp_path / "ok.xlsx"

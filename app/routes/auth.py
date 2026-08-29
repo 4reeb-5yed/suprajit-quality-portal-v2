@@ -12,7 +12,7 @@ from app.oauth import get_oauth_settings, get_registered_client
 auth_bp = Blueprint('auth', __name__)
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
-@limiter.limit("5000 per minute")
+@limiter.limit("10 per minute")
 def login():
     if current_user.is_authenticated:
         return redirect(url_for('portal.search'))

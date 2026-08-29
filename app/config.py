@@ -1,11 +1,20 @@
-﻿import os
+import os
 from dotenv import load_dotenv
 
 load_dotenv()
 
 class Config:
     # Flask Settings
-    SECRET_KEY = os.getenv("SECRET_KEY", "fallback-dev-secret-key-do-not-use-in-prod")
+    SECRET_KEY = os.getenv("SECRET_KEY")
+    if not SECRET_KEY:
+        if os.getenv("FLASK_ENV") == "testing" or os.getenv("PYTEST_CURRENT_TEST"):
+            SECRET_KEY = "test-secret-key-for-testing-only"
+        else:
+            raise RuntimeError(
+                "CRITICAL SECURITY ERROR: SECRET_KEY environment variable is not set. "
+                "The application refuses to start with an insecure default key. "
+                "Please set SECRET_KEY in your environment or .env file."
+            )
     
     # OWASP/ASVS 5.0 Session Hardening
     SESSION_COOKIE_SECURE = True

@@ -98,6 +98,24 @@ def test_pairwise_search_filtering(client, app, recipe, serial, date_from, date_
     query_url = f"/search/results?recipe={recipe}&serial={serial}&date_from={date_from}&date_to={date_to}"
     res = client.get(query_url)
 
-    # Server must gracefully handle all combinations with HTTP 200 or clean validation
+    # Server must return HTTP 200 without throwing 500 error
     assert res.status_code == 200
-    assert b"<tr>" in res.data or b"<!DOCTYPE html>" in res.data or b"table" in res.data or b"No quality reports found" in res.data
+
+    # 1. SQL Injection Safety Check:
+    # If the search parameter contains SQL injection payloads, it must never bypass filtering or return unintended data.
+    if "DROP TABLE" in recipe or "1=1" in serial or "1=1" in recipe:
+        assert b"EV_THROTTLE" not in res.data or recipe == "EV_THROTTLE"
+
+    # 2. Multi-Tenant Scoping & Custom User Isolation Check:
+    # If a custom_user has no assigned recipe access to 'EV_THROTTLE', they must never see TVS report records
+    if role == 'custom_user' and recipe == "NONEXISTENT_RECIPE":
+        assert b"EV_THROTTLE" not in res.data
+        assert b"0001" not in res.data or b"No quality reports found" in res.data
+
+    # 3. Contextual HTML validation: Assert structured results or explicit empty/prompt state message
+    if b"0001" in res.data and b"EV_THROTTLE" in res.data:
+        assert b'<td class="font-mono' in res.data or b'Download' in res.data
+    else:
+        assert (b"No quality reports found" in res.data or 
+                b"Please select a recipe" in res.data or 
+                b"table" in res.data)

@@ -18,10 +18,20 @@ def parse_filename(filename: str, custom_pattern: Optional[str] = None) -> Optio
     The pattern must capture 4 groups: (1) recipe_name, (2) date, (3) time, (4) serial.
     Returns None if the filename does not match the expected pattern.
     """
-    # If it is a full path (e.g. contains backslashes or leading dir paths), take the last segment
-    basename = filename.replace('\\', '/').split('/')[-1] if ('/' in filename or '\\' in filename) and not ('_' in filename and '-' in filename and '/' in filename and not os.path.isabs(filename)) else filename
+    # Cleanly extract basename whether filename is an absolute path or relative string with date slashes
     if os.path.isabs(filename):
         basename = os.path.basename(filename)
+    elif ('/' in filename or '\\' in filename):
+        # If string looks like a standalone filename with in-date slashes (e.g. RECIPE_13/06/2026_...)
+        # and has no directory separators, preserve it. Otherwise take the final path component.
+        has_recipe_and_date = '_' in filename and '-' in filename
+        if has_recipe_and_date and not os.path.dirname(filename):
+            basename = filename
+        else:
+            basename = filename.replace('\\', '/').split('/')[-1]
+    else:
+        basename = filename
+
     pattern = get_compiled_pattern(custom_pattern)
     match = pattern.match(basename)
     
