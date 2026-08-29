@@ -102,6 +102,33 @@ def test_password_reset_flow(client):
     # Attempting to post to forgot-password
     rv = client.post('/forgot-password', data={'email': 'user@customer.com'}, follow_redirects=True)
     assert rv.status_code == 200
+
+# -----------------
+# SETUP WIZARD TRAP & UNLOCK TEST
+# -----------------
+def test_setup_wizard_completion_unlocks_admin_portal(client, app):
+    with app.app_context():
+        conn = get_connection(app.config['DATABASE_PATH'])
+        from werkzeug.security import generate_password_hash
+        conn.execute("INSERT OR REPLACE INTO users (id, username, password_hash, display_name, role, is_active) VALUES (999, 'bootstrap_admin', ?, 'Bootstrap', 'admin', 1)", (generate_password_hash('admin123'),))
+        conn.execute("DELETE FROM system_settings WHERE key = 'setup_completed'")
+        conn.commit()
+        conn.close()
+
+    # Login as bootstrap_admin
+    client.post('/login', data={'username': 'bootstrap_admin', 'password': 'admin123'}, follow_redirects=True)
     
-    # (In a real scenario it would send an email and generate a token, we just check no 500 error occurs here)
-    # The mail.py is mostly mocked or skipped if not fully configured but shouldn't 500
+    # Try accessing admin dashboard -> should be redirected to setup
+    rv = client.get('/admin/', follow_redirects=False)
+    assert rv.status_code == 302
+    assert '/admin/setup' in rv.location
+    
+    # Complete Setup Wizard
+    rv_post = client.post('/admin/setup', data={'new_password': 'BrandNewPassword123!', 'admin_email': 'admin@enterprise.com'}, follow_redirects=True)
+    assert rv_post.status_code == 200
+    assert b'Initial configuration complete' in rv_post.data
+    
+    # Now accessing admin dashboard directly should succeed (200 OK)
+    rv_dash = client.get('/admin/', follow_redirects=True)
+    assert rv_dash.status_code == 200
+    assert b'System Control Panel' in rv_dash.data or b'Dashboard' in rv_dash.data or b'Total' in rv_dash.data

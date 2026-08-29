@@ -9,8 +9,9 @@ admin_bp = Blueprint('admin', __name__)
 def require_admin():
     if not current_user.is_admin:
         abort(403)
-    # Enforce Setup Wizard Trap: Force bootstrap_admin to complete initial setup before accessing any portal features
-    if current_user.username == 'bootstrap_admin' and request.endpoint not in ('admin.setup', 'auth.logout', 'static'):
+    # Enforce Setup Wizard Trap: Force bootstrap_admin to complete initial setup if not completed
+    setup_done = g.db.execute("SELECT value FROM system_settings WHERE key = 'setup_completed'").fetchone()
+    if not setup_done and current_user.username == 'bootstrap_admin' and request.endpoint not in ('admin.setup', 'auth.logout', 'static'):
         return redirect(url_for('admin.setup'))
 
 @admin_bp.route('/setup', methods=['GET', 'POST'])
@@ -31,6 +32,7 @@ def setup():
         
         if new_pass and len(new_pass) >= 8:
             g.db.execute("UPDATE users SET password_hash = ?, email = ? WHERE id = ?", (generate_password_hash(new_pass), admin_email, current_user.id))
+            g.db.execute(SET_SETTING, ('setup_completed', '1'))
             
             if m_srv: g.db.execute(SET_SETTING, ('mail_server', m_srv))
             if m_prt: g.db.execute(SET_SETTING, ('mail_port', m_prt))
