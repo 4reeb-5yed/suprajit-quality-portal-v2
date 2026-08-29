@@ -54,9 +54,13 @@ def dashboard():
     customers_count = g.db.execute("SELECT COUNT(*) FROM customers ").fetchone()[0]
     reports_count = g.db.execute("SELECT COUNT(*) FROM reports").fetchone()[0]
     
-    # Recent batches
+    # Recent batches with calculated duration in seconds
     recent_batches = g.db.execute("""
-        SELECT * FROM batch_runs 
+        SELECT id, run_started, run_completed, target_date,
+               files_scanned, files_inserted, files_skipped, files_failed,
+               error_log, status,
+               ROUND(MAX(0.1, (julianday(COALESCE(run_completed, datetime('now'))) - julianday(run_started)) * 86400.0), 1) as duration_sec
+        FROM batch_runs 
         ORDER BY run_started DESC 
         LIMIT 10
     """).fetchall()
