@@ -93,17 +93,16 @@ def test_integration_search_matrix(client, app, query_idx):
 # =============================================================================
 @pytest.mark.parametrize("stream_idx", range(100))
 def test_integration_streaming_and_download(client, app, stream_idx):
-    fd, temp_file = tempfile.mkstemp(suffix='.xlsx')
+    storage_folder = app.config['STORAGE_FOLDER']
+    temp_file = os.path.join(storage_folder, f"mock_report_{stream_idx}.xlsx")
     with open(temp_file, 'wb') as f:
         f.write(b"PK\x03\x04MockExcelStreamContent" + str(stream_idx).encode())
 
-    storage_base = os.path.dirname(temp_file)
     filename = os.path.basename(temp_file)
 
     with app.app_context():
         conn = get_connection(app.config['DATABASE_PATH'])
         ensure_schema(conn)
-        conn.execute("INSERT OR REPLACE INTO system_settings (key, value) VALUES ('root_search_path', ?)", (storage_base,))
         cursor = conn.cursor()
         cursor.execute("""
             INSERT INTO reports (recipe_name, report_date, report_time, serial_raw, serial_normalized, original_filename, file_path, file_hash)
@@ -128,7 +127,6 @@ def test_integration_streaming_and_download(client, app, stream_idx):
     assert res_view.status_code == 200
     assert "openxmlformats" in res_view.headers.get('Content-Type', '')
 
-    os.close(fd)
     if os.path.exists(temp_file):
         os.remove(temp_file)
 
