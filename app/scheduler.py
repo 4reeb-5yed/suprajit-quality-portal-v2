@@ -12,6 +12,7 @@ logger = logging.getLogger(__name__)
 def cleanup_zombies(db_path):
     try:
         conn = get_connection(db_path)
+        ensure_schema(conn)
         zombie_threshold = (datetime.now() - timedelta(minutes=45)).strftime('%Y-%m-%d %H:%M:%S')
         
         cursor = conn.cursor()
