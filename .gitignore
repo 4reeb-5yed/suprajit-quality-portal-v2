@@ -32,4 +32,9 @@ suprajit.log
 data/
 storage/
 app/static/onlyoffice_raw/
+scratch/
+.coverage
+.hypothesis/
+.pytest_cache/
+.ruff_cache/
 
