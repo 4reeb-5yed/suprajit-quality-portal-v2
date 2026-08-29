@@ -30,35 +30,36 @@ def parse_filename(filename: str, custom_pattern: Optional[str] = None) -> Optio
     time_str = match.group(3)
     serial_raw = match.group(4)
     
-    # Normalize date to YYYY-MM-DD
-    if '-' in date_str:
-        parts = date_str.split('-')
-        if len(parts) == 3:
-            if len(parts[0]) == 4: # YYYY-MM-DD
-                normalized_date = date_str
-            else: # DD-MM-YYYY
-                day, month, year = parts
-                normalized_date = f"{year}-{month}-{day}"
-        else:
-            normalized_date = date_str
-    elif '/' in date_str:
-        parts = date_str.split('/')
-        if len(parts) == 3:
-            day, month, year = parts
-            normalized_date = f"{year}-{month}-{day}"
-        else:
-            normalized_date = date_str
-    else:
-        normalized_date = date_str
+    from datetime import datetime
     
-    # Normalize time to HH:MM:SS
-    normalized_time = time_str.replace('.', ':')
+    # Strict Date Validation
+    normalized_date = None
+    for fmt in ('%d-%m-%Y', '%Y-%m-%d', '%d/%m/%Y', '%Y/%m/%d'):
+        try:
+            dt = datetime.strptime(date_str, fmt)
+            normalized_date = dt.strftime('%Y-%m-%d')
+            break
+        except ValueError:
+            pass
+            
+    if not normalized_date:
+        return None
+    
+    # Strict Time Validation (HH.MM.SS)
+    try:
+        t_parts = [int(p) for p in time_str.split('.')]
+        if len(t_parts) != 3 or not (0 <= t_parts[0] <= 23 and 0 <= t_parts[1] <= 59 and 0 <= t_parts[2] <= 59):
+            return None
+        normalized_time = f"{t_parts[0]:02d}:{t_parts[1]:02d}:{t_parts[2]:02d}"
+    except Exception:
+        return None
     
     # Normalize serial to zero-padded 4 digits (e.g., "12" -> "0012")
-    serial_normalized = serial_raw.zfill(4) if serial_raw.isdigit() else serial_raw
+    serial_clean = serial_raw.strip()
+    serial_normalized = serial_clean.zfill(4) if serial_clean.isdigit() else serial_clean
     
     return {
-        "recipe_name": recipe_name,
+        "recipe_name": recipe_name.strip(),
         "report_date": normalized_date,
         "report_time": normalized_time,
         "serial_raw": serial_raw,

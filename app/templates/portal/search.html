@@ -233,14 +233,30 @@ window.openExcelViewer = async function(reportId, filename, recipeName, serial, 
             loading.classList.add('hidden');
         }, function (error) {
             console.error("SpreadJS ExcelIO open error:", error);
-            alert("Error importing Excel file in SpreadJS: " + (error.errorMessage || error));
-            loading.classList.add('hidden');
+            loading.innerHTML = `
+                <div class="p-6 bg-red-50 border border-red-200 rounded-lg text-center max-w-md">
+                    <i class="fa-solid fa-triangle-exclamation text-3xl text-red-500 mb-2"></i>
+                    <h4 class="font-bold text-red-800 text-sm">Preview Rendering Error</h4>
+                    <p class="text-xs text-red-600 mt-1">${error.errorMessage || error}</p>
+                    <a href="${downloadUrl}" class="btn btn-sm bg-emerald-700 text-white mt-4 border-none hover:bg-emerald-800">
+                        <i class="fa-solid fa-download mr-1"></i> Download .xlsx File Directly
+                    </a>
+                </div>
+            `;
         });
 
     } catch (err) {
         console.error("SpreadJS Load Error:", err);
-        alert("Error loading Excel report: " + err.message);
-        loading.classList.add('hidden');
+        loading.innerHTML = `
+            <div class="p-6 bg-red-50 border border-red-200 rounded-lg text-center max-w-md">
+                <i class="fa-solid fa-circle-exclamation text-3xl text-amber-500 mb-2"></i>
+                <h4 class="font-bold text-gray-800 text-sm">Document Retrieval Notice</h4>
+                <p class="text-xs text-gray-600 mt-1">${err.message}</p>
+                <a href="${downloadUrl}" class="btn btn-sm bg-emerald-700 text-white mt-4 border-none hover:bg-emerald-800">
+                    <i class="fa-solid fa-download mr-1"></i> Download File
+                </a>
+            </div>
+        `;
     }
 };
 </script>
