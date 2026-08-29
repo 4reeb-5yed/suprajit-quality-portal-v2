@@ -96,16 +96,6 @@
             </div>
             
             <div class="flex items-center gap-2">
-                <!-- View Mode Toggle -->
-                <div class="join bg-emerald-900/60 p-0.5 rounded-lg border border-emerald-700">
-                    <button id="btnViewGrid" onclick="switchView('grid')" class="btn btn-xs join-item bg-white text-emerald-900 font-bold border-none">
-                        <i class="fa-solid fa-table-cells mr-1"></i> Worksheet Grid
-                    </button>
-                    <button id="btnViewCharts" onclick="switchView('charts')" class="btn btn-xs join-item btn-ghost text-white font-semibold">
-                        <i class="fa-solid fa-chart-line mr-1"></i> Data Analytics & Graphs
-                    </button>
-                </div>
-                
                 <a id="modalDownloadBtn" href="#" class="btn btn-sm bg-white text-emerald-900 hover:bg-emerald-50 border-none font-bold shadow">
                     <i class="fa-solid fa-download mr-1"></i> Download Original .xlsx
                 </a>
@@ -128,50 +118,17 @@
             <!-- Dynamically populated sheets -->
         </div>
 
-        <!-- Main Viewport -->
-        <div class="flex-1 overflow-auto bg-gray-100 relative" id="spreadsheetViewport">
+        <!-- Main Viewport: Pure Native Excel Spreadsheet View -->
+        <div class="flex-1 overflow-auto bg-gray-200 relative p-4" id="spreadsheetViewport">
             <!-- Loading Indicator -->
             <div id="excelLoading" class="absolute inset-0 flex flex-col items-center justify-center bg-white/95 z-20">
                 <span class="loading loading-spinner loading-lg text-emerald-700"></span>
-                <p class="text-sm font-bold text-gray-700 mt-3">Parsing Excel Spreadsheet in Browser...</p>
-                <p class="text-xs text-gray-400">Rendering high-resolution workbook grid</p>
+                <p class="text-sm font-bold text-gray-700 mt-3">Loading Excel Worksheet...</p>
+                <p class="text-xs text-gray-400">Rendering authentic spreadsheet</p>
             </div>
 
-            <!-- View 1: Authentic Excel Grid & Embedded Charts -->
-            <div id="gridContainer" class="p-4 overflow-auto min-w-full space-y-6">
-                <!-- Embedded Excel Charts & Diagram Visuals from file -->
-                <div id="embeddedVisualsSection" class="hidden bg-white p-4 rounded border border-gray-300 shadow-sm">
-                    <h4 class="font-bold text-gray-800 text-sm mb-3 flex items-center gap-2">
-                        <i class="fa-solid fa-image text-emerald-600"></i>
-                        Embedded Graphs, Diagrams & Inspection Visuals (from Original Excel)
-                    </h4>
-                    <div id="embeddedVisualsGrid" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <!-- Extracted embedded image and chart drawings -->
-                    </div>
-                </div>
-
-                <div id="excelContent" class="bg-white rounded border border-gray-300 shadow overflow-auto">
-                    <!-- Excel Table with A-Z Headers & 1-N Rows -->
-                </div>
-            </div>
-
-            <!-- View 2: Client-Side Interactive Graphs -->
-            <div id="chartsContainer" class="p-6 hidden space-y-6">
-                <div class="bg-white p-6 rounded-lg border border-gray-300 shadow-sm">
-                    <div class="flex items-center justify-between mb-4">
-                        <div>
-                            <h4 class="font-bold text-gray-800 text-base flex items-center gap-2">
-                                <i class="fa-solid fa-chart-column text-emerald-600"></i>
-                                Numerical Trends & Quality Parameter Measurements
-                            </h4>
-                            <p class="text-xs text-gray-500">Automatically extracted numerical inspection dimensions from active sheet</p>
-                        </div>
-                        <span class="badge badge-success text-white font-bold text-xs" id="chartDataPointsBadge">0 Data Points</span>
-                    </div>
-                    <div class="h-96 relative w-full">
-                        <canvas id="excelTrendChart"></canvas>
-                    </div>
-                </div>
+            <div id="excelContent" class="bg-white rounded border border-gray-400 shadow-md overflow-auto min-w-full">
+                <!-- Exact Excel Table with Merged Cells, Formulas, and Formatting -->
             </div>
         </div>
 
@@ -219,46 +176,8 @@ async function openExcelViewer(reportId, filename, recipeName, serial, downloadU
         
         const arrayBuffer = await response.arrayBuffer();
         const data = new Uint8Array(arrayBuffer);
-        
-        // 1. Client-Side Embedded Visual Extraction (Zero Server Overhead)
-        const visualsGrid = document.getElementById('embeddedVisualsGrid');
-        const visualsSection = document.getElementById('embeddedVisualsSection');
-        visualsGrid.innerHTML = '';
-        visualsSection.classList.add('hidden');
-        
-        try {
-            const zip = await JSZip.loadAsync(arrayBuffer);
-            let imageCount = 0;
-            
-            // Search all media files inside xl/media/
-            const mediaFiles = Object.keys(zip.files).filter(path => path.startsWith('xl/media/'));
-            
-            for (let mediaPath of mediaFiles) {
-                const file = zip.files[mediaPath];
-                const blob = await file.async('blob');
-                const imgUrl = URL.createObjectURL(blob);
-                
-                const card = document.createElement('div');
-                card.className = 'border border-gray-200 rounded-lg p-2 bg-gray-50 flex flex-col items-center justify-center hover:shadow-md transition';
-                card.innerHTML = `
-                    <div class="w-full flex items-center justify-between text-xs text-gray-500 mb-2 px-1 font-mono">
-                        <span class="truncate"><i class="fa-solid fa-chart-area text-emerald-600 mr-1"></i> ${mediaPath.replace('xl/media/', '')}</span>
-                        <a href="${imgUrl}" target="_blank" class="text-blue-600 hover:underline flex items-center gap-1"><i class="fa-solid fa-expand"></i> Full Size</a>
-                    </div>
-                    <img src="${imgUrl}" alt="Excel Diagram" class="max-h-64 object-contain rounded border border-gray-300 bg-white" />
-                `;
-                visualsGrid.appendChild(card);
-                imageCount++;
-            }
-            
-            if (imageCount > 0) {
-                visualsSection.classList.remove('hidden');
-            }
-        } catch (zipErr) {
-            console.warn("Could not extract embedded media:", zipErr);
-        }
 
-        // 2. Parse with full cell styles, formula headers and formatting
+        // Parse with full cell styles, formula headers and formatting
         currentWorkbook = XLSX.read(data, { 
             type: 'array',
             cellDates: true,
@@ -311,9 +230,6 @@ function renderSheet(sheetName, activeBtn) {
 
     document.getElementById('footerTotalRows').textContent = `Rows: ${rowCount}`;
     document.getElementById('footerTotalCols').textContent = `Columns: ${colCount}`;
-
-    // Convert to 2D JSON array for fast analytical parsing
-    activeSheetData = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
 
     // Parse Merged Cell Ranges (!merges)
     const merges = worksheet['!merges'] || [];
@@ -384,111 +300,11 @@ function renderSheet(sheetName, activeBtn) {
     tableHtml += '</tbody></table>';
 
     document.getElementById('excelContent').innerHTML = tableHtml;
-    
-    // Auto-generate chart from sheet numeric columns
-    buildDynamicChart(activeSheetData);
 }
 
 function selectCell(ref, val) {
     document.getElementById('activeCellRef').textContent = ref;
     document.getElementById('activeCellValue').textContent = val || '(empty)';
-}
-
-function switchView(viewName) {
-    const grid = document.getElementById('gridContainer');
-    const charts = document.getElementById('chartsContainer');
-    const btnGrid = document.getElementById('btnViewGrid');
-    const btnCharts = document.getElementById('btnViewCharts');
-
-    if (viewName === 'grid') {
-        grid.classList.remove('hidden');
-        charts.classList.add('hidden');
-        btnGrid.className = 'btn btn-xs join-item bg-white text-emerald-900 font-bold border-none';
-        btnCharts.className = 'btn btn-xs join-item btn-ghost text-white font-semibold';
-    } else {
-        grid.classList.add('hidden');
-        charts.classList.remove('hidden');
-        btnCharts.className = 'btn btn-xs join-item bg-white text-emerald-900 font-bold border-none';
-        btnGrid.className = 'btn btn-xs join-item btn-ghost text-white font-semibold';
-        if (currentChart) currentChart.resize();
-    }
-}
-
-function buildDynamicChart(data) {
-    if (!data || data.length < 2) return;
-    
-    const headers = data[0];
-    const rows = data.slice(1);
-    
-    // Find numeric columns
-    let numericCols = [];
-    headers.forEach((header, colIndex) => {
-        if (!header) return;
-        const hasNumbers = rows.some(r => typeof r[colIndex] === 'number' || (!isNaN(parseFloat(r[colIndex])) && isFinite(r[colIndex])));
-        if (hasNumbers) {
-            numericCols.push({ header: String(header), index: colIndex });
-        }
-    });
-
-    const ctx = document.getElementById('excelTrendChart');
-    if (!ctx) return;
-
-    if (currentChart) {
-        currentChart.destroy();
-    }
-
-    if (numericCols.length === 0) {
-        document.getElementById('chartDataPointsBadge').textContent = 'No numerical columns found';
-        return;
-    }
-
-    const labels = rows.map((r, i) => `Row ${i + 1}`);
-    const datasets = numericCols.slice(0, 4).map((col, idx) => {
-        const colors = [
-            { border: '#059669', bg: 'rgba(5, 150, 105, 0.1)' },
-            { border: '#2563eb', bg: 'rgba(37, 99, 235, 0.1)' },
-            { border: '#d97706', bg: 'rgba(217, 119, 6, 0.1)' },
-            { border: '#dc2626', bg: 'rgba(220, 38, 38, 0.1)' }
-        ];
-        const color = colors[idx % colors.length];
-        
-        return {
-            label: col.header,
-            data: rows.map(r => parseFloat(r[col.index]) || 0),
-            borderColor: color.border,
-            backgroundColor: color.bg,
-            borderWidth: 2,
-            tension: 0.25,
-            fill: true,
-            pointRadius: 3
-        };
-    });
-
-    document.getElementById('chartDataPointsBadge').textContent = `${rows.length} Data Points Analyzed`;
-
-    currentChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: labels,
-            datasets: datasets
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            interaction: {
-                mode: 'index',
-                intersect: false
-            },
-            plugins: {
-                legend: { position: 'top', labels: { font: { family: 'JetBrains Mono', size: 11 } } },
-                tooltip: { backgroundColor: '#1e293b' }
-            },
-            scales: {
-                x: { grid: { color: '#f1f5f9' }, ticks: { font: { family: 'JetBrains Mono', size: 10 } } },
-                y: { grid: { color: '#f1f5f9' }, ticks: { font: { family: 'JetBrains Mono', size: 10 } } }
-            }
-        }
-    });
 }
 </script>
 {% endblock %}
