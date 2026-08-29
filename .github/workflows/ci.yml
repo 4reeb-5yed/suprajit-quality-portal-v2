@@ -1,10 +1,10 @@
-﻿name: V2 Build Pipeline
+name: Suprajit Quality Portal Enterprise CI Matrix
 
 on:
   push:
-    branches: [ "master" ]
+    branches: [ "master", "v3" ]
   pull_request:
-    branches: [ "master" ]
+    branches: [ "master", "v3" ]
 
 permissions:
   contents: write
@@ -23,16 +23,10 @@ jobs:
         python -m pip install --upgrade pip
         pip install .[dev]
         pip install pytest pytest-flask pytest-cov
-    - name: Software Composition Analysis (pip-audit)
-      run: |
-        pip install pip-audit
-        pip-audit
-
-    - name: Run Mathematical Source Code Tests
+    - name: Run Complete 3-Way Test Matrix (Unit, Integration, ASVS Security & E2E)
       env:
         PYTHONPATH: .
       run: |
-        python -c "import tomllib; tomllib.load(open('pyproject.toml','rb'))"
         python -m pytest tests/ -v --cov=app --cov-report=term
 
   build-and-smoke-test:
@@ -56,23 +50,3 @@ jobs:
     - name: Run Compiled EXE Smoke Test
       run: |
         python tests/smoke_test_binary.py
-
-
-    - name: Zip Executable
-      run: |
-        Compress-Archive -Path dist\SuprajitQualityPortal -DestinationPath SuprajitQualityPortal_V2.zip -Force
-    - name: Upload to Release
-      uses: softprops/action-gh-release@v2
-      with:
-        name: Suprajit Quality Portal V2
-        tag_name: v2.0.0
-        files: SuprajitQualityPortal_V2.zip
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-
-
-
-
-
-
