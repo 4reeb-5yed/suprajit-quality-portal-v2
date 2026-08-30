@@ -182,10 +182,20 @@ def add_folder_mapping():
 
 @admin_bp.route("/folder_mappings/delete", methods=["POST"])
 def delete_folder_mapping():
-    """Removes a folder mapping."""
+    """Removes a folder mapping and immediately resets customer ownership on associated reports."""
     mapping_id = request.form.get("mapping_id")
     if mapping_id:
+        row = g.db.execute(
+            "SELECT folder_path, customer_id FROM folder_mappings WHERE id = ?", (mapping_id,)
+        ).fetchone()
+        if row and row["folder_path"]:
+            normalized_folder = row["folder_path"].replace("/", "\\").rstrip("\\")
+            # Instantly unbind customer tag from reports in that folder
+            g.db.execute(
+                "UPDATE reports SET customer_id = NULL WHERE file_path LIKE ?",
+                (f"{normalized_folder}%",),
+            )
         g.db.execute("DELETE FROM folder_mappings WHERE id = ?", (mapping_id,))
         g.db.commit()
-        flash("Folder mapping removed.", "success")
+        flash("Folder mapping removed and reports reset to unassigned.", "success")
     return redirect(url_for("admin.settings"))
