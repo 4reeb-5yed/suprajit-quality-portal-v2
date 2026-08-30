@@ -218,10 +218,16 @@ def test_portal_search_results_metric_error_branch(client, app):
 @pytest.mark.live_external
 def test_portal_preview_pdf_real_generation_and_cached(client, app):
     """Test preview_pdf using real files, real LibreOffice conversion and caching."""
+    import shutil
+    soffice_available = (
+        os.path.exists(r"C:\Program Files\LibreOffice\program\soffice.exe")
+        or shutil.which("soffice") is not None
+    )
+    if not soffice_available:
+        pytest.skip("LibreOffice (soffice) not installed in current environment")
     storage = app.config["STORAGE_FOLDER"]
     sample_src = os.path.join(os.path.dirname(__file__), "sample_report.xlsx")
     target_fp = os.path.join(storage, "real_report_preview.xlsx")
-    import shutil
     shutil.copyfile(sample_src, target_fp)
 
     data_folder = app.config.get("DATA_FOLDER") or os.path.dirname(app.config["DATABASE_PATH"])
