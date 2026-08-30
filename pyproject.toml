@@ -21,9 +21,6 @@ dependencies = [
     "requests>=2.31.0",
 ]
 
-[project.scripts]
-suprajit-v2 = "suprajit_v2:main"
-
 [build-system]
 requires = ["uv_build>=0.12.3,<0.13.0"]
 build-backend = "uv_build"
