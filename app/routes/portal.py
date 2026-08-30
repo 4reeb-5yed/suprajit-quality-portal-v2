@@ -4,7 +4,7 @@ import time
 from flask import Blueprint, abort, current_app, g, render_template, request, send_file
 from flask_login import current_user, login_required
 
-from app.helpers import customer_scope, is_safe_path
+from app.helpers import customer_scope, is_safe_path, locate_report_file
 
 portal_bp = Blueprint("portal", __name__)
 
@@ -88,22 +88,44 @@ def download_report(report_id):
         abort(404)
 
     target_path = row["file_path"]
+    expected_hash = row["file_hash"] if "file_hash" in row.keys() else None
 
-    # SECURITY PATCH: Actually enforce is_safe_path
-    # Reports can be safely served from the local STORAGE_FOLDER or the designated root_search_path network share
+    # Collect search root directories
+    search_roots = [current_app.config["STORAGE_FOLDER"]]
     setting_row = g.db.execute("SELECT value FROM system_settings WHERE key = 'root_search_path'").fetchone()
-    root_search_path = setting_row["value"] if setting_row else ""
+    if setting_row and setting_row["value"]:
+        search_roots.extend([r.strip() for r in setting_row["value"].split(";") if r.strip()])
+    folder_mappings = g.db.execute("SELECT folder_path FROM folder_mappings").fetchall()
+    for fm in folder_mappings:
+        if fm["folder_path"]:
+            search_roots.append(fm["folder_path"].strip())
 
-    is_safe = is_safe_path(current_app.config["STORAGE_FOLDER"], target_path)
-    if not is_safe and root_search_path:
-        for single_root in [r.strip() for r in root_search_path.split(";") if r.strip()]:
-            if is_safe_path(single_root, target_path):
-                is_safe = True
-                break
+    # Security check: if direct path exists, verify is_safe_path
+    if os.path.exists(target_path):
+        is_safe = any(is_safe_path(root, target_path) for root in search_roots)
+        if not is_safe:
+            current_app.logger.error(f"Path Traversal Attempt Blocked: {target_path}")
+            abort(403)
+    else:
+        # If target_path is not within authorized search roots, block as traversal
+        is_safe = any(is_safe_path(root, target_path) for root in search_roots)
+        if not is_safe:
+            current_app.logger.error(f"Path Traversal Attempt Blocked: {target_path}")
+            abort(403)
 
-    if not is_safe:
-        current_app.logger.error(f"Path Traversal Attempt Blocked: {target_path}")
-        abort(403)
+        # Resolve active file location (supports moved/relocated files across watched roots)
+        resolved_path = locate_report_file(target_path, expected_hash, search_roots, row["original_filename"])
+        if not resolved_path:
+            abort(404)
+
+        if resolved_path != target_path:
+            try:
+                g.db.execute("UPDATE reports SET file_path = ? WHERE id = ?", (resolved_path, report_id))
+                g.db.commit()
+                current_app.logger.info(f"Relocated file updated in DB: {row['original_filename']} -> {resolved_path}")
+            except Exception as e:
+                current_app.logger.warning(f"Could not update relocated path in DB: {e}")
+            target_path = resolved_path
 
     if not os.path.exists(target_path):
         abort(404)
@@ -129,17 +151,44 @@ def raw_report(report_id):
         abort(404)
 
     target_path = row["file_path"]
+    expected_hash = row["file_hash"] if "file_hash" in row.keys() else None
+
+    # Collect search root directories
+    search_roots = [current_app.config["STORAGE_FOLDER"]]
     setting_row = g.db.execute("SELECT value FROM system_settings WHERE key = 'root_search_path'").fetchone()
-    root_search_path = setting_row["value"] if setting_row else ""
+    if setting_row and setting_row["value"]:
+        search_roots.extend([r.strip() for r in setting_row["value"].split(";") if r.strip()])
+    folder_mappings = g.db.execute("SELECT folder_path FROM folder_mappings").fetchall()
+    for fm in folder_mappings:
+        if fm["folder_path"]:
+            search_roots.append(fm["folder_path"].strip())
 
-    is_safe = is_safe_path(current_app.config["STORAGE_FOLDER"], target_path)
-    if not is_safe and root_search_path:
-        for single_root in [r.strip() for r in root_search_path.split(";") if r.strip()]:
-            if is_safe_path(single_root, target_path):
-                is_safe = True
-                break
+    # Security check: if direct path exists, verify is_safe_path
+    if os.path.exists(target_path):
+        is_safe = any(is_safe_path(root, target_path) for root in search_roots)
+        if not is_safe:
+            abort(404)
+    else:
+        # If target_path is not within authorized search roots, block
+        is_safe = any(is_safe_path(root, target_path) for root in search_roots)
+        if not is_safe:
+            abort(404)
 
-    if not is_safe or not os.path.exists(target_path):
+        # Resolve active file location (supports moved/relocated files across watched roots)
+        resolved_path = locate_report_file(target_path, expected_hash, search_roots, row["original_filename"])
+        if not resolved_path:
+            abort(404)
+
+        if resolved_path != target_path:
+            try:
+                g.db.execute("UPDATE reports SET file_path = ? WHERE id = ?", (resolved_path, report_id))
+                g.db.commit()
+                current_app.logger.info(f"Relocated file updated in DB: {row['original_filename']} -> {resolved_path}")
+            except Exception as e:
+                current_app.logger.warning(f"Could not update relocated path in DB: {e}")
+            target_path = resolved_path
+
+    if not os.path.exists(target_path):
         abort(404)
 
     g.db.execute(

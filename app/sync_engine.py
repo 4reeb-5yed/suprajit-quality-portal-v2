@@ -158,7 +158,10 @@ class SyncEngine:
             return 0
 
         insert_values = []
-        existing_hashes = {row[0] for row in conn.execute("SELECT file_hash FROM reports").fetchall()}
+        existing_hashes = {
+            row["file_hash"]: {"file_path": row["file_path"], "customer_id": row["customer_id"]}
+            for row in conn.execute("SELECT file_hash, file_path, customer_id FROM reports").fetchall()
+        }
         folder_mapping = self._get_folder_customer_mapping()
 
         custom_pattern = self._get_custom_pattern()
@@ -188,6 +191,15 @@ class SyncEngine:
 
                 file_hash = hash_file(filepath)
                 if file_hash in existing_hashes:
+                    # Relocation check: if file moved to a new folder, update the path in SQLite
+                    current_record = existing_hashes[file_hash]
+                    if current_record.get("file_path") != filepath:
+                        conn.execute(
+                            "UPDATE reports SET file_path = ?, customer_id = COALESCE(?, customer_id) WHERE file_hash = ?",
+                            (filepath, customer_id, file_hash),
+                        )
+                        conn.commit()
+                        logger.info(f"Updated relocated file path for hash {file_hash[:8]} -> {filepath}")
                     skipped += 1
                     continue
 

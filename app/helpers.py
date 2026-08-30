@@ -21,6 +21,36 @@ def is_safe_path(base_dir: str, target_path: str) -> bool:
     return target_path.startswith(base_dir + os.sep)
 
 
+def locate_report_file(stored_path: str, expected_hash: str | None, search_roots: list[str], original_filename: str = "") -> str | None:
+    """
+    Resolves a report file path. If stored_path exists, verifies and returns it.
+    If stored_path is missing (e.g. file was moved), searches configured search_roots
+    for a matching file with the identical SHA-256 hash.
+    """
+    # 1. Direct path check
+    if os.path.exists(stored_path):
+        return stored_path
+
+    # 2. Search candidate locations across search_roots
+    fname = original_filename or os.path.basename(stored_path)
+    for root in search_roots:
+        if not root or not os.path.exists(root):
+            continue
+        try:
+            for dirpath, _, filenames in os.walk(root):
+                if fname in filenames:
+                    candidate = os.path.join(dirpath, fname)
+                    if expected_hash:
+                        if hash_file(candidate) == expected_hash:
+                            return candidate
+                    else:
+                        return candidate
+        except Exception:
+            continue
+
+    return None
+
+
 def customer_scope(user):
     if user.is_admin:
         return "1=1", []
