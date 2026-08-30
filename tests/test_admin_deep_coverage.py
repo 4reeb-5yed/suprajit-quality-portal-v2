@@ -535,3 +535,29 @@ def test_admin_before_request_non_admin_and_bootstrap_trap(client, app):
     res_trap = client.get("/admin/", follow_redirects=False)
     assert res_trap.status_code == 302
     assert "/admin/setup" in res_trap.headers.get("Location", "")
+
+    # 4. Authenticate as bootstrap_admin when setup_completed IS '1' -> NOT trapped, proceeds to /admin/ (200)
+    with app.app_context():
+        conn = get_connection(app.config["DATABASE_PATH"])
+        conn.execute("INSERT OR REPLACE INTO system_settings (key, value) VALUES ('setup_completed', '1')")
+        conn.commit()
+        conn.close()
+
+    res_post_setup = client.get("/admin/")
+    assert res_post_setup.status_code == 200
+
+    # 5. User object lacking is_admin attribute (simulating raw user or custom mixin) -> 403 (kills mutant 7)
+    client.get("/logout", follow_redirects=True)
+    with app.app_context():
+        conn = get_connection(app.config["DATABASE_PATH"])
+        conn.execute(
+            "INSERT OR REPLACE INTO users (id, username, display_name, password_hash, role, is_active, access_mode) VALUES (57, 'no_role_user', 'No Role', ?, 'viewer', 1, 'ALL')",
+            (generate_password_hash("Password123!"),)
+        )
+        conn.commit()
+        conn.close()
+
+    client.post("/login", data={"username": "no_role_user", "password": "Password123!"}, follow_redirects=True)
+    from flask_login import current_user
+    res_no_admin = client.get("/admin/")
+    assert res_no_admin.status_code == 403
