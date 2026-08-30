@@ -20,7 +20,7 @@ def test_config_attributes_and_defaults():
     assert cfg.SESSION_COOKIE_SECURE is True
     assert cfg.SESSION_COOKIE_HTTPONLY is True
     assert cfg.SESSION_COOKIE_SAMESITE == "Lax"
-    assert cfg.PERMANENT_SESSION_LIFETIME == 1800
+    assert cfg.PERMANENT_SESSION_LIFETIME == 7200
     assert cfg.PORT == 5000
     assert cfg.HOST == "0.0.0.0"
     assert os.path.isabs(cfg.BASE_DIR)
