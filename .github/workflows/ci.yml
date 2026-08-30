@@ -69,10 +69,8 @@ jobs:
         pip install pytest pytest-cov openpyxl hypothesis allpairspy psutil
 
     - name: Run Unit & Integration Tests
-      env:
-        PYTHONPATH: .
-        SECRET_KEY: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
       run: |
+        export SECRET_KEY=$(python -c "import secrets; print(secrets.token_hex(32))")
         python -m pytest -c pytest.ini -m "unit or integration" -v --cov=app --cov-branch --cov-report=term
 
   e2e-and-live-gate:
@@ -103,17 +101,13 @@ jobs:
         python -m playwright install --with-deps chromium
 
     - name: Run E2E & Live External Test Suites
-      env:
-        PYTHONPATH: .
-        SECRET_KEY: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
       run: |
+        export SECRET_KEY=$(python -c "import secrets; print(secrets.token_hex(32))")
         python -m pytest -c pytest.ini -m "e2e or live_external" -v
 
     - name: Mutation Testing Quality Gate (admin.py & auth.py)
-      env:
-        PYTHONPATH: .
-        SECRET_KEY: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
       run: |
+        export SECRET_KEY=$(python -c "import secrets; print(secrets.token_hex(32))")
         python -m mutmut run 3 --runner "python -m pytest -c pytest.ini tests/test_admin_deep_coverage.py -k test_admin_before_request_non_admin_and_bootstrap_trap -q" --simple-output --no-progress || true
 
 
