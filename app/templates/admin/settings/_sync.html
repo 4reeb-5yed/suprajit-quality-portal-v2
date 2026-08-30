@@ -1,0 +1,42 @@
+<!-- 1. Automated Ingestion Schedule -->
+<div class="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden flex flex-col justify-between">
+    <div>
+        <div class="p-5 border-b border-gray-200 bg-gray-50">
+            <h2 class="text-base font-bold text-gray-900 flex items-center gap-2">
+                <i class="fa-solid fa-clock text-blue-600"></i>
+                Ingestion Schedule
+            </h2>
+            <p class="text-xs text-gray-500 mt-1">Automatic recurring background sync.</p>
+        </div>
+        <div class="p-6 space-y-4">
+            <form id="scheduleForm" method="POST" action="{{ url_for('admin.settings') }}" class="space-y-4">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                
+                <div class="form-control">
+                    <label class="label py-1"><span class="label-text text-sm font-bold text-gray-800">Daily Sync Time (24h)</span></label>
+                    <input type="time" name="sync_time" value="{{ sync_time }}" required class="input input-bordered w-full font-mono text-sm" />
+                </div>
+
+                <div class="form-control">
+                    <label class="label py-1"><span class="label-text text-sm font-bold text-gray-800">Global Root Directories</span></label>
+                    <textarea name="root_search_path" rows="3" required class="textarea textarea-bordered w-full font-mono text-xs leading-relaxed" placeholder="e.g. Z:\Suprajit\Test Reports; D:\Reports">{{ root_search_path }}</textarea>
+                    <label class="label py-0.5"><span class="label-text-alt text-gray-400 text-xs">Separate paths with a semicolon (;)</span></label>
+                </div>
+
+                <div class="form-control">
+                    <div class="flex justify-between items-center">
+                        <label class="label py-1"><span class="label-text text-sm font-bold text-gray-800">Filename Regex Pattern</span></label>
+                        <button type="button" class="text-[11px] text-blue-600 hover:underline font-semibold" onclick="document.getElementById('regexInput').value='{{ default_regex_pattern }}'">Reset Default</button>
+                    </div>
+                    <input type="text" id="regexInput" name="filename_regex_pattern" value="{{ filename_regex_pattern }}" required class="input input-bordered w-full font-mono text-xs" />
+                    <label class="label py-0.5"><span class="label-text-alt text-gray-400 text-[11px]">Must capture 4 groups: (1) Recipe, (2) Date, (3) Time, (4) Serial.</span></label>
+                </div>
+            </form>
+        </div>
+    </div>
+    <div class="p-4 bg-gray-50 border-t border-gray-100 flex justify-end">
+        <button type="submit" form="scheduleForm" class="btn btn-primary suprajit-blue-bg border-none text-white font-bold text-xs px-4 shadow">
+            <i class="fa-solid fa-save mr-1.5"></i> Save Ingestion Config
+        </button>
+    </div>
+</div>

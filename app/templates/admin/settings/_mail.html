@@ -1,0 +1,82 @@
+<!-- 2. SMTP Sender Configuration -->
+<div class="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden flex flex-col justify-between">
+    <div>
+        <div class="p-5 border-b border-gray-200 bg-gray-50">
+            <h2 class="text-base font-bold text-gray-900 flex items-center gap-2">
+                <i class="fa-solid fa-paper-plane text-blue-600"></i>
+                Sender Email (SMTP)
+            </h2>
+            <p class="text-xs text-gray-500 mt-1">Outgoing credentials for system emails.</p>
+        </div>
+        <div class="p-6 space-y-4">
+            <form id="smtpForm" method="POST" action="{{ url_for('admin.settings') }}" class="space-y-4">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                
+                <div class="grid grid-cols-3 gap-2">
+                    <div class="form-control col-span-2">
+                        <label class="label py-1"><span class="label-text text-sm font-bold text-gray-800">SMTP Server</span></label>
+                        <input type="text" name="mail_server" value="{{ mail_server }}" placeholder="smtp.gmail.com" class="input input-bordered w-full text-sm" />
+                    </div>
+                    <div class="form-control">
+                        <label class="label py-1"><span class="label-text text-sm font-bold text-gray-800">Port</span></label>
+                        <input type="number" name="mail_port" value="{{ mail_port }}" placeholder="587" class="input input-bordered w-full font-mono text-sm" />
+                    </div>
+                </div>
+
+                <div class="form-control">
+                    <label class="label py-1"><span class="label-text text-sm font-bold text-gray-800">Sender Email</span></label>
+                    <input type="email" name="mail_username" value="{{ mail_username }}" placeholder="factory@gmail.com" class="input input-bordered w-full text-sm" />
+                </div>
+
+                <div class="form-control">
+                    <label class="label py-1"><span class="label-text text-sm font-bold text-gray-800">App Password</span></label>
+                    <input type="password" name="mail_password" placeholder="{% if has_mail_password %}•••••••• (Saved){% else %}App Password{% endif %}" class="input input-bordered w-full text-sm" />
+                </div>
+            </form>
+        </div>
+    </div>
+    <div class="p-4 bg-gray-50 border-t border-gray-100 flex justify-end">
+        <button type="submit" form="smtpForm" class="btn btn-primary suprajit-blue-bg border-none text-white font-bold text-xs px-4 shadow">
+            <i class="fa-solid fa-save mr-1.5"></i> Save SMTP
+        </button>
+    </div>
+</div>
+
+<!-- 3. Developer Alerts & Telemetry -->
+<div class="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden flex flex-col justify-between">
+    <div>
+        <div class="p-5 border-b border-gray-200 bg-gray-50">
+            <h2 class="text-base font-bold text-gray-900 flex items-center gap-2">
+                <i class="fa-solid fa-bell text-blue-600"></i>
+                Developer Alerts
+            </h2>
+            <p class="text-xs text-gray-500 mt-1">Health monitoring and error telemetry.</p>
+        </div>
+        <div class="p-6 space-y-4">
+            <form id="telemetryForm" method="POST" action="{{ url_for('admin.settings') }}" class="space-y-4">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                
+                <div class="form-control">
+                    <label class="label py-1"><span class="label-text text-sm font-bold text-gray-800">Developer Alert Email</span></label>
+                    <input type="text" name="developer_email" value="{{ developer_email }}" class="input input-bordered w-full text-sm" placeholder="admin@canspirit.com" />
+                    <label class="label py-1"><span class="label-text-alt text-gray-400 text-xs">Receives critical error dumps & health audits.</span></label>
+                </div>
+
+                <div class="form-control">
+                    <label class="label py-1"><span class="label-text text-sm font-bold text-gray-800">Heartbeat Frequency</span></label>
+                    <select name="telemetry_frequency" class="select select-bordered w-full text-sm">
+                        <option value="daily" {% if telemetry_frequency == 'daily' %}selected{% endif %}>Daily Heartbeat</option>
+                        <option value="weekly" {% if telemetry_frequency == 'weekly' %}selected{% endif %}>Weekly Heartbeat</option>
+                        <option value="monthly" {% if telemetry_frequency == 'monthly' %}selected{% endif %}>Monthly Heartbeat</option>
+                        <option value="errors_only" {% if telemetry_frequency == 'errors_only' %}selected{% endif %}>Critical Errors Only</option>
+                    </select>
+                </div>
+            </form>
+        </div>
+    </div>
+    <div class="p-4 bg-gray-50 border-t border-gray-100 flex justify-end">
+        <button type="submit" form="telemetryForm" class="btn btn-primary suprajit-blue-bg border-none text-white font-bold text-xs px-4 shadow">
+            <i class="fa-solid fa-save mr-1.5"></i> Save Alerts
+        </button>
+    </div>
+</div>

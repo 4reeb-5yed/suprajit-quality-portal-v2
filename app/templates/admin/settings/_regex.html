@@ -1,0 +1,66 @@
+<!-- 6. Configurable Corporate Email Templates -->
+<div class="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
+    <div class="p-5 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
+        <div>
+            <h2 class="text-base font-bold text-gray-900 flex items-center gap-2">
+                <i class="fa-solid fa-envelope-open-text text-blue-600"></i>
+                Corporate Email Templates
+            </h2>
+            <p class="text-xs text-gray-500 mt-1">Customize the exact email text, instructions, and placeholder tags sent to users.</p>
+        </div>
+    </div>
+    <div class="p-6">
+        <form id="templateForm" method="POST" action="{{ url_for('admin.settings') }}" class="space-y-6">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Bulk Onboarding Invitation Template -->
+                <div class="border border-gray-200 rounded p-4 bg-gray-50 flex flex-col justify-between space-y-3">
+                    <div>
+                        <span class="font-bold text-sm text-gray-800 flex items-center gap-1.5 mb-1">
+                            <i class="fa-solid fa-user-plus text-blue-600"></i> Team Invite Template
+                        </span>
+                        <p class="text-[11px] text-gray-500 mb-2">Used during CSV bulk import & client user invitations.</p>
+                        <textarea name="template_invite_email" rows="12" class="textarea textarea-bordered w-full font-mono text-xs leading-relaxed">{{ template_invite_email }}</textarea>
+                    </div>
+                    <div class="text-[10px] text-gray-400">
+                        Available Tags: <code>{portal_url}</code>, <code>{username}</code>, <code>{temporary_password}</code>, <code>{company_name}</code>, <code>{company_tag}</code>
+                    </div>
+                </div>
+
+                <!-- Welcome Email Template -->
+                <div class="border border-gray-200 rounded p-4 bg-gray-50 flex flex-col justify-between space-y-3">
+                    <div>
+                        <span class="font-bold text-sm text-gray-800 flex items-center gap-1.5 mb-1">
+                            <i class="fa-solid fa-door-open text-emerald-600"></i> Welcome Email Template
+                        </span>
+                        <p class="text-[11px] text-gray-500 mb-2">Used when single user accounts are manually created.</p>
+                        <textarea name="template_welcome_email" rows="12" class="textarea textarea-bordered w-full font-mono text-xs leading-relaxed">{{ template_welcome_email }}</textarea>
+                    </div>
+                    <div class="text-[10px] text-gray-400">
+                        Available Tags: <code>{portal_url}</code>, <code>{username}</code>, <code>{temporary_password}</code>
+                    </div>
+                </div>
+
+                <!-- Password Reset Template -->
+                <div class="border border-gray-200 rounded p-4 bg-gray-50 flex flex-col justify-between space-y-3">
+                    <div>
+                        <span class="font-bold text-sm text-gray-800 flex items-center gap-1.5 mb-1">
+                            <i class="fa-solid fa-key text-amber-600"></i> Password Reset Template
+                        </span>
+                        <p class="text-[11px] text-gray-500 mb-2">Used when a user requests a secure password reset link.</p>
+                        <textarea name="template_reset_password" rows="12" class="textarea textarea-bordered w-full font-mono text-xs leading-relaxed">{{ template_reset_password }}</textarea>
+                    </div>
+                    <div class="text-[10px] text-gray-400">
+                        Available Tags: <code>{reset_url}</code>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+    <div class="p-4 bg-gray-50 border-t border-gray-100 flex justify-end">
+        <button type="submit" form="templateForm" class="btn btn-primary suprajit-blue-bg border-none text-white font-bold text-xs px-4 shadow">
+            <i class="fa-solid fa-save mr-1.5"></i> Save Email Templates
+        </button>
+    </div>
+</div>
