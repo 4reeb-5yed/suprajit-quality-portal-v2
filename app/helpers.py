@@ -57,12 +57,12 @@ def customer_scope(user):
     if user.is_admin:
         return "1=1", []
 
-    # Standard access: match customer_id or unassigned reports, strictly scoped to authorized recipes
+    # Standard access: reports.customer_id must match user's customer_id, and recipe_name must be in customer_recipes
     if getattr(user, "access_mode", "ALL") == "CUSTOM":
-        where = "(customer_id = ? OR customer_id IS NULL) AND recipe_name IN (SELECT recipe_name FROM user_recipes WHERE user_id = ?)"
+        where = "customer_id = ? AND recipe_name IN (SELECT recipe_name FROM user_recipes WHERE user_id = ?)"
         params = [user.customer_id, int(user.id)]
     else:
-        where = "(customer_id = ? OR customer_id IS NULL) AND recipe_name IN (SELECT recipe_name FROM customer_recipes WHERE customer_id = ?)"
+        where = "customer_id = ? AND recipe_name IN (SELECT recipe_name FROM customer_recipes WHERE customer_id = ?)"
         params = [user.customer_id, user.customer_id]
 
     return where, params
