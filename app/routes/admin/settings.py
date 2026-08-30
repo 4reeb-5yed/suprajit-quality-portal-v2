@@ -31,10 +31,11 @@ def settings():
         dev_email = request.form.get("developer_email")
         tel_freq = request.form.get("telemetry_frequency")
 
-        # Filename Regex Pattern (supports single or multiple newline-separated patterns)
+        # Filename Pattern / Regex (supports friendly templates like {RECIPE}_{DATE}_{TIME}_{SERIAL}.xlsx or raw regex)
         regex_pattern = request.form.get("filename_regex_pattern")
         if regex_pattern is not None:
-            # Validate each non-empty regex pattern line before saving
+            from app.parser import template_to_regex
+
             lines = [
                 line.strip()
                 for line in regex_pattern.strip().splitlines()
@@ -42,8 +43,9 @@ def settings():
             ]
             syntax_errors = []
             for line in lines:
+                conv_regex = template_to_regex(line)
                 try:
-                    re.compile(line)
+                    re.compile(conv_regex)
                 except re.error as e:
                     syntax_errors.append(f"'{line}': {e}")
 

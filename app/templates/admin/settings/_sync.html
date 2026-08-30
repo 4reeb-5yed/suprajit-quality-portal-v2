@@ -25,11 +25,32 @@
 
                 <div class="form-control">
                     <div class="flex justify-between items-center">
-                        <label class="label py-1"><span class="label-text text-sm font-bold text-gray-800">Filename Regex Pattern</span></label>
-                        <button type="button" class="text-[11px] text-blue-600 hover:underline font-semibold" onclick="document.getElementById('regexInput').value='{{ default_regex_pattern }}'">Reset Default</button>
+                        <label class="label py-1"><span class="label-text text-sm font-bold text-gray-800">Filename Pattern / Regex</span></label>
+                        <button type="button" class="text-[11px] text-blue-600 hover:underline font-semibold" onclick="document.getElementById('regexInput').value='{RECIPE}_{DATE}_{TIME}_{SERIAL}.xlsx'">Use Standard Template</button>
                     </div>
-                    <input type="text" id="regexInput" name="filename_regex_pattern" value="{{ filename_regex_pattern }}" required class="input input-bordered w-full font-mono text-xs" />
-                    <label class="label py-0.5"><span class="label-text-alt text-gray-400 text-[11px]">Must capture 4 groups: (1) Recipe, (2) Date, (3) Time, (4) Serial.</span></label>
+                    
+                    <!-- Quick Tag Inserts -->
+                    <div class="flex flex-wrap gap-1.5 mb-2">
+                        <span class="text-[11px] text-gray-500 font-semibold self-center mr-1">Insert Tag:</span>
+                        <button type="button" class="btn btn-xs btn-outline text-blue-700 font-mono py-0 h-6" onclick="insertPatternTag('{RECIPE}')">+ {RECIPE}</button>
+                        <button type="button" class="btn btn-xs btn-outline text-emerald-700 font-mono py-0 h-6" onclick="insertPatternTag('{DATE}')">+ {DATE}</button>
+                        <button type="button" class="btn btn-xs btn-outline text-purple-700 font-mono py-0 h-6" onclick="insertPatternTag('{TIME}')">+ {TIME}</button>
+                        <button type="button" class="btn btn-xs btn-outline text-amber-700 font-mono py-0 h-6" onclick="insertPatternTag('{SERIAL}')">+ {SERIAL}</button>
+                    </div>
+
+                    <textarea id="regexInput" name="filename_regex_pattern" rows="3" required class="textarea textarea-bordered w-full font-mono text-xs leading-relaxed" placeholder="e.g. {RECIPE}_{DATE}_{TIME}_{SERIAL}.xlsx" oninput="testPatternLive()">{{ filename_regex_pattern }}</textarea>
+                    
+                    <!-- Live Interactive Tester -->
+                    <div class="mt-2 p-3 bg-slate-50 border border-gray-200 rounded text-xs space-y-2">
+                        <div class="flex justify-between items-center">
+                            <span class="font-bold text-gray-700"><i class="fa-solid fa-flask text-blue-600 mr-1"></i> Live Pattern Tester</span>
+                            <span id="patternStatusBadge" class="badge badge-xs badge-success text-white font-semibold">Valid</span>
+                        </div>
+                        <input type="text" id="sampleFilenameInput" placeholder="Test with sample filename (e.g. CLUTCH_28-08-2026_14.30.00_0012.xlsx)" value="CLUTCH_CABLE_28-08-2026_14.30.00_0012.xlsx" class="input input-xs input-bordered w-full font-mono" oninput="testPatternLive()" />
+                        <div id="testResultBox" class="text-[11px] font-mono text-slate-700 p-2 bg-white rounded border border-gray-200">
+                            <!-- Populated dynamically via JS -->
+                        </div>
+                    </div>
                 </div>
             </form>
         </div>
@@ -40,3 +61,89 @@
         </button>
     </div>
 </div>
+
+<script>
+function insertPatternTag(tag) {
+    const area = document.getElementById('regexInput');
+    if (!area) return;
+    const start = area.selectionStart;
+    const end = area.selectionEnd;
+    const text = area.value;
+    area.value = text.substring(0, start) + tag + text.substring(end);
+    area.focus();
+    area.selectionStart = area.selectionEnd = start + tag.length;
+    testPatternLive();
+}
+
+function testPatternLive() {
+    const patternText = document.getElementById('regexInput').value.trim();
+    const sample = document.getElementById('sampleFilenameInput').value.trim();
+    const badge = document.getElementById('patternStatusBadge');
+    const resultBox = document.getElementById('testResultBox');
+    
+    if (!patternText || !sample) {
+        resultBox.innerHTML = '<span class="text-gray-400 italic">Enter pattern and sample filename to test...</span>';
+        return;
+    }
+
+    // Translate templates in JS for client-side preview
+    const lines = patternText.split('\n').map(l => l.trim()).filter(l => l && !l.startsWith('#'));
+    let matched = false;
+    let extracted = null;
+
+    for (let line of lines) {
+        let regexStr = line;
+        if (!regexStr.startsWith('^') && !regexStr.includes('(?') && !regexStr.includes('\\d')) {
+            const hasAll = ['{RECIPE}', '{DATE}', '{TIME}', '{SERIAL}'].every(t => line.toUpperCase().includes(t));
+            if (hasAll) {
+                let escaped = line
+                    .replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')
+                    .replace(/\\\{RECIPE\\\}/gi, '(.+?)')
+                    .replace(/\\\{DATE\\\}/gi, '(\\d{2,4}[-\\/]\\d{2}[-\\/]\\d{2,4})')
+                    .replace(/\\\{TIME\\\}/gi, '(\\d{2}\\.\\d{2}\\.\\d{2})')
+                    .replace(/\\\{SERIAL\\\}/gi, '([a-zA-Z0-9_-]+?)')
+                    .replace(/\\\.(xlsx|xls|xlsm|csv)$/i, '(?:\\s*\\(\\d+\\)|\\s*-\\s*Copy)*\\.(?:xlsx|xls|xlsm|csv)');
+                regexStr = '^' + escaped + '$';
+            }
+        }
+
+        try {
+            const regex = new RegExp(regexStr, 'i');
+            const match = sample.match(regex);
+            if (match && match.length >= 5) {
+                matched = true;
+                extracted = {
+                    recipe: match[1],
+                    date: match[2],
+                    time: match[3],
+                    serial: match[4]
+                };
+                break;
+            }
+        } catch (e) {
+            badge.className = 'badge badge-xs badge-error text-white font-semibold';
+            badge.textContent = 'Syntax Error';
+            resultBox.innerHTML = `<span class="text-red-600 font-bold">Error: ${e.message}</span>`;
+            return;
+        }
+    }
+
+    if (matched && extracted) {
+        badge.className = 'badge badge-xs badge-success text-white font-semibold';
+        badge.textContent = 'Match Found ✓';
+        resultBox.innerHTML = `
+            <div class="grid grid-cols-2 gap-1.5 text-[11px]">
+                <div><span class="text-gray-400">Recipe:</span> <strong class="text-blue-700">${extracted.recipe}</strong></div>
+                <div><span class="text-gray-400">Date:</span> <strong class="text-emerald-700">${extracted.date}</strong></div>
+                <div><span class="text-gray-400">Time:</span> <strong class="text-purple-700">${extracted.time}</strong></div>
+                <div><span class="text-gray-400">Serial:</span> <strong class="text-amber-700">${extracted.serial}</strong></div>
+            </div>
+        `;
+    } else {
+        badge.className = 'badge badge-xs badge-warning text-gray-900 font-semibold';
+        badge.textContent = 'No Match';
+        resultBox.innerHTML = '<span class="text-amber-700 italic">Sample filename does not match pattern.</span>';
+    }
+}
+document.addEventListener('DOMContentLoaded', testPatternLive);
+</script>

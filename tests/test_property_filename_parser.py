@@ -143,3 +143,36 @@ def test_multi_pattern_filename_parsing():
     res3 = parse_filename("unrelated_garbage_file.txt", custom_pattern=multiline_pattern)
     assert res3 is None
 
+
+def test_friendly_template_parsing():
+    """Verifies that human-readable templates {RECIPE}_{DATE}_{TIME}_{SERIAL}.xlsx work identically."""
+    friendly_templates = """
+    # Standard template
+    {RECIPE}_{DATE}_{TIME}_{SERIAL}.xlsx
+    # Hyphenated format
+    {RECIPE}-{DATE}-{TIME}-{SERIAL}.csv
+    # Prefixed format
+    QC_{SERIAL}_{RECIPE}_{DATE}_{TIME}.xlsx
+    """
+
+    res1 = parse_filename("THROTTLE_V1_25-08-2026_10.30.00_0042.xlsx", custom_pattern=friendly_templates)
+    assert res1 is not None
+    assert res1["recipe_name"] == "THROTTLE_V1"
+    assert res1["report_date"] == "2026-08-25"
+    assert res1["report_time"] == "10:30:00"
+    assert res1["serial_normalized"] == "0042"
+
+    res2 = parse_filename("BRAKE_CABLE-2026-08-25-11.45.00-SN99.csv", custom_pattern=friendly_templates)
+    assert res2 is not None
+    assert res2["recipe_name"] == "BRAKE_CABLE"
+    assert res2["report_date"] == "2026-08-25"
+    assert res2["report_time"] == "11:45:00"
+    assert res2["serial_normalized"] == "SN99"
+
+    res3 = parse_filename("QC_501_SPEEDO_CABLE_25/08/2026_09.15.00.xlsx", custom_pattern=friendly_templates)
+    assert res3 is not None
+    assert res3["recipe_name"] == "SPEEDO_CABLE"
+    assert res3["report_date"] == "2026-08-25"
+    assert res3["serial_normalized"] == "0501"
+
+
