@@ -1,4 +1,4 @@
-﻿{% extends "base.html" %}
+{% extends "base.html" %}
 
 {% block content %}
 <div class="max-w-md mx-auto mt-12 mb-12">
@@ -13,18 +13,19 @@
             
             <div class="form-control">
                 <label class="label py-1"><span class="label-text font-semibold text-xs text-gray-700">Corporate Email Address</span></label>
-                <input type="email" name="email" placeholder="e.g. yourname@company.com" required class="input input-sm input-bordered w-full" />
+                <input type="email" id="regEmail" name="email" placeholder="e.g. yourname@company.com" required class="input input-sm input-bordered w-full" oninput="autoSuggestRegUsername()" />
                 <label class="label py-0.5"><span class="label-text-alt text-gray-400 text-[11px]">Must be your official organization email domain.</span></label>
             </div>
 
             <div class="form-control">
                 <label class="label py-1"><span class="label-text font-semibold text-xs text-gray-700">Full Name</span></label>
-                <input type="text" name="display_name" placeholder="e.g. Rahul Sharma" required class="input input-sm input-bordered w-full" />
+                <input type="text" id="regDisplayName" name="display_name" placeholder="e.g. Rahul Sharma" required class="input input-sm input-bordered w-full" />
             </div>
 
             <div class="form-control">
                 <label class="label py-1"><span class="label-text font-semibold text-xs text-gray-700">Desired Username</span></label>
-                <input type="text" name="username" placeholder="e.g. rahul_s" required class="input input-sm input-bordered w-full font-mono" />
+                <input type="text" id="regUsername" name="username" placeholder="e.g. rahul_s" required class="input input-sm input-bordered w-full font-mono" />
+                <label class="label py-0.5"><span class="label-text-alt text-gray-400 text-[11px]">Your company code prefix will be attached automatically.</span></label>
             </div>
 
             <div class="form-control">
@@ -42,4 +43,25 @@
         </form>
     </div>
 </div>
+
+<script>
+function autoSuggestRegUsername() {
+    const emailInput = document.getElementById('regEmail');
+    const usernameInput = document.getElementById('regUsername');
+    const nameInput = document.getElementById('regDisplayName');
+    
+    if (!emailInput || !usernameInput) return;
+    const email = emailInput.value.trim();
+    if (email.includes('@')) {
+        const parts = email.split('@');
+        const localPart = parts[0].toLowerCase().replace(/[^a-z0-9_-]/g, '_');
+        if (localPart && !usernameInput.value) {
+            usernameInput.value = localPart;
+        }
+        if (nameInput && !nameInput.value && localPart) {
+            nameInput.value = localPart.replace(/[._-]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        }
+    }
+}
+</script>
 {% endblock %}

@@ -236,10 +236,19 @@ def oauth_callback(provider):
         flash("Portal access for your organization is currently suspended.", "error")
         return redirect(url_for("auth.login"))
 
-    # Auto-create new user account
+    # Auto-create new user account with enforced company prefix
     import secrets
 
-    username = email.split("@")[0].lower()
+    clean_un = email.split("@")[0].lower()
+    clean_un = "".join(c for c in clean_un if c.isalnum() or c in ("_", "-"))
+    cust_prefix = matched_customer["id"]
+
+    if not clean_un.startswith(f"{cust_prefix}_"):
+        clean_un = clean_un.removeprefix(cust_prefix).lstrip("_-")
+        username = f"{cust_prefix}_{clean_un}"
+    else:
+        username = clean_un
+
     existing_un = g.db.execute("SELECT id FROM users WHERE username = ?", (username,)).fetchone()
     if existing_un:
         username = f"{username}_{secrets.token_hex(2)}"
@@ -357,6 +366,15 @@ def register():
         if matched_customer["portal_suspended"]:
             flash("Portal access for your organization is currently suspended.", "error")
             return render_template("auth/register.html")
+
+        # Enforce company prefix on username
+        cust_prefix = matched_customer["id"]
+        clean_un = "".join(c for c in username if c.isalnum() or c in ("_", "-"))
+        if not clean_un.startswith(f"{cust_prefix}_"):
+            clean_un = clean_un.removeprefix(cust_prefix).lstrip("_-")
+            username = f"{cust_prefix}_{clean_un}"
+        else:
+            username = clean_un
 
         # Check existing username or email
         existing = g.db.execute(

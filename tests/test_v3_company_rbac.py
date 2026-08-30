@@ -228,7 +228,7 @@ def test_reg_authorized_domain(v3_client, v3_app):
     assert b'Account created successfully' in res.data
     with v3_app.app_context():
         conn = get_connection(v3_app.config['DATABASE_PATH'])
-        u = conn.execute("SELECT customer_id FROM users WHERE username = 'anand_tvs'").fetchone()
+        u = conn.execute("SELECT customer_id FROM users WHERE username = 'tvs_anand_tvs'").fetchone()
         assert u['customer_id'] == 'tvs'
 
 def test_reg_secondary_domain(v3_client):
