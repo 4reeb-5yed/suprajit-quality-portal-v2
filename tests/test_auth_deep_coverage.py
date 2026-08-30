@@ -86,6 +86,29 @@ def test_auth_login_branches(client, app):
     assert res_adm.status_code == 302
     assert "/admin" in res_adm.headers.get("Location")
 
+    # Verify failed_attempts was reset to 0 upon successful login (kills mutant 989)
+    with app.app_context():
+        conn = get_connection(app.config["DATABASE_PATH"])
+        row = conn.execute("SELECT failed_attempts FROM users WHERE username = 'auth_admin'").fetchone()
+        assert row["failed_attempts"] == 0
+        conn.close()
+
+    client.get("/logout", follow_redirects=True)
+
+    # 6. Admin user in a suspended customer still logs in because role == 'admin' (kills mutant 976)
+    with app.app_context():
+        conn = get_connection(app.config["DATABASE_PATH"])
+        conn.execute(
+            "INSERT OR REPLACE INTO users (username, display_name, password_hash, role, customer_id, is_active) VALUES ('admin_in_susp', 'Admin In Susp', ?, 'admin', 'bajaj_susp', 1)",
+            (generate_password_hash("AdminPass123!"),)
+        )
+        conn.commit()
+        conn.close()
+
+    res_adm_susp = client.post("/login", data={"username": "admin_in_susp", "password": "AdminPass123!"}, follow_redirects=False)
+    assert res_adm_susp.status_code == 302
+    assert "/admin" in res_adm_susp.headers.get("Location")
+
     client.get("/logout", follow_redirects=True)
 
     res_comp = client.post("/login", data={"username": "auth_compadmin", "password": "CompPass123!"}, follow_redirects=False)

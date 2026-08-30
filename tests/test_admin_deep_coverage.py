@@ -59,22 +59,33 @@ def test_admin_setup_and_dashboard(client, app):
         "mail_password": "SMTPPassword123!",
         "developer_email": "devops@suprajit.com"
     }, follow_redirects=True)
-    assert res_valid.status_code == 200
+    # Setup POST exactly 8 character password boundary (kills mutants 46, 47)
+    res_eight = client.post("/admin/setup", data={
+        "new_password": "Eight12!",
+        "admin_email": "admin8@suprajit.com",
+        "mail_server": "smtp.eight.lan",
+        "mail_port": "587",
+        "mail_username": "alerts8@suprajit.com",
+        "mail_password": "SMTPPassword123!",
+        "developer_email": "dev8@suprajit.com"
+    }, follow_redirects=True)
+    assert res_eight.status_code == 200
 
-    # Verify settings stored
+    # Verify settings stored (kills mutants 40, 42, 44, 53, 55)
     with app.app_context():
         conn = get_connection(app.config["DATABASE_PATH"])
-        row = conn.execute("SELECT value FROM system_settings WHERE key = 'mail_server'").fetchone()
-        assert row["value"] == "smtp.internal.lan"
-        dev_row = conn.execute("SELECT value FROM system_settings WHERE key = 'developer_email'").fetchone()
-        assert dev_row["value"] == "devops@suprajit.com"
+        assert conn.execute("SELECT value FROM system_settings WHERE key = 'mail_port'").fetchone()["value"] == "587"
+        assert conn.execute("SELECT value FROM system_settings WHERE key = 'mail_username'").fetchone()["value"] == "alerts8@suprajit.com"
+        assert conn.execute("SELECT value FROM system_settings WHERE key = 'mail_password'").fetchone()["value"] is not None
+        assert conn.execute("SELECT value FROM system_settings WHERE key = 'developer_email'").fetchone()["value"] == "dev8@suprajit.com"
         assert conn.execute("SELECT value FROM system_settings WHERE key = 'setup_completed'").fetchone()["value"] == "1"
         conn.close()
 
-    # Dashboard view
+    # Dashboard view asserts counts are rendered (kills mutants 67, 70, 73)
     res_dash = client.get("/admin/")
     assert res_dash.status_code == 200
     assert b"superadmin" in res_dash.data or b"Dashboard" in res_dash.data
+    assert b"Active Users" in res_dash.data or b"users" in res_dash.data.lower()
 
 
 def test_admin_settings_post_and_invalid_regex(client, app):
@@ -111,14 +122,19 @@ def test_admin_settings_post_and_invalid_regex(client, app):
     }, follow_redirects=True)
     assert res_settings.status_code == 200
 
-    # Verify settings persisted in DB
+    # Verify all settings persisted in DB (kills mutants 134, 136, 138, 140, 141)
     with app.app_context():
         conn = get_connection(app.config["DATABASE_PATH"])
         assert conn.execute("SELECT value FROM system_settings WHERE key = 'sync_time'").fetchone()["value"] == "03:30"
+        assert conn.execute("SELECT value FROM system_settings WHERE key = 'root_search_path'").fetchone()["value"] == "C:\\FactoryData\\Reports"
+        assert conn.execute("SELECT value FROM system_settings WHERE key = 'mail_port'").fetchone()["value"] == "2525"
+        assert conn.execute("SELECT value FROM system_settings WHERE key = 'mail_username'").fetchone()["value"] == "system_admin"
         assert conn.execute("SELECT value FROM system_settings WHERE key = 'sso_google_enabled'").fetchone()["value"] == "1"
         assert conn.execute("SELECT value FROM system_settings WHERE key = 'sso_microsoft_enabled'").fetchone()["value"] == "0"
         assert conn.execute("SELECT value FROM system_settings WHERE key = 'public_portal_url'").fetchone()["value"] == "https://portal.suprajit.com"
-        assert "Welcome" in conn.execute("SELECT value FROM system_settings WHERE key = 'template_welcome_email'").fetchone()["value"]
+        assert conn.execute("SELECT value FROM system_settings WHERE key = 'template_welcome_email'").fetchone()["value"] == "Welcome {{username}}!"
+        assert conn.execute("SELECT value FROM system_settings WHERE key = 'template_invite_email'").fetchone()["value"] == "Join {{company_name}} portal!"
+        assert conn.execute("SELECT value FROM system_settings WHERE key = 'template_reset_password'").fetchone()["value"] == "Reset your token: {{reset_url}}"
         conn.close()
 
 

@@ -57,7 +57,7 @@ def setup():
             if m_prt:
                 g.db.execute(SET_SETTING, ("mail_port", m_prt))
             if m_usr:
-                g.db.execute(SET_SETTING, ("XXmail_usernameXX", m_usr))
+                g.db.execute(SET_SETTING, ("mail_username", m_usr))
             if m_pwd:
                 from app.helpers import encrypt_password
 
@@ -187,7 +187,7 @@ def settings():
         if new_storage:
             g.db.execute(SET_SETTING, ("root_search_path", new_storage))
         if m_srv is not None:
-            g.db.execute(SET_SETTING, ("XXmail_serverXX", m_srv))
+            g.db.execute(SET_SETTING, ("mail_server", m_srv))
         if m_prt is not None:
             g.db.execute(SET_SETTING, ("mail_port", m_prt))
         if m_usr is not None:
