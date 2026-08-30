@@ -1,92 +1,51 @@
-# Contributing to Suprajit Quality Portal (V3)
+# Contributing to Suprajit Quality Portal
 
-Thank you for contributing to the Suprajit Quality Portal! This guide details local setup, test execution, architectural conventions, and critical safety rules for maintainers and contributors.
+Thank you for contributing to the Suprajit Quality Portal. This document outlines how to propose changes, commit conventions, and code review expectations.
 
----
-
-## 1. Local Development Setup
-
-Follow the standard setup instructions from [README.md](README.md):
-
-1. **Clone the repository**:
-   ```bash
-   git clone https://github.com/4reeb-5yed/suprajit-quality-portal-v2.git
-   cd suprajit-quality-portal-v2
-   ```
-
-2. **Create and activate a virtual environment**:
-   ```bash
-   python -m venv .venv
-   # Windows:
-   .venv\Scripts\activate
-   # Linux/macOS:
-   # source .venv/bin/activate
-   ```
-
-3. **Install dependencies in editable development mode**:
-   ```bash
-   pip install -e ".[dev]"
-   python -m playwright install --with-deps chromium
-   ```
-
-4. **Launch development server**:
-   ```bash
-   python web_server.py
-   ```
+For local environment setup, testing commands, and linting instructions, please refer to [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md).
 
 ---
 
-## 2. Test Suite Tiers & Markers
+## 1. Proposing Changes & Branch Strategy
 
-The test suite uses custom pytest markers to separate fast feedback from live external operations. Please consult [tests/README.md](tests/README.md) for full execution commands, marker details, and environment prerequisites.
-
-- **Fast Tier (Unit + Integration)**: `pytest -m "unit or integration" -v`
-- **Live Tier (E2E + Live External)**: `pytest -m "e2e or live_external" -v`
-- **Complete Suite**: `pytest -v`
-
----
-
-## 3. Package Architecture: `app/routes/admin/`
-
-The admin subsystem is modularized into cohesive functional areas:
-
-- `app/routes/admin/__init__.py`: Defines the `admin_bp` blueprint, the `before_request` security guard (enforcing the bootstrap setup wizard trap), and registers sibling submodules.
-- `app/routes/admin/dashboard.py`: Top-level admin metrics dashboard, batch run history, and security/quality evidence metrics (`/evidence`).
-- `app/routes/admin/users.py`: Master admin user management, bulk CSV/text onboarding, user activation toggling, and user deletion.
-- `app/routes/admin/customers.py`: Client tenant CRUD, recipe grant/revocation, granular user recipe scopes (`ALL` vs `CUSTOM`), allowed auto-join domains, and customer suspension toggles.
-- `app/routes/admin/settings.py`: System-wide settings (ingestion schedule, storage paths, SMTP credentials, telemetry alerts, regex pattern configuration).
-- `app/routes/admin/sso.py`: Enterprise Single Sign-On configuration persistence (Google Workspace, Microsoft 365, GitHub OAuth credentials).
-- `app/routes/admin/tunnel.py`: Subprocess orchestration for Cloudflare Zero Trust tunnels (quick tunnels and named token-authenticated tunnels).
-- `app/routes/admin/diagnostics.py`: Live system log viewer, SQLite WAL database size telemetry, schema migration versioning display, and manual repair/sync tools.
+1. **Active Branches**:
+   - `master`: Production release branch.
+   - `v3`: Active development and refactoring branch for the V3 release series.
+2. **Branching Model**:
+   - Create a feature or bugfix branch from `v3`:
+     ```bash
+     git checkout -b fix/issue-description
+     ```
+3. **Submitting a Pull Request**:
+   - Open a pull request against the `v3` branch.
+   - Ensure all automated CI gates pass before requesting review.
 
 ---
 
-## 4. Known Gotchas & Coding Rules
+## 2. Commit Message Conventions
 
-### Rule A: File-Writing Encoding & BOM Prevention
-- **Never generate code files via shell scripts, PowerShell here-strings, or heredocs.** These mechanisms frequently introduce UTF-8 Byte Order Marks (BOM `\xef\xbb\xbf`) or corrupt tab/backtick characters (`\t`, ``` ` ```) due to shell variable interpolation.
-- Write files directly through standard editor tooling or Python's native `open(path, 'w', encoding='utf-8')`.
-- Always verify that written files start with valid content and not a BOM byte sequence.
+We adhere to [Conventional Commits](https://www.conventionalcommits.org/):
 
-### Rule B: Path Traversal Argument Order
-- When validating file paths with `is_safe_path()`, always pass `base_dir` first and `target_path` second:
-  ```python
-  # Correct:
-  is_safe_path(base_folder, requested_file_path)
+- `feat:` New features or functional additions.
+- `fix:` Bug fixes and security patches.
+- `refactor:` Code restructuring without behavior changes.
+- `build:` Build configuration, packaging, or dependency changes.
+- `docs:` Documentation additions or updates.
+- `test:` Test suite additions or refactoring.
+- `chore:` Maintenance tasks, CI updates, or housekeeping.
 
-  # Incorrect (Vulnerability / Bug):
-  # is_safe_path(requested_file_path, base_folder)
-  ```
+### Example:
+```text
+feat(auth): add Microsoft 365 OAuth 2.0 provider integration
+fix(parser): handle filenames with multiple space-delimited copy suffixes
+```
 
 ---
 
-## 5. Commit Message Conventions
+## 3. Code Review & Quality Expectations
 
-We follow [Conventional Commits](https://www.conventionalcommits.org/) for all contributions:
-
-- `feat:` New features or functional enhancements
-- `fix:` Bug fixes and security patches
-- `refactor:` Code restructuring without behavior changes
-- `docs:` Documentation additions or updates
-- `test:` New tests or test infrastructure refactoring
-- `chore:` Dependency bumps, CI/CD tweaks, or build configurations
+Every pull request is evaluated against:
+1. **Verification**: Zero regressions across all 170+ unit and integration tests.
+2. **Security Standards**: Parameterized database queries, strict tenancy isolation via `customer_scope()`, and path safety checks via `is_safe_path()`.
+3. **Static Analysis**: Zero errors reported by `ruff`, `mypy`, `bandit`, and `pip-audit`.
+4. **Documentation**: Updates to [`docs/API_ROUTES.md`](docs/API_ROUTES.md), [`docs/DATABASE_SCHEMA.md`](docs/DATABASE_SCHEMA.md), or [`docs/CONFIGURATION.md`](docs/CONFIGURATION.md) when routes, schemas, or config keys are modified.

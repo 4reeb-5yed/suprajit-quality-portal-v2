@@ -1,65 +1,74 @@
-# Factory IT & Production Deployment Guide (V3)
+# Factory Deployment & Operations Guide
 
-This guide is for the Systems Administrator deploying the standalone **Suprajit Quality Portal (V3)** on a factory server or plant PC.
+This guide details how to install, configure, and maintain the Suprajit Quality Portal on a factory Windows server or edge PC.
 
 ---
 
-## 💻 Server Prerequisites
+## 1. System Requirements & Prerequisites
+
 - **Operating System**: Windows Server 2016+, Windows 10/11 (64-bit).
-- **Network Requirements**: Local LAN access to the factory report directory.
-- **Port**: Local Port `5000` (internal only).
-- **Internet Exposure**: Zero incoming ports needed when using the integrated Cloudflare Zero Trust Tunnel.
+- **Network**: Local Area Network (LAN) access to factory quality output folders.
+- **Port**: Local Port `5000` (internal WSGI listener).
+- **Inbound Ports**: 0 inbound ports required when using Cloudflare Zero Trust Tunnels.
 
 ---
 
-## 🛠️ Step-by-Step Installation
+## 2. Installation via Standalone Distribution
 
-### Step 1: Extract Release Artifacts
-1. Download `SuprajitQualityPortal_V2.zip` from GitHub Releases or build via `.\build.bat`.
-2. Extract to a permanent drive directory (recommended: `C:\Program Files\SuprajitQualityPortal` or `Z:\SuprajitQualityPortal`).
+The compiled distribution requires no separate Python or database installation.
 
-### Step 2: Configure Environment (`.env`)
-1. Copy `.env.example` to `.env`.
-2. Open in Notepad and set your secret key and initial configuration:
-   ```ini
-   SECRET_KEY=generate_a_random_32_character_string
-   DATABASE_PATH=data/portal.db
-   STORAGE_FOLDER=data/storage
-   WATCHED_FOLDER=Z:\Factory_Quality_Outputs
-   ```
+1. **Extract Distribution Package**:
+   - Extract the compiled `SuprajitQualityPortal/` directory to a permanent path (e.g. `C:\Program Files\SuprajitQualityPortal` or `C:\SuprajitQualityPortal`).
 
-### Step 3: Install Windows Background Service (NSSM)
-To ensure the application starts automatically upon server reboot and auto-heals from crashes:
-1. Open PowerShell / Command Prompt as **Administrator**.
-2. Run:
-   ```cmd
-   .\install_service.bat
-   ```
-3. This registers the Windows Service `SuprajitQualityPortal` and opens local Port 5000 in Windows Defender Firewall.
+2. **Configure Environment (`.env`)**:
+   - Copy `.env.example` to `.env`:
+     ```ini
+     SECRET_KEY=generate_a_secure_random_string
+     PORT=5000
+     HOST=0.0.0.0
+     DATABASE_PATH=data/portal.db
+     STORAGE_FOLDER=storage/
+     ```
 
----
-
-## 🌐 Internet Exposure (Zero Open Inbound Ports)
-
-### Option A: Integrated 1-Click Cloudflare Tunnel (Recommended)
-1. Download `cloudflared.exe` (or place in system PATH).
-2. Login to the portal as `bootstrap_admin` &rarr; Go to **Admin &rarr; Settings &rarr; Cloudflare Tunnel Manager**.
-3. Choose either **Free Ephemeral Tunnel** or enter your **Named Cloudflare Zero Trust Token**.
-4. Click **Start Tunnel**.
-5. The portal is now immediately live over encrypted HTTPS with automatic DDoS mitigation.
-
-### Option B: On-Premise Reverse Proxy (IIS / NGINX)
-If using an internal enterprise load balancer:
-1. Bind your SSL certificate to your corporate domain (e.g. `quality.suprajit.com`).
-2. Set reverse proxy upstream to `http://127.0.0.1:5000`.
-3. Ensure the `X-Forwarded-For` and `X-Forwarded-Proto` headers are passed.
+3. **Install Background Windows Service (`install_service.bat`)**:
+   - Open Command Prompt or PowerShell as **Administrator**.
+   - Run:
+     ```cmd
+     install_service.bat
+     ```
+   - This script registers `SuprajitQualityPortal.exe` as a native Windows service via NSSM, configures automatic restart on reboot/crash, and opens port 5000 in Windows Defender Firewall.
 
 ---
 
-## 🔐 Initial Setup Wizard & Security Hardening
-1. Navigate to `http://localhost:5000` in your browser.
-2. The **Mandatory Setup Wizard** will force you to change the initial `admin123` password and register your administrator email.
-3. Configure your corporate SMTP server in **Admin &rarr; Settings** for transactional password reset and invite deliveries.
-4. Enter the **Watched Folder** containing plant Excel files.
-5. In **Admin &rarr; Repair & Diagnostics**, click **Dry Run** to verify metadata parsing against live factory files.
+## 3. Remote Access & Tunneling
 
+### Option A: Cloudflare Zero Trust Tunnel (Outbound Encrypted HTTPS)
+1. Ensure `cloudflared.exe` is placed in the project folder or system `PATH`.
+2. Navigate to **Admin &rarr; Settings &rarr; Cloudflare Tunnel Manager**.
+3. Choose either:
+   - **Quick Tunnel**: Starts a free, ephemeral `trycloudflare.com` tunnel.
+   - **Named Tunnel Token**: Enter your persistent Cloudflare Zero Trust Tunnel token.
+4. Click **Start Tunnel**. Outbound invitation emails and password reset links will automatically use the active public URL.
+
+### Option B: Local Network / Reverse Proxy (IIS / NGINX)
+- Configure an internal reverse proxy upstream to `http://127.0.0.1:5000`.
+- Ensure `X-Forwarded-For` and `X-Forwarded-Proto` headers are passed.
+
+---
+
+## 4. Backup & Disaster Recovery
+
+Because all application data and metadata are stored in SQLite:
+
+1. **Backup Procedure**:
+   - Copy the database file `data/portal.db` to a backup directory or network drive. Because SQLite is operating in WAL mode, ensure `data/portal.db-wal` and `data/portal.db-shm` are copied if active.
+2. **Restore Procedure**:
+   - Stop the Windows Service:
+     ```cmd
+     net stop SuprajitQualityPortal
+     ```
+   - Replace `data/portal.db` with the backup copy.
+   - Restart the Windows Service:
+     ```cmd
+     net start SuprajitQualityPortal
+     ```

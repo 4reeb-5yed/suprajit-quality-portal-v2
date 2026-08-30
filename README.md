@@ -1,98 +1,109 @@
-# Suprajit Quality Portal (V3 Enterprise Edition)
+# Suprajit Quality Portal
 
-A high-concurrency, multi-tenant Quality Report Indexing, In-Browser Spreadsheet Inspection, and Automated Ingestion System engineered for automotive and manufacturing environments.
-
-It autonomously indexes factory quality inspection reports (Excel `.xlsx` / `.csv`), parses metadata via configurable dynamic regex, isolates records across customer organizations with 3-tier Role-Based Access Control (RBAC), and serves a zero-overhead in-browser spreadsheet viewer and public internet portal.
+The Suprajit Quality Portal is an edge-deployed inspection report indexing, spreadsheet preview, and multi-tenant search system engineered for manufacturing and factory environments.
 
 ---
 
-## 🌟 Key Architecture & Capabilities
+## 1. Tech Stack
 
-### 1. 🛡️ 3-Tier Multi-Tenancy & Granular RBAC
-- **Master Admin (`bootstrap_admin`)**: Complete system authority, global customer provisioning, dynamic regex configuration, SMTP settings, SSO credentials, and native tunnel orchestration.
-- **Company Admin (`company_admin`)**: Delegated administrative portal for client companies (e.g. TVS, Mahindra, Tata). Manage internal team members, auto-join email domains, user activation toggles, and recipe assignment.
-- **Client Viewer (`customer_viewer`)**: Filtered search portal with granular recipe scopes (`ALL` vs `CUSTOM` user-assigned recipes) and instant tenant isolation.
-- **Instant Kill-Switch**: 1-click global customer suspension with live session termination.
-
-### 2. ⚡ Ingestion Engine & Dynamic Regex Parser
-- **N-1 Batch Ingestion**: Chronologically scans previous-day batches to mathematically avoid Windows OS file locks and partial network file copies.
-- **Dynamic Filename Regex Engine**: Configure and validate custom recipe, date, time, and serial number naming patterns live in the Admin UI without restarting the server.
-- **SHA-256 Deduplication & Integrity**: Cryptographic deduplication and zero-byte quarantine safeguards.
-
-### 3. 📊 In-Browser Excel Spreadsheet Viewer (Zero Server Overhead)
-- **Client-Side SheetJS WebAssembly Rendering**: In-browser preview for `.xlsx` and `.csv` files directly inside an interactive modal.
-- **Multi-Sheet Navigation**: Seamlessly navigate between workbook sheets without stressing backend CPU or memory.
-- **Forensic Audit Logging**: Every download and online view event is recorded in an immutable audit trail with client IP and timestamps.
-
-### 4. 🔑 Enterprise Single Sign-On (SSO / OAuth 2.0)
-- Out-of-the-box OAuth 2.0 integration for **Microsoft 365 / Outlook / Entra ID**, **Google Workspace**, and **GitHub**.
-- **Corporate Domain Auto-Join**: Users signing in via SSO or self-registering with verified company email domains (`@tvs.com`, `@mahindra.com`) are automatically assigned to their respective company organization.
-
-### 5. 🌐 Native Internet Tunneling & Configurable Notifications
-- **1-Click Cloudflare Zero Trust Tunnel Runner**: Native subprocess controller for instant, free public endpoints (`trycloudflare.com`) or custom corporate domain tunnel tokens.
-- **Public URL Resolution**: Automatically rewrites invitation and password reset links to use the public tunnel/domain URL.
-- **Configurable Email Templates**: Live editors for Team Invites, Single User Welcomes, and Password Reset emails with dynamic tags.
+| Component / Layer | Technology | Version Constraint / Dependency |
+| :--- | :--- | :--- |
+| **Web Framework** | Flask | `>=3.1.3` |
+| **WSGI Server** | Waitress | `>=3.0.2` |
+| **Database** | SQLite 3 (WAL mode) | Standard Library (`sqlite3`) |
+| **Authentication & Sessions** | Flask-Login, Authlib | `flask-login>=0.6.3`, `authlib>=1.7.0` |
+| **Rate Limiting & CSRF** | Flask-Limiter, Flask-WTF | `flask-limiter>=4.1.1`, `flask-wtf>=1.3.0` |
+| **Cryptography** | cryptography (Fernet AES-256) | `>=41.0.0` |
+| **Environment Configuration** | python-dotenv | `>=1.2.3` |
+| **Spreadsheet Viewer** | SheetJS (WebAssembly) | Client-side standalone bundle |
+| **Test Framework** | pytest, pytest-cov, Playwright | `pytest>=9.1.1`, `playwright>=1.40.0` |
+| **Static Analysis** | Ruff, Mypy, Bandit, Pip-Audit | `ruff>=0.1.0`, `mypy>=1.8.0`, `bandit>=1.7.0` |
 
 ---
 
-### 1. Clone & Setup Environment
+## 2. Key Features
+
+- **Multi-Tenant Scoping & 3-Tier RBAC**: Isolates quality reports across customer companies (`admin`, `company_admin`, `customer_viewer`) with granular recipe access (`ALL` vs `CUSTOM`).
+- **N-1 Batch Ingestion Engine**: Automatically indexes previous-calendar-day inspection reports to prevent Windows file lock contention and in-flight network copy errors.
+- **Dynamic Filename Metadata Extraction**: Configurable regex parser capturing recipe names, inspection timestamps, and serial numbers.
+- **Client-Side Spreadsheet Inspection**: In-browser preview for `.xlsx` and `.csv` inspection reports via SheetJS with multi-sheet tab navigation.
+- **Enterprise Single Sign-On (SSO)**: OAuth 2.0 / OIDC integrations for Google Workspace, Microsoft 365 / Entra ID, and GitHub with domain-based auto-join.
+- **Native Cloudflare Zero Trust Tunneling**: Subprocess-managed encrypted tunnels for public internet access with zero inbound open router ports.
+- **Forensic Audit Logging**: Immutable tracking of report downloads, views, and authentication attempts.
+
+---
+
+## 3. Project Structure
+
+```text
+app/
+  routes/
+    admin/           # Master admin management package (dashboard, users, customers, settings, sso, tunnel, diagnostics)
+    auth.py          # Session authentication, registration, OAuth callbacks, password resets
+    company.py       # Delegated company admin portal for user and recipe assignment
+    portal.py        # Report search interface, raw streaming, and file download
+  database.py        # Database connection, schema definition, and PRAGMA user_version migrations
+  sync_engine.py     # N-1 batch ingestion pipeline and file lock checks
+  parser.py          # Dynamic regex filename parser and token extractor
+  helpers.py         # Customer scoping, path safety validation, and Fernet encryption
+  oauth.py           # Authlib OAuth client registration and database settings loader
+  mail.py            # SMTP dispatch, token generation, and email templates
+  scheduler.py       # Background daemon for nightly batch execution and zombie batch cleanup
+  tunnel_manager.py  # Subprocess orchestration for cloudflared tunnels
+  config.py          # Environment variable loader and security configurations
+  auth_models.py     # User session model for Flask-Login
+tests/               # Unit, integration, E2E (Playwright), and live external test suites
+docs/                # In-depth architectural and operational documentation
+```
+
+---
+
+## 4. Quickstart
+
+### Prerequisites
+- Python 3.10+ (Tested in CI against Python 3.13).
+
 ```bash
+# 1. Clone repository
 git clone https://github.com/4reeb-5yed/suprajit-quality-portal-v2.git
 cd suprajit-quality-portal-v2
+
+# 2. Set up virtual environment
 python -m venv .venv
+# On Windows: .venv\Scripts\activate
+# On Linux/macOS: source .venv/bin/activate
 
-# On Windows:
-.venv\Scripts\activate
-# On Linux/macOS:
-# source .venv/bin/activate
-
+# 3. Install dependencies
 pip install -e ".[dev]"
-playwright install chromium
-```
 
-### 2. Optional: In-Browser ONLYOFFICE WebAssembly / x2t Binaries
-The primary quality portal uses zero-overhead client-side SheetJS / PDF rendering for spreadsheet previews out-of-the-box. If using the optional standalone ONLYOFFICE WebAssembly / x2t conversion engine:
-1. Place the `onlyoffice/` build folder into `app/static/onlyoffice/`.
-2. Extract the `x2t` binary distribution into `app/static/x2t/`.
-
-### 3. Run Development Server
-```bash
+# 4. Run development server
 python web_server.py
 ```
-*Accessible at `http://localhost:5000`. Initial setup credentials: Username `bootstrap_admin`, Password `admin123`.*
+
+Open `http://localhost:5000` in your browser. Default initial credentials: Username `bootstrap_admin`, Password `admin123`.
 
 ---
 
-## 🧪 Comprehensive Enterprise Test Matrix
+## 5. Documentation Index
 
-The repository enforces a complete test matrix covering RBAC, tenant isolation, security boundaries, property tests, and Playwright browser E2E journeys:
-
-```bash
-# Run complete test suite with coverage
-python -m pytest tests/ -v --cov=app --cov-report=term
-```
-
-- **Tier 1 (Unit & Isolation)**: Regex parser engine, AES-256 Fernet cryptography, SHA-256 deduplication, path traversal defenses.
-- **Tier 2 (Multi-Tenant Integration & Security)**: OWASP ASVS isolation, 3-tier RBAC boundaries, SSO OAuth client registration, Cloudflare tunnel management.
-- **Tier 3 (End-to-End & Smoke Tests)**: Search filtering lifecycle, Excel raw stream endpoints, bulk onboarding, self-registration, and error recovery.
+| Document | Description |
+| :--- | :--- |
+| [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) | High-level architecture, request lifecycles, multi-tenancy model, and ADRs. |
+| [`docs/DATABASE_SCHEMA.md`](docs/DATABASE_SCHEMA.md) | Table catalogs, columns, indexes, FTS5 virtual tables, and `PRAGMA user_version` migrations. |
+| [`docs/API_ROUTES.md`](docs/API_ROUTES.md) | Complete catalog of all endpoints across `auth`, `portal`, `company`, and `admin` blueprints. |
+| [`docs/CONFIGURATION.md`](docs/CONFIGURATION.md) | Reference of all environment variables and `system_settings` key-value pairs. |
+| [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md) | Local developer environment, static analysis tools, test execution, and coding gotchas. |
+| [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) | Factory Windows server deployment, NSSM background service installation, and backups. |
+| [`docs/ADMIN_GUIDE.md`](docs/ADMIN_GUIDE.md) | Operations manual for master system administrators and customer company admins. |
+| [`docs/OAUTH_SETUP.md`](docs/OAUTH_SETUP.md) | Setup instructions for Google Workspace, Microsoft Entra ID, and GitHub OAuth 2.0. |
+| [`docs/RELEASING.md`](docs/RELEASING.md) | Versioning details, PyInstaller standalone binary compilation, and CI gate lifecycle. |
+| [`CONTRIBUTING.md`](CONTRIBUTING.md) | Contribution process, branching strategy, and Conventional Commits conventions. |
+| [`SECURITY.md`](SECURITY.md) | Threat mitigation matrix, transport layer requirements, and vulnerability reporting. |
+| [`tests/README.md`](tests/README.md) | Test suite markers (`unit`, `integration`, `e2e`, `live_external`) and execution commands. |
+| [`CHANGELOG.md`](CHANGELOG.md) | Chronological record of release features, fixes, and architectural enhancements. |
 
 ---
 
-## 📦 Production Executable (.exe) Compilation
+## 6. License & Contact
 
-Compile the standalone single-binary package using Waitress WSGI and PyInstaller:
-
-```cmd
-.\build.bat
-```
----
-
-## 📖 Complete Documentation Index
-- [Architecture & Design Records (ADR)](docs/ARCHITECTURE.md)
-- [Administrator & Operations Guide](docs/ADMIN_GUIDE.md)
-- [Factory IT Deployment Guide](docs/DEPLOYMENT.md)
-- [OWASP ASVS 2025 Hardening & Security Policy](SECURITY.md)
-- [System Internals & Database Schema](SYSTEM_INTERNALS.md)
-
-
-
+Maintained by the Suprajit Quality Engineering Team. Internal proprietary distribution for authorized automotive partners and factory plant sites.

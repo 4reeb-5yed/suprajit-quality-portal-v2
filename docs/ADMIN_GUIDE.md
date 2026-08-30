@@ -1,130 +1,61 @@
-# Enterprise Administrator & Operations Manual (V3)
+# Administrator Operations Guide
 
-This manual provides authoritative operational guidance for both **Master System Administrators** (`bootstrap_admin` / Suprajit Corporate IT) and **Customer Company Administrators** (`company_admin` e.g., TVS, Tata Motors, Mahindra).
+This guide provides operational instructions for Master Administrators (`admin`) and Company Administrators (`company_admin`).
 
 ---
 
-## 🏛️ 1. Multi-Tier Role Hierarchy & Permissions
+## 1. Role Hierarchy & Access Matrix
 
-| Functionality | Master Admin (`admin`) | Company Admin (`company_admin`) | Viewer (`customer_viewer`) |
+| Administrative Capability | Master Admin (`admin`) | Company Admin (`company_admin`) | Client Viewer (`customer_viewer`) |
 | :--- | :---: | :---: | :---: |
-| **System Settings & Search Root** | ✅ Full Access | ❌ Forbidden | ❌ Forbidden |
-| **Dynamic Filename Regex Engine** | ✅ Full Access | ❌ Forbidden | ❌ Forbidden |
-| **Cloudflare Tunnel Runner** | ✅ Full Access | ❌ Forbidden | ❌ Forbidden |
-| **OAuth 2.0 / SSO Configuration** | ✅ Full Access | ❌ Forbidden | ❌ Forbidden |
-| **Email Template Customization** | ✅ Full Access | ❌ Forbidden | ❌ Forbidden |
-| **Customer Global Suspension** | ✅ Full Access | ❌ Forbidden | ❌ Forbidden |
-| **Company Team Onboarding (Single & Bulk)**| ✅ Global | ✅ Own Company Only | ❌ Forbidden |
-| **Team Domain Whitelist (Auto-Join)**| ✅ Global | ✅ Own Company Only | ❌ Forbidden |
-| **User Recipe Access Mode (`ALL` vs `CUSTOM`)**| ✅ Global | ✅ Own Company Only | ❌ Forbidden |
-| **In-Browser Spreadsheet Viewer & Search**| ✅ Global Scopes | ✅ Own Recipes | ✅ Assigned Recipes |
-| **Forensic Audit Trail & Telemetry** | ✅ Global | ✅ Own Company Audit | ❌ Forbidden |
+| **System Settings & SMTP Configuration** | Full Access | Forbidden | Forbidden |
+| **Dynamic Filename Regex Engine** | Full Access | Forbidden | Forbidden |
+| **Cloudflare Tunnel Control** | Full Access | Forbidden | Forbidden |
+| **OAuth 2.0 / SSO Configuration** | Full Access | Forbidden | Forbidden |
+| **Email Template Editor** | Full Access | Forbidden | Forbidden |
+| **Global Customer Tenant Suspension** | Full Access | Forbidden | Forbidden |
+| **User Onboarding (Single & Bulk)** | Global (Any Company) | Own Company Only | Forbidden |
+| **Corporate Domain Whitelisting** | Global | Own Company Only | Forbidden |
+| **User Recipe Access Control (`ALL` vs `CUSTOM`)** | Global | Own Company Only | Forbidden |
+| **Spreadsheet Search & In-Browser Viewer** | Global Scopes | Own Company Recipes | Assigned Recipes |
+| **Forensic Audit Log Access** | Global | Own Company Audit | Forbidden |
 
 ---
 
-## ⚙️ 2. Dynamic Filename Regex Configuration (Master Admin)
+## 2. Master Admin Workflows
 
-The portal dynamically parses metadata from factory output files without opening them in Excel. System administrators can customize and test regex patterns live from **Admin &rarr; Settings &rarr; Custom Filename Parser**:
+### Initial Bootstrap Wizard (`/admin/setup`)
+Upon first deployment, the portal enforces a setup wizard requiring the default bootstrap credentials (`bootstrap_admin` / `admin123`) to be updated with a strong password and administrative recovery email.
 
-### Standard Named Regex Groups
-The parser matches against these capture group names:
-- `(?P<recipe>[a-zA-Z0-9_-]+)` &rarr; Product Recipe / Part family.
-- `(?P<year>\d{4})(?P<month>\d{2})(?P<day>\d{2})` &rarr; Inspection Date (ISO format or separated by delimiters).
-- `(?P<hour>\d{2})(?P<minute>\d{2})(?P<second>\d{2})` &rarr; Time of inspection.
-- `(?P<serial>[a-zA-Z0-9_-]+)` &rarr; Serial / Barcode identifier.
+### Dynamic Filename Regex Configuration
+Located under **Admin &rarr; Settings &rarr; Filename Regex Parser**:
+- Configures regular expressions to extract metadata tokens from incoming factory filenames.
+- Standard named capture groups:
+  - `(?P<recipe>...)`: Part / inspection recipe name.
+  - `(?P<year>\d{4})(?P<month>\d{2})(?P<day>\d{2})`: Inspection date.
+  - `(?P<hour>\d{2})(?P<minute>\d{2})(?P<second>\d{2})`: Inspection time.
+  - `(?P<serial>...)`: Serial or barcode number.
 
-### Live Testing & Fallback
-The Admin Settings dashboard includes an **Interactive Regex Tester**. Enter a sample filename (e.g. `BRAKE_CABLE_20260829_103045_SN98412_PASS.xlsx`) to see real-time parsing extraction before saving.
+### Monitored Folder Mappings
+Located under **Admin &rarr; Settings &rarr; Monitored Folders**:
+- Map specific server folders or network shares directly to customer tenants.
+- Files found in mapped folders are automatically associated with the assigned `customer_id`.
 
----
-
-## 🔑 3. Single Sign-On (SSO / OAuth 2.0) Integration
-
-The portal features turnkey enterprise authentication across three identity providers:
-
-### A. Microsoft 365 / Entra ID (Azure AD)
-1. Register an App Registration in the **Azure Portal**.
-2. Set Redirect URI to: `https://<YOUR_PUBLIC_DOMAIN>/auth/callback/microsoft`
-3. In **Admin &rarr; Settings &rarr; Single Sign-On**:
-   - Enable Microsoft SSO.
-   - Enter **Client ID**, **Client Secret**, and **Tenant ID** (or `common`).
-
-### B. Google Workspace
-1. Create OAuth Credentials in **Google Cloud Console**.
-2. Set Redirect URI to: `https://<YOUR_PUBLIC_DOMAIN>/auth/callback/google`
-3. Enter Client ID and Client Secret in Admin Settings.
-
-### C. GitHub Enterprise / Public
-1. Create OAuth App in GitHub Settings.
-2. Set Redirect URI to: `https://<YOUR_PUBLIC_DOMAIN>/auth/callback/github`
-3. Enter Client ID and Client Secret.
+### Diagnostic & Repair Utilities (`/admin/repair`)
+- **Dry Run Simulator**: Scans target folders and prints trace logs showing extracted metadata without inserting records into SQLite.
+- **Forced Date Sync**: Bypasses N-1 logic to ingest files for a specific historic date.
+- **Date Purge**: Safely deletes all records and files ingested for a specific target date.
 
 ---
 
-## 🌐 4. Cloudflare Zero Trust Native Tunnel Runner
+## 3. Company Admin Workflows (`/company/users`)
 
-Expose the internal server to the internet with zero open router ports and enterprise DDoS protection:
+Company administrators manage internal staff without access to global system settings:
 
-1. Navigate to **Admin &rarr; Settings &rarr; Cloudflare Tunnel Manager**.
-2. Select your mode:
-   - **Quick Free Tunnel (`trycloudflare.com`)**: Generates a free, instant HTTPS tunnel directly from the local `cloudflared` binary with one click.
-   - **Persistent Custom Domain Tunnel**: Paste your Cloudflare Zero Trust Named Tunnel Token (`ey...`).
-3. Click **"Start Cloudflare Tunnel"**.
-4. The system will launch a managed background process and automatically register the live public URL into `public_base_url`. All outgoing invitation emails and reset tokens will automatically link to this live HTTPS URL.
-
----
-
-## 📧 5. Configurable Email Templates
-
-Administrators can customize transactional notifications under **Admin &rarr; Settings &rarr; Email Templates**:
-
-### Available Templates:
-1. **User Welcome & Invitation**: Sent when a user is manually or bulk provisioned.
-2. **Password Reset**: Sent for self-service forgotten passwords.
-3. **Company Admin Notification**: Sent when a company admin account is created.
-
-### Supported Dynamic Variables:
-- `{{ user_name }}`: Display name of recipient.
-- `{{ company_name }}`: Associated organization name.
-- `{{ login_url }}`: Direct portal URL (resolved with public tunnel).
-- `{{ reset_url }}`: Secure single-use token link.
-- `{{ temp_password }}`: Temporary password (if auto-generated).
-
----
-
-## 👥 6. Company Admin Workflows (`/company/dashboard`)
-
-Company administrators have a dedicated, branded workspace to manage their internal staff:
-
-### A. Auto-Join Email Domains
-Configure corporate email domains (e.g. `tvs.in`, `tvs-motor.com`). Anyone registering on the public registration page with an `@tvs.in` email is automatically verified and joined to the TVS tenant organization.
-
-### B. Bulk User Provisioning
-Import multiple engineers simultaneously via CSV or multiline textarea:
-```text
-john.doe@tvs.in, John Doe, ALL
-jane.smith@tvs.in, Jane Smith, CUSTOM
-```
-
-### C. User Recipe Filtering (`ALL` vs `CUSTOM`)
-- **`ALL`**: User can view every recipe associated with the company.
-- **`CUSTOM`**: Restrict specific engineers or third-party auditors to only view designated recipes.
-
----
-
-## 📊 7. Zero-Overhead In-Browser Spreadsheet Viewer
-
-- When viewing search results, click **"View"** next to any record to open the full spreadsheet modal.
-- The browser downloads the raw binary via an isolated, authorized streaming endpoint (`/view-raw/<id>`) and renders the workbook via **SheetJS WebAssembly** entirely in the client browser.
-- **Zero Server CPU Overhead**: Complex formulas, sheets, and tables are parsed on the client machine.
-- Every view and download event is logged in the `audit_logs` table.
-
----
-
-## 🛠️ 8. Diagnostics & Repair Utilities
-
-Under **Admin &rarr; Repair & Diagnostics**:
-- **Dry-Run Trace Simulator**: Simulates indexing of the watched folder and prints a detailed execution log without writing to SQLite.
-- **Batch Date Purge**: Safely purges an entire day's corrupted ingestions in one transaction.
-- **Database Vacuum & Integrity Check**: Runs `PRAGMA integrity_check` and `VACUUM` to compact SQLite storage.
-- **Live System Telemetry**: View SQLite WAL cache status, memory usage, and background scheduler heartbeats.
+1. **Auto-Join Corporate Email Domains**:
+   - Add domain whitelists (e.g. `tvs.in`, `mahindra.com`). New users signing in via SSO or public registration with matching emails automatically join the company organization.
+2. **Bulk Team Provisioning**:
+   - Onboard multiple team members via CSV upload or multiline text box.
+3. **Recipe Permissions (`ALL` vs `CUSTOM`)**:
+   - Set user access mode to `ALL` to allow viewing all recipes granted to the company.
+   - Set to `CUSTOM` and select specific recipe checkboxes to restrict an individual user or contractor to a subset of recipes.
