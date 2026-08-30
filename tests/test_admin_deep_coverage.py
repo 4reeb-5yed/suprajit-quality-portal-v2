@@ -270,7 +270,7 @@ def test_admin_user_lifecycle_and_permissions(client, app):
 
     with app.app_context():
         conn = get_connection(app.config["DATABASE_PATH"])
-        user_row = conn.execute("SELECT * FROM users WHERE username = 'bajaj_lead'").fetchone()
+        user_row = conn.execute("SELECT * FROM users WHERE username = 'suprajit_bajaj_lead'").fetchone()
         assert user_row is not None
         uid = user_row["id"]
         conn.close()

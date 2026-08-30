@@ -379,18 +379,21 @@
             <input type="hidden" name="redirect_url" value="{{ url_for('admin.customer_detail', customer_id=customer.id) }}"/>
 
             <div class="form-control">
-                <label class="label font-bold text-gray-700"><span class="label-text">Username</span></label>
-                <input type="text" name="username" placeholder="e.g. {{ customer.id }}_viewer1" required class="input input-sm input-bordered w-full font-mono" />
+                <label class="label font-bold text-gray-700"><span class="label-text">Contact Email</span></label>
+                <input type="email" id="adminUserEmail" name="email" placeholder="e.g. rahul@{{ customer.id }}.com" class="input input-sm input-bordered w-full" oninput="autoSuggestAdminUsername('{{ customer.id }}')" />
+            </div>
+
+            <div class="form-control">
+                <label class="label font-bold text-gray-700 flex justify-between">
+                    <span class="label-text">Username</span>
+                    <span class="text-[11px] font-normal text-blue-600 font-mono">Prefix: {{ customer.id }}_</span>
+                </label>
+                <input type="text" id="adminUserUsername" name="username" placeholder="e.g. {{ customer.id }}_viewer1" required class="input input-sm input-bordered w-full font-mono" />
             </div>
 
             <div class="form-control">
                 <label class="label font-bold text-gray-700"><span class="label-text">Full Name / Display Name</span></label>
-                <input type="text" name="display_name" placeholder="e.g. Rahul Sharma" required class="input input-sm input-bordered w-full" />
-            </div>
-
-            <div class="form-control">
-                <label class="label font-bold text-gray-700"><span class="label-text">Contact Email</span></label>
-                <input type="email" name="email" placeholder="e.g. rahul@{{ customer.id }}.com" class="input input-sm input-bordered w-full" />
+                <input type="text" id="adminUserDisplayName" name="display_name" placeholder="e.g. Rahul Sharma" required class="input input-sm input-bordered w-full" />
             </div>
 
             <div class="form-control">
@@ -405,6 +408,26 @@
     </div>
     <form method="dialog" class="modal-backdrop"><button>close</button></form>
 </dialog>
+
+<script>
+function autoSuggestAdminUsername(companyId) {
+    const emailInput = document.getElementById('adminUserEmail');
+    const usernameInput = document.getElementById('adminUserUsername');
+    const nameInput = document.getElementById('adminUserDisplayName');
+    
+    if (!emailInput || !usernameInput) return;
+    const email = emailInput.value.trim();
+    if (email.includes('@')) {
+        const localPart = email.split('@')[0].toLowerCase().replace(/[^a-z0-9_-]/g, '_');
+        if (localPart) {
+            usernameInput.value = companyId + '_' + localPart;
+            if (nameInput && !nameInput.value) {
+                nameInput.value = localPart.replace(/[._-]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+            }
+        }
+    }
+}
+</script>
 
 <!-- Grant Recipe Modal -->
 <dialog id="grantRecipeModal" class="modal">

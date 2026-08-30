@@ -202,18 +202,21 @@
             </div>
             
             <div class="form-control">
-                <label class="label font-bold text-gray-700"><span class="label-text">Username</span></label>
-                <input type="text" name="username" placeholder="e.g. {{ customer.id }}_rahul" required class="input input-sm input-bordered w-full" />
+                <label class="label font-bold text-gray-700"><span class="label-text">Contact Email</span></label>
+                <input type="email" id="companyUserEmail" name="email" placeholder="e.g. rahul@{{ customer.id }}.com" required class="input input-sm input-bordered w-full" oninput="autoSuggestCompanyUsername('{{ customer.id }}')" />
+            </div>
+
+            <div class="form-control">
+                <label class="label font-bold text-gray-700 flex justify-between">
+                    <span class="label-text">Username</span>
+                    <span class="text-[11px] font-normal text-blue-600 font-mono">Prefix: {{ customer.id }}_</span>
+                </label>
+                <input type="text" id="companyUserUsername" name="username" placeholder="e.g. {{ customer.id }}_rahul" required class="input input-sm input-bordered w-full font-mono" />
             </div>
 
             <div class="form-control">
                 <label class="label font-bold text-gray-700"><span class="label-text">Full Name</span></label>
-                <input type="text" name="display_name" placeholder="e.g. Rahul Sharma" required class="input input-sm input-bordered w-full" />
-            </div>
-
-            <div class="form-control">
-                <label class="label font-bold text-gray-700"><span class="label-text">Contact Email</span></label>
-                <input type="email" name="email" placeholder="e.g. rahul@{{ customer.id }}.com" required class="input input-sm input-bordered w-full" />
+                <input type="text" id="companyUserDisplayName" name="display_name" placeholder="e.g. Rahul Sharma" required class="input input-sm input-bordered w-full" />
             </div>
 
             <div class="form-control">
@@ -228,6 +231,26 @@
     </div>
     <form method="dialog" class="modal-backdrop"><button>close</button></form>
 </dialog>
+
+<script>
+function autoSuggestCompanyUsername(companyId) {
+    const emailInput = document.getElementById('companyUserEmail');
+    const usernameInput = document.getElementById('companyUserUsername');
+    const nameInput = document.getElementById('companyUserDisplayName');
+    
+    if (!emailInput || !usernameInput) return;
+    const email = emailInput.value.trim();
+    if (email.includes('@')) {
+        const localPart = email.split('@')[0].toLowerCase().replace(/[^a-z0-9_-]/g, '_');
+        if (localPart) {
+            usernameInput.value = companyId + '_' + localPart;
+            if (nameInput && !nameInput.value) {
+                nameInput.value = localPart.replace(/[._-]/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+            }
+        }
+    }
+}
+</script>
 
 <!-- Bulk Import Modal for Company Admin -->
 <dialog id="bulkImportModal" class="modal">

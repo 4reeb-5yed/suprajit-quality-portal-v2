@@ -86,6 +86,11 @@ def add_user():
         flash("Username and password are required.", "error")
         return redirect(url_for("company.manage_users"))
 
+    # Enforce company prefix
+    if customer_id and not username.startswith(f"{customer_id}_"):
+        clean_name = username.removeprefix(customer_id).lstrip("_-")
+        username = f"{customer_id}_{clean_name}"
+
     pwd_hash = generate_password_hash(password)
     from app.database import INSERT_USER
 
@@ -220,7 +225,11 @@ def bulk_add_users():
             skipped_count += 1
             continue
 
+        # Clean username and enforce company code prefix for tenant users
         username = "".join(c for c in username if c.isalnum() or c in ("_", "-"))
+        if customer_id and not username.startswith(f"{customer_id}_"):
+            clean_name = username.removeprefix(customer_id).lstrip("_-")
+            username = f"{customer_id}_{clean_name}"
 
         # Check existing user
         existing = g.db.execute(

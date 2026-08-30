@@ -32,6 +32,12 @@ def add_user():
             return redirect(url_for("admin.settings"))
         return redirect(url_for("admin.customers"))
 
+    # Enforce company prefix for tenant users
+    if customer_id and not username.startswith(f"{customer_id}_"):
+        # If user typed the prefix without underscore or just the plain name, format properly
+        clean_name = username.removeprefix(customer_id).lstrip("_-")
+        username = f"{customer_id}_{clean_name}"
+
     pwd_hash = generate_password_hash(password)
 
     try:
@@ -166,8 +172,11 @@ def bulk_import_users():
             skipped_count += 1
             continue
 
-        # Clean username
+        # Clean username and enforce company code prefix for tenant users
         username = "".join(c for c in username if c.isalnum() or c in ("_", "-"))
+        if customer_id and not username.startswith(f"{customer_id}_"):
+            clean_name = username.removeprefix(customer_id).lstrip("_-")
+            username = f"{customer_id}_{clean_name}"
 
         # Check existing user
         existing = g.db.execute(

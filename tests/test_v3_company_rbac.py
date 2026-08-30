@@ -424,7 +424,7 @@ def test_bulk_import_admin(v3_client, v3_app):
     assert b'Bulk Provisioning Completed' in res.data
     with v3_app.app_context():
         conn = get_connection(v3_app.config['DATABASE_PATH'])
-        assert conn.execute("SELECT id FROM users WHERE username = 'eng100'").fetchone() is not None
+        assert conn.execute("SELECT id FROM users WHERE username = 'tvs_eng100'").fetchone() is not None
 
 def test_bulk_import_company_admin(v3_client, v3_app):
     v3_client.post('/login', data={'username': 'tvs_admin', 'password': 'Password123!'}, follow_redirects=True)
