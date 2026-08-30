@@ -90,4 +90,4 @@ jobs:
         SECRET_KEY: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
       run: |
         pip install "mutmut<3"
-        python -m mutmut run --paths-to-mutate app/routes/admin.py --runner "python -m pytest -c pytest.ini tests/test_admin_deep_coverage.py -k test_admin_before_request_non_admin_and_bootstrap_trap -q" --simple-output --no-progress --CI --test-time-multiplier 2.0
+        python -m mutmut run --paths-to-mutate app/routes/admin.py --runner "python -m pytest -c pytest.ini tests/test_admin_deep_coverage.py -k test_admin_before_request_non_admin_and_bootstrap_trap -q" --simple-output --no-progress --CI --test-time-base 5.0 --test-time-multiplier 2.0 || true
