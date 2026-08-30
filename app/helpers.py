@@ -21,7 +21,9 @@ def is_safe_path(base_dir: str, target_path: str) -> bool:
     return target_path.startswith(base_dir + os.sep)
 
 
-def locate_report_file(stored_path: str, expected_hash: str | None, search_roots: list[str], original_filename: str = "") -> str | None:
+def locate_report_file(
+    stored_path: str, expected_hash: str | None, search_roots: list[str], original_filename: str = ""
+) -> str | None:
     """
     Resolves a report file path. If stored_path exists, verifies and returns it.
     If stored_path is missing (e.g. file was moved), searches configured search_roots
