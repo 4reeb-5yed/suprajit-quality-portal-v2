@@ -121,9 +121,7 @@ def repair():
         except Exception as e:
             error_msg = str(e)
 
-    return render_template(
-        "admin/repair.html", trace_log=trace_log, success_msg=success_msg, error_msg=error_msg
-    )
+    return render_template("admin/repair.html", trace_log=trace_log, success_msg=success_msg, error_msg=error_msg)
 
 
 @admin_bp.route("/logs/download")

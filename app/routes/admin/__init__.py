@@ -1,7 +1,6 @@
 from flask import (
     Blueprint,
     abort,
-    current_app,
     flash,
     g,
     redirect,
@@ -12,7 +11,7 @@ from flask import (
 from flask_login import current_user
 from werkzeug.security import generate_password_hash
 
-from app.database import GET_SETTING, SET_SETTING
+from app.database import SET_SETTING
 
 admin_bp = Blueprint("admin", __name__)
 
