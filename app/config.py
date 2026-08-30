@@ -22,7 +22,7 @@ class Config:
     SESSION_COOKIE_SECURE = True
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = "Lax"
-    PERMANENT_SESSION_LIFETIME = 7200  # 2 hours (7200 seconds)
+    PERMANENT_SESSION_LIFETIME = 18000  # 5 hours (18000 seconds)
 
     # Path configuration
     import os
