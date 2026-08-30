@@ -37,6 +37,9 @@ def diagnostics():
     sync_time_row = g.db.execute(GET_SETTING, ("sync_time",)).fetchone()
     sync_time_str = sync_time_row["value"] if sync_time_row else "02:00"
 
+    schema_version_row = g.db.execute("PRAGMA user_version").fetchone()
+    schema_version = schema_version_row[0] if schema_version_row else 1
+
     audit_logs = g.db.execute("""
         SELECT a.id, a.created_at as timestamp, a.action, a.client_ip as ip_address,
                COALESCE(u.display_name, u.username, 'System') as display_name,
@@ -54,6 +57,7 @@ def diagnostics():
         log_lines=log_lines,
         last_run=last_run,
         db_size_mb=db_size_mb,
+        schema_version=schema_version,
         total_reports=total_reports,
         unassigned_reports=unassigned_reports,
         total_customers=total_customers,
