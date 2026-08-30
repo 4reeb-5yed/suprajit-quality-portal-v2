@@ -16,6 +16,7 @@ import tempfile
 import shutil
 import threading
 from werkzeug.serving import make_server
+from werkzeug.security import generate_password_hash
 import openpyxl
 pytest.importorskip("playwright")
 from playwright.sync_api import sync_playwright, expect
