@@ -3,6 +3,10 @@ PROPERTY-BASED HYPOTHESIS TEST SUITE FOR CRYPTOGRAPHY & PATH SAFETY
 Tests invariant algebraic properties of security helpers.
 """
 
+import pytest
+pytestmark = pytest.mark.unit
+
+
 from hypothesis import given, strategies as st, settings, HealthCheck
 from app.helpers import is_safe_path, encrypt_password, decrypt_password
 import os

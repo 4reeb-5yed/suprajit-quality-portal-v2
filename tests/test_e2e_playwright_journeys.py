@@ -5,6 +5,10 @@ Checks rendered DOM state, interactive spreadsheet viewer cell data, downloads w
 date/recipe filter changes, password resets, team management, and domain self-registration.
 """
 
+import pytest
+pytestmark = pytest.mark.e2e
+
+
 import os
 import time
 import socket

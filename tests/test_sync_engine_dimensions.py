@@ -1,4 +1,7 @@
-﻿import os
+import pytest
+pytestmark = pytest.mark.integration
+
+import os
 from unittest.mock import patch
 
 from app.sync_engine import SyncEngine

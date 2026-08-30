@@ -8,6 +8,10 @@ Tests high-risk administrative operations:
 """
 
 import pytest
+pytestmark = pytest.mark.integration
+
+
+import pytest
 from app.database import get_connection, ensure_schema
 from app.helpers import decrypt_password
 

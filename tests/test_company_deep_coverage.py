@@ -4,6 +4,10 @@ Targeting 95%+ coverage across company admin RBAC, user management,
 bulk import variants, allowed domain controls, and permission boundaries.
 """
 
+import pytest
+pytestmark = pytest.mark.integration
+
+
 import io
 from app.database import get_connection, ensure_schema
 from werkzeug.security import generate_password_hash

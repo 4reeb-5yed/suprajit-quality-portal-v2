@@ -1,4 +1,7 @@
 import pytest
+pytestmark = pytest.mark.integration
+
+import pytest
 from app import create_app
 from app.database import get_connection
 

@@ -8,6 +8,10 @@ Tests security-critical token flows and email dispatches:
 """
 
 import pytest
+pytestmark = pytest.mark.integration
+
+
+import pytest
 from werkzeug.security import check_password_hash
 from app.database import get_connection, ensure_schema
 from app.mail import get_serializer, get_effective_portal_url

@@ -4,6 +4,10 @@ Ensures that the login endpoint strictly enforces the configured rate limit (10 
 and returns HTTP 429 Too Many Requests on the 11th attempt.
 """
 
+import pytest
+pytestmark = pytest.mark.integration
+
+
 import tempfile
 import os
 import shutil

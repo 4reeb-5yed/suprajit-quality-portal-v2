@@ -1,3 +1,6 @@
+import pytest
+pytestmark = pytest.mark.integration
+
 import os
 
 from app.sync_engine import SyncEngine

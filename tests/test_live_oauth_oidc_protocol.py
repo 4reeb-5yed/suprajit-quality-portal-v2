@@ -18,6 +18,10 @@ CAPTCHAs and rate limit triggers.
 ================================================================================
 """
 
+import pytest
+pytestmark = pytest.mark.live_external
+
+
 import threading
 import json
 import urllib.parse

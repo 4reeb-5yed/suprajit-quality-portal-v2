@@ -4,6 +4,10 @@ Generated using AllPairs combinatorial coverage across multi-parameter boundarie
 """
 
 import pytest
+pytestmark = pytest.mark.integration
+
+
+import pytest
 from allpairspy import AllPairs
 from app.database import get_connection, ensure_schema
 

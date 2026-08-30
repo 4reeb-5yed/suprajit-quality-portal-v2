@@ -3,6 +3,10 @@ PROPERTY-BASED HYPOTHESIS TEST SUITE FOR FILENAME PARSING
 Verifies algebraic invariants of the filename parser across arbitrary generated inputs.
 """
 
+import pytest
+pytestmark = pytest.mark.unit
+
+
 from hypothesis import given, strategies as st, settings, HealthCheck
 from datetime import datetime
 from app.parser import parse_filename

@@ -3,6 +3,10 @@ AUTHENTIC DEEP COVERAGE TESTS FOR app/routes/portal.py
 Covers search (admin/CUSTOM/ALL modes), download (safe/unsafe path, file exists/missing,
 path traversal block), raw_report, onlyoffice_viewer, preview_pdf branches.
 """
+
+import pytest
+pytestmark = pytest.mark.integration
+
 import os
 import tempfile
 from werkzeug.security import generate_password_hash

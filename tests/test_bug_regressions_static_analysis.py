@@ -4,6 +4,10 @@ Proves that the bugs flagged by Bandit, Mypy, and Ruff fail on the unfixed patte
 and pass on the hardened code.
 """
 
+import pytest
+pytestmark = pytest.mark.integration
+
+
 import os
 import hashlib
 import pytest

@@ -14,6 +14,10 @@ in app/tunnel_manager.py:
 ================================================================================
 """
 
+import pytest
+pytestmark = pytest.mark.live_external
+
+
 import shutil
 import threading
 import time

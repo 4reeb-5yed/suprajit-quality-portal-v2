@@ -4,6 +4,10 @@ Targeting 95%+ coverage across all admin endpoints, configuration changes,
 customer lifecycle, folder mappings, user management, and diagnostic tools.
 """
 
+import pytest
+pytestmark = pytest.mark.integration
+
+
 import io
 import os
 from app.database import get_connection, ensure_schema

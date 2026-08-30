@@ -10,6 +10,10 @@ Tests authentic SMTP network socket delivery and dynamic email templating in app
 ZERO MOCKS: All dispatches traverse the genuine smtplib.SMTP socket client.
 """
 
+import pytest
+pytestmark = pytest.mark.live_external
+
+
 import threading
 import time
 import socket

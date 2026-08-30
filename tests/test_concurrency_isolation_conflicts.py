@@ -3,6 +3,10 @@ REAL CONCURRENCY & TRANSACTION ISOLATION CONFLICT TESTING
 Simulates simultaneous threads attempting to execute write-write collisions and read-write contention.
 """
 
+import pytest
+pytestmark = pytest.mark.integration
+
+
 import threading
 import tempfile
 import os

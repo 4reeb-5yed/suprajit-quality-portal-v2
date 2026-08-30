@@ -50,9 +50,34 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  test-matrix:
-    name: Full Test Suite & E2E Validation
+  fast-test-gate:
+    name: Fast Unit & Integration Gate
     needs: static-analysis-and-security
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.13'
+
+    - name: Install Project & Fast Test Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install .
+        pip install pytest pytest-cov openpyxl hypothesis allpairspy psutil
+
+    - name: Run Unit & Integration Tests
+      env:
+        PYTHONPATH: .
+        SECRET_KEY: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+      run: |
+        python -m pytest -c pytest.ini -m "unit or integration" -v --cov=app --cov-branch --cov-report=term
+
+  e2e-and-live-gate:
+    name: E2E & Live External Validation Gate
+    needs: fast-test-gate
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
@@ -70,25 +95,25 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y libreoffice
 
-    - name: Install Project & Test Dependencies
+    - name: Install Dependencies & Playwright
       run: |
         python -m pip install --upgrade pip
         pip install .
-        pip install pytest pytest-cov playwright pytest-playwright openpyxl hypothesis allpairspy psutil
+        pip install pytest pytest-cov playwright pytest-playwright openpyxl hypothesis allpairspy psutil "mutmut==2.5.1"
         python -m playwright install --with-deps chromium
 
-    - name: Run Full Test Suite with Coverage
+    - name: Run E2E & Live External Test Suites
       env:
         PYTHONPATH: .
         SECRET_KEY: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
       run: |
-        python -m pytest -c pytest.ini tests/ -v --cov=app --cov-branch --cov-report=term
+        python -m pytest -c pytest.ini -m "e2e or live_external" -v
 
     - name: Mutation Testing Quality Gate (admin.py & auth.py)
       env:
         PYTHONPATH: .
         SECRET_KEY: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
       run: |
-        pip install "mutmut==2.5.1"
         python -m mutmut run 3 --runner "python -m pytest -c pytest.ini tests/test_admin_deep_coverage.py -k test_admin_before_request_non_admin_and_bootstrap_trap -q" --simple-output --no-progress || true
+
 

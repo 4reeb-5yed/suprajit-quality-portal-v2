@@ -5,6 +5,10 @@ Tests:
 2. get_config function
 3. Frozen sys.executable path resolution branch
 """
+
+import pytest
+pytestmark = pytest.mark.integration
+
 import os
 import sys
 from app.config import Config, get_config

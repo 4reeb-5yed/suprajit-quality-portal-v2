@@ -10,6 +10,10 @@ Proves:
 6. customer_scope() filters strictly on reports.customer_id, ignoring mismatched customer_recipes live state.
 """
 
+import pytest
+pytestmark = pytest.mark.integration
+
+
 import os
 import pytest
 from app import create_app

@@ -4,6 +4,10 @@ Exercises all functions in app/tunnel_manager.py: get_installed_tunnel_binaries,
 get_tunnel_status, start_cloudflared_quick_tunnel, start_named_cloudflared_tunnel, and stop_tunnel.
 Zero mocks.
 """
+
+import pytest
+pytestmark = pytest.mark.live_external
+
 import time
 from app.tunnel_manager import (
     get_installed_tunnel_binaries,
