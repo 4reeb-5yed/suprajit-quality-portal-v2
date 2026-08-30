@@ -215,6 +215,7 @@ def test_portal_search_results_metric_error_branch(client, app):
     res = client.get("/search/results?recipe=TEST_RECIPE")
     assert res.status_code == 200
 
+@pytest.mark.live_external
 def test_portal_preview_pdf_real_generation_and_cached(client, app):
     """Test preview_pdf using real files, real LibreOffice conversion and caching."""
     storage = app.config["STORAGE_FOLDER"]
