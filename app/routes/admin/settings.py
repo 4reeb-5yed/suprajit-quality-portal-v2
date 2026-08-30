@@ -165,8 +165,15 @@ def add_folder_mapping():
                 "INSERT INTO folder_mappings (folder_path, customer_id) VALUES (?, ?)",
                 (folder_path, customer_id),
             )
+            # If customer_id is provided, retroactively tag all previously ingested reports inside this folder
+            if customer_id:
+                normalized_folder = folder_path.replace("/", "\\").rstrip("\\")
+                g.db.execute(
+                    "UPDATE reports SET customer_id = ? WHERE file_path LIKE ? AND (customer_id IS NULL OR customer_id != ?)",
+                    (customer_id, f"{normalized_folder}%", customer_id),
+                )
             g.db.commit()
-            flash("Root folder mapped successfully.", "success")
+            flash("Root folder mapped and existing reports retroactively updated successfully.", "success")
         except Exception as e:
             flash(f"Error mapping folder: {e}", "error")
 

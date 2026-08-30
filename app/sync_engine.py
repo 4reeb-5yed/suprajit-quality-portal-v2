@@ -191,15 +191,20 @@ class SyncEngine:
 
                 file_hash = hash_file(filepath)
                 if file_hash in existing_hashes:
-                    # Relocation check: if file moved to a new folder, update the path in SQLite
+                    # Relocation / Customer Mapping check: if file moved or customer binding changed, update in SQLite
                     current_record = existing_hashes[file_hash]
-                    if current_record.get("file_path") != filepath:
+                    needs_path_update = current_record.get("file_path") != filepath
+                    needs_cust_update = customer_id is not None and current_record.get("customer_id") != customer_id
+
+                    if needs_path_update or needs_cust_update:
                         conn.execute(
                             "UPDATE reports SET file_path = ?, customer_id = COALESCE(?, customer_id) WHERE file_hash = ?",
                             (filepath, customer_id, file_hash),
                         )
                         conn.commit()
-                        logger.info(f"Updated relocated file path for hash {file_hash[:8]} -> {filepath}")
+                        logger.info(
+                            f"Updated report metadata for hash {file_hash[:8]} -> Path: {filepath}, Customer: {customer_id}"
+                        )
                     skipped += 1
                     continue
 
