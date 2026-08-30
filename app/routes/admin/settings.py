@@ -31,16 +31,27 @@ def settings():
         dev_email = request.form.get("developer_email")
         tel_freq = request.form.get("telemetry_frequency")
 
-        # Filename Regex Pattern
+        # Filename Regex Pattern (supports single or multiple newline-separated patterns)
         regex_pattern = request.form.get("filename_regex_pattern")
         if regex_pattern is not None:
-            # Validate regex syntax before saving
-            try:
-                re.compile(regex_pattern.strip())
-                g.db.execute(SET_SETTING, ("filename_regex_pattern", regex_pattern.strip()))
-            except re.error as e:
-                flash(f"Invalid Regular Expression Syntax: {e}", "error")
+            # Validate each non-empty regex pattern line before saving
+            lines = [
+                line.strip()
+                for line in regex_pattern.strip().splitlines()
+                if line.strip() and not line.strip().startswith("#")
+            ]
+            syntax_errors = []
+            for line in lines:
+                try:
+                    re.compile(line)
+                except re.error as e:
+                    syntax_errors.append(f"'{line}': {e}")
+
+            if syntax_errors:
+                flash(f"Invalid Regular Expression Syntax: {'; '.join(syntax_errors)}", "error")
                 return redirect(url_for("admin.settings"))
+
+            g.db.execute(SET_SETTING, ("filename_regex_pattern", regex_pattern.strip()))
 
         # SSO Settings (Google, Microsoft, GitHub)
         save_sso_settings(request.form)

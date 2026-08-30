@@ -117,3 +117,29 @@ def test_property_invalid_hours_strictly_rejected(recipe, bad_hour, sn):
     """
     filename = f"{recipe}_13-06-2026_{bad_hour:02d}.00.00_{sn}.xlsx"
     assert parse_filename(filename) is None
+
+
+def test_multi_pattern_filename_parsing():
+    """Verifies that multiline regex patterns match different machine filename conventions."""
+    multiline_pattern = """
+    # Standard format
+    ^(.+)_(\\d{2}-\\d{2}-\\d{4})_(\\d{2}\\.\\d{2}\\.\\d{2})_([a-zA-Z0-9_-]+)\\.(?:xlsx|csv)$
+    # Alternative hyphenated format (e.g. PLANT_B-2026-08-20-14.30.00-SN001.xlsx)
+    ^(.+)-(\\d{4}-\\d{2}-\\d{2})-(\\d{2}\\.\\d{2}\\.\\d{2})-([a-zA-Z0-9_-]+)\\.(?:xlsx|csv)$
+    """
+
+    res1 = parse_filename("RECIPE_A_20-08-2026_10.00.00_001.xlsx", custom_pattern=multiline_pattern)
+    assert res1 is not None
+    assert res1["recipe_name"] == "RECIPE_A"
+    assert res1["report_date"] == "2026-08-20"
+    assert res1["serial_normalized"] == "0001"
+
+    res2 = parse_filename("PLANT_B-2026-08-20-14.30.00-SN002.xlsx", custom_pattern=multiline_pattern)
+    assert res2 is not None
+    assert res2["recipe_name"] == "PLANT_B"
+    assert res2["report_date"] == "2026-08-20"
+    assert res2["serial_normalized"] == "SN002"
+
+    res3 = parse_filename("unrelated_garbage_file.txt", custom_pattern=multiline_pattern)
+    assert res3 is None
+

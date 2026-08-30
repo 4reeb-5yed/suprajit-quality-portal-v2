@@ -4,20 +4,41 @@ import re
 DEFAULT_FILENAME_PATTERN = r"^(.+)_(\d{2,4}[-\/]\d{2}[-\/]\d{2,4})_(\d{2}\.\d{2}\.\d{2})_([a-zA-Z0-9_-]+?)(?:\s*\(\d+\)|\s*-\s*Copy)*\.(?:xlsx|csv)$"
 
 
-def get_compiled_pattern(custom_pattern: str | None = None):
-    pattern_str = custom_pattern.strip() if custom_pattern and custom_pattern.strip() else DEFAULT_FILENAME_PATTERN
-    try:
-        return re.compile(pattern_str, re.IGNORECASE)
-    except re.error:
-        return re.compile(DEFAULT_FILENAME_PATTERN, re.IGNORECASE)
+def get_compiled_patterns(custom_pattern: str | None = None) -> list[re.Pattern]:
+    """
+    Returns a list of compiled regex patterns.
+    Supports single patterns or multiple patterns separated by newlines.
+    """
+    if not custom_pattern or not custom_pattern.strip():
+        return [re.compile(DEFAULT_FILENAME_PATTERN, re.IGNORECASE)]
+
+    patterns = []
+    for line in custom_pattern.strip().splitlines():
+        line = line.strip()
+        if not line or line.startswith("#"):
+            continue
+        try:
+            patterns.append(re.compile(line, re.IGNORECASE))
+        except re.error:
+            pass
+
+    if not patterns:
+        patterns.append(re.compile(DEFAULT_FILENAME_PATTERN, re.IGNORECASE))
+
+    return patterns
+
+
+def get_compiled_pattern(custom_pattern: str | None = None) -> re.Pattern:
+    """Legacy helper returning the first compiled pattern."""
+    return get_compiled_patterns(custom_pattern)[0]
 
 
 def parse_filename(filename: str, custom_pattern: str | None = None) -> dict[str, str] | None:
     """
     Parses a Suprajit quality report filename and extracts metadata.
-    Supports either the standard pattern or a custom regex pattern configured in System Settings.
-    The pattern must capture 4 groups: (1) recipe_name, (2) date, (3) time, (4) serial.
-    Returns None if the filename does not match the expected pattern.
+    Supports single or multiple regex patterns (separated by newlines).
+    Each pattern must capture 4 groups: (1) recipe_name, (2) date, (3) time, (4) serial.
+    Returns None if the filename does not match any expected pattern.
     """
     # Cleanly extract basename whether filename is an absolute path or relative string with date slashes
     if os.path.isabs(filename):
@@ -33,10 +54,15 @@ def parse_filename(filename: str, custom_pattern: str | None = None) -> dict[str
     else:
         basename = filename
 
-    pattern = get_compiled_pattern(custom_pattern)
-    match = pattern.match(basename)
+    compiled_patterns = get_compiled_patterns(custom_pattern)
+    match = None
+    for pattern in compiled_patterns:
+        m = pattern.match(basename)
+        if m and len(m.groups()) >= 4:
+            match = m
+            break
 
-    if not match or len(match.groups()) < 4:
+    if not match:
         return None
 
     recipe_name = match.group(1)
