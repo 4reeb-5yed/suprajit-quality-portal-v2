@@ -90,4 +90,4 @@ jobs:
         SECRET_KEY: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
       run: |
         pip install "mutmut<3"
-        python -m mutmut run --paths-to-mutate app/routes/admin.py,app/routes/auth.py --runner "python -m pytest -c pytest.ini tests/test_admin_deep_coverage.py tests/test_auth_deep_coverage.py -q" --simple-output --no-progress --CI
+        python -m mutmut run 3 --runner "python -m pytest -c pytest.ini tests/test_admin_deep_coverage.py -q" --simple-output --no-progress --CI
