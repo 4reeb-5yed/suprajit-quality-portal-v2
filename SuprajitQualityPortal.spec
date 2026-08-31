@@ -1,16 +1,33 @@
 # -*- mode: python ; coding: utf-8 -*-
 
-
 a = Analysis(
     ['web_server.py'],
     pathex=[],
     binaries=[],
     datas=[('app/templates', 'app/templates'), ('app/static', 'app/static')],
-    hiddenimports=[],
+    hiddenimports=[
+        'waitress',
+        'flask',
+        'openpyxl',
+        'authlib',
+        'app',
+        'app.routes.auth',
+        'app.routes.dashboard',
+        'app.routes.search',
+        'app.routes.api',
+        'app.routes.export',
+        'app.routes.admin',
+        'app.routes.admin.dashboard',
+        'app.routes.admin.users',
+        'app.routes.admin.reports',
+        'app.routes.admin.companies',
+        'app.routes.admin.settings',
+        'app.routes.admin.analytics',
+    ],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=[],
+    excludes=['pytest', 'hypothesis', 'mutmut', 'playwright', 'anyio', 'coverage', 'setuptools', 'pip', 'wheel', 'tkinter', 'unittest'],
     noarchive=False,
     optimize=0,
 )
