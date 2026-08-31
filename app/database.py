@@ -176,14 +176,27 @@ def _migration_v4_customer_allowed_domains(conn):
         conn.execute("ALTER TABLE customers ADD COLUMN allowed_domains TEXT")
 
 
+def _migration_v5_report_customer_id(conn):
+    """V5: Ensure customer_id column exists on reports and folder_mappings tables."""
+    report_cols = [r["name"] for r in conn.execute("PRAGMA table_info(reports)").fetchall()]
+    if "customer_id" not in report_cols:
+        conn.execute("ALTER TABLE reports ADD COLUMN customer_id TEXT")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_reports_customer ON reports(customer_id)")
+
+    folder_cols = [r["name"] for r in conn.execute("PRAGMA table_info(folder_mappings)").fetchall()]
+    if "customer_id" not in folder_cols:
+        conn.execute("ALTER TABLE folder_mappings ADD COLUMN customer_id TEXT")
+
+
 MIGRATIONS = [
     (1, "Core Base Schema Definition", _migration_v1_base_schema),
     (2, "User Granular Access Mode & Customer Association", _migration_v2_user_access_mode_and_customer_id),
     (3, "Customer Portal Suspension Support", _migration_v3_customer_portal_suspended),
     (4, "Customer Auto-Join Allowed Domains Support", _migration_v4_customer_allowed_domains),
+    (5, "Reports and Folder Mappings Customer Association", _migration_v5_report_customer_id),
 ]
 
-LATEST_SCHEMA_VERSION = 4
+LATEST_SCHEMA_VERSION = 5
 
 
 def get_current_schema_version(conn):
