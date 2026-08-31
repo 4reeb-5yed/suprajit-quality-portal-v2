@@ -1,9 +1,9 @@
 {% if reports %}
     {% for row in reports %}
     <tr>
-        <td class="font-mono font-semibold text-blue-800 bg-blue-50/50 px-4">{{ row.serial_normalized }}</td>
         <td class="font-medium text-gray-800">{{ row.recipe_name }}</td>
         <td class="text-gray-600 font-mono text-sm">{{ row.report_date }}</td>
+        <td class="font-mono font-semibold text-blue-800 bg-blue-50/50 px-4">{{ row.serial_normalized }}</td>
         <td class="text-gray-600 font-mono text-sm">{{ row.report_time }}</td>
         <td class="text-right whitespace-nowrap space-x-1">
             <button onclick="openExcelViewer({{ row.id }}, '{{ row.original_filename }}', '{{ row.recipe_name }}', '{{ row.serial_normalized }}', '{{ url_for('portal.download_report', report_id=row.id) }}')" class="btn btn-sm btn-outline border-gray-300 text-blue-700 hover:bg-blue-50 font-semibold shadow-sm">
