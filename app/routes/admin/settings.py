@@ -92,6 +92,21 @@ def settings():
             g.db.execute(SET_SETTING, ("telemetry_frequency", tel_freq))
 
         g.db.commit()
+
+        # Two-Way Sync: Write updated settings directly into .env file
+        from app.env_sync import write_env_key
+
+        if new_storage:
+            write_env_key("STORAGE_FOLDER", new_storage)
+        if m_srv is not None:
+            write_env_key("MAIL_SERVER", m_srv)
+        if m_prt is not None:
+            write_env_key("MAIL_PORT", m_prt)
+        if m_usr is not None:
+            write_env_key("MAIL_USERNAME", m_usr)
+        if m_pwd:
+            write_env_key("MAIL_PASSWORD", m_pwd)
+
         flash("System configuration updated.", "success")
         return redirect(url_for("admin.settings"))
 

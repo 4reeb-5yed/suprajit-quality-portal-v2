@@ -120,6 +120,10 @@ def create_app(test_config=None):
         conn = get_connection(app.config["DATABASE_PATH"])
         ensure_schema(conn)
 
+        from app.env_sync import sync_env_to_db
+
+        sync_env_to_db(conn)
+
         secret_row = conn.execute("SELECT value FROM system_settings WHERE key = 'secret_key'").fetchone()
         if not secret_row:
             import secrets
