@@ -13,12 +13,34 @@ _tunnel_process: subprocess.Popen | None = None
 _tunnel_status: dict[str, Any] = {"active": False, "provider": "none", "public_url": "", "log": ""}
 
 
+def _find_binary(name: str) -> str | None:
+    """Finds binary in PATH, current working directory, or application directory."""
+    # 1. Check system PATH
+    found = shutil.which(name)
+    if found:
+        return found
+
+    # 2. Check application directory or CWD (for frozen .exe)
+    import sys
+    base_dir = os.path.dirname(sys.executable) if getattr(sys, "frozen", False) else os.getcwd()
+    candidate = os.path.join(base_dir, f"{name}.exe" if os.name == "nt" else name)
+    if os.path.isfile(candidate) and os.access(candidate, os.X_OK):
+        return candidate
+    
+    # 3. Check relative to script
+    candidate_cwd = os.path.join(os.getcwd(), f"{name}.exe" if os.name == "nt" else name)
+    if os.path.isfile(candidate_cwd) and os.access(candidate_cwd, os.X_OK):
+        return candidate_cwd
+
+    return None
+
+
 def get_installed_tunnel_binaries() -> dict[str, bool]:
-    """Checks if Cloudflared, Tailscale, or Ngrok CLI binaries exist in PATH."""
+    """Checks if Cloudflared, Tailscale, or Ngrok CLI binaries exist."""
     return {
-        "cloudflared": shutil.which("cloudflared") is not None,
-        "tailscale": shutil.which("tailscale") is not None,
-        "ngrok": shutil.which("ngrok") is not None,
+        "cloudflared": _find_binary("cloudflared") is not None,
+        "tailscale": _find_binary("tailscale") is not None,
+        "ngrok": _find_binary("ngrok") is not None,
     }
 
 
@@ -36,10 +58,11 @@ def start_cloudflared_quick_tunnel(port: int = 5000) -> dict[str, Any]:
     global _tunnel_process, _tunnel_status
     stop_tunnel()
 
-    if not shutil.which("cloudflared"):
-        return {"success": False, "error": "cloudflared executable not found in PATH."}
+    bin_path = _find_binary("cloudflared")
+    if not bin_path:
+        return {"success": False, "error": "cloudflared executable not found in PATH or portal folder."}
 
-    cmd = ["cloudflared", "tunnel", "--url", f"http://localhost:{port}"]
+    cmd = [bin_path, "tunnel", "--url", f"http://localhost:{port}"]
 
     try:
         proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1)
