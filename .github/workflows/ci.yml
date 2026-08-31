@@ -3,6 +3,8 @@ name: Suprajit Quality Portal Enterprise CI & Security Quality Gate
 on:
   push:
     branches: [ "master", "v3" ]
+    tags:
+      - 'v*'
   pull_request:
     branches: [ "master", "v3" ]
 
@@ -109,5 +111,46 @@ jobs:
       run: |
         export SECRET_KEY=$(python -c "import secrets; print(secrets.token_hex(32))")
         python -m mutmut run 3 --runner "python -m pytest -c pytest.ini tests/test_admin_deep_coverage.py -k test_admin_before_request_non_admin_and_bootstrap_trap -q" --simple-output --no-progress || true
+
+  release-build:
+    name: Build & Publish Release Binary
+    needs: [e2e-and-live-gate]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.13'
+
+    - name: Install Build Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install .
+        pip install pyinstaller waitress openpyxl authlib cryptography
+
+    - name: Build Standalone Executable
+      run: |
+        pyinstaller SuprajitQualityPortal.spec --noconfirm
+
+    - name: Package Release Archive
+      shell: pwsh
+      run: |
+        Copy-Item '.env.example' -Destination 'dist\SuprajitQualityPortal\.env.example' -ErrorAction SilentlyContinue
+        Copy-Item 'install_service.bat' -Destination 'dist\SuprajitQualityPortal\install_service.bat' -ErrorAction SilentlyContinue
+        Copy-Item 'uninstall_service.bat' -Destination 'dist\SuprajitQualityPortal\uninstall_service.bat' -ErrorAction SilentlyContinue
+        Compress-Archive -Path 'dist\SuprajitQualityPortal\*' -DestinationPath "SuprajitQualityPortal-${{ github.ref_name }}-windows-x64.zip" -Force
+
+    - name: Upload Binary Asset to GitHub Release
+      uses: softprops/action-gh-release@v2
+      with:
+        files: "SuprajitQualityPortal-*.zip"
+        generate_release_notes: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 
