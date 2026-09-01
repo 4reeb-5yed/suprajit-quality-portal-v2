@@ -23,11 +23,12 @@ def _find_binary(name: str) -> str | None:
 
     # 2. Check application directory or CWD (for frozen .exe)
     import sys
+
     base_dir = os.path.dirname(sys.executable) if getattr(sys, "frozen", False) else os.getcwd()
     candidate = os.path.join(base_dir, f"{name}.exe" if os.name == "nt" else name)
     if os.path.isfile(candidate) and os.access(candidate, os.X_OK):
         return candidate
-    
+
     # 3. Check relative to script
     candidate_cwd = os.path.join(os.getcwd(), f"{name}.exe" if os.name == "nt" else name)
     if os.path.isfile(candidate_cwd) and os.access(candidate_cwd, os.X_OK):

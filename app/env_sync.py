@@ -1,10 +1,11 @@
-﻿"""
+"""
 Two-way environment variable and SQLite system_settings synchronization.
 Ensures that settings saved in the Admin UI write to .env, and values set in .env update system_settings.
 """
 
 import os
 import re
+
 from app.config import Config
 
 
@@ -20,7 +21,7 @@ def read_env_file() -> dict[str, str]:
         return {}
 
     env_data = {}
-    with open(path, "r", encoding="utf-8") as f:
+    with open(path, encoding="utf-8") as f:
         for line in f:
             line = line.strip()
             if not line or line.startswith("#"):
@@ -38,7 +39,7 @@ def write_env_key(key: str, value: str) -> None:
     found = False
 
     if os.path.exists(path):
-        with open(path, "r", encoding="utf-8") as f:
+        with open(path, encoding="utf-8") as f:
             lines = f.readlines()
 
     clean_val = str(value)
