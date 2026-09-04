@@ -178,14 +178,17 @@ def _migration_v4_customer_allowed_domains(conn):
 
 def _migration_v5_report_customer_id(conn):
     """V5: Ensure customer_id column exists on reports and folder_mappings tables."""
-    report_cols = [r["name"] for r in conn.execute("PRAGMA table_info(reports)").fetchall()]
-    if "customer_id" not in report_cols:
-        conn.execute("ALTER TABLE reports ADD COLUMN customer_id TEXT")
-        conn.execute("CREATE INDEX IF NOT EXISTS idx_reports_customer ON reports(customer_id)")
+    tables = {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()}
+    if "reports" in tables:
+        report_cols = [r["name"] for r in conn.execute("PRAGMA table_info(reports)").fetchall()]
+        if "customer_id" not in report_cols:
+            conn.execute("ALTER TABLE reports ADD COLUMN customer_id TEXT")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_reports_customer ON reports(customer_id)")
 
-    folder_cols = [r["name"] for r in conn.execute("PRAGMA table_info(folder_mappings)").fetchall()]
-    if "customer_id" not in folder_cols:
-        conn.execute("ALTER TABLE folder_mappings ADD COLUMN customer_id TEXT")
+    if "folder_mappings" in tables:
+        folder_cols = [r["name"] for r in conn.execute("PRAGMA table_info(folder_mappings)").fetchall()]
+        if "customer_id" not in folder_cols:
+            conn.execute("ALTER TABLE folder_mappings ADD COLUMN customer_id TEXT")
 
 
 MIGRATIONS = [
